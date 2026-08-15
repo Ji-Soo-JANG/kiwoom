@@ -1,9 +1,12 @@
-import { lazy, Suspense, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 
 import {
   getCurrentPrice,
   getDailyPrices,
-  getMultiplePrices
+  getMultiplePrices,
+  getWatchlist,
+  addToWatchlist,
+  removeFromWatchlist
 } from './api/kiwoomApi';
 
 import StockSearchForm
@@ -11,6 +14,7 @@ import StockSearchForm
 
 import StockResultList
   from './components/StockResultList';
+import Watchlist from './components/Watchlist';
 
 const StockDailyChart = lazy(() =>
     import('./components/StockDailyChart')
@@ -28,6 +32,12 @@ function App() {
 
   const [error, setError] =
       useState('');
+  const [watchlist, setWatchlist] = useState([]);
+
+  useEffect(() => {
+    getWatchlist().then(setWatchlist)
+        .catch(() => setError('관심종목을 불러오지 못했습니다.'));
+  }, []);
 
   const initializeSearch = () => {
     setLoading(true);
@@ -41,6 +51,21 @@ function App() {
         '주가 조회 중 오류가 발생했습니다: '
         + err.message
     );
+  };
+
+  const addCurrentToWatchlist = async () => {
+    if (!stocks[0]) return;
+    try {
+      await addToWatchlist(stocks[0].code);
+      setWatchlist(await getWatchlist());
+    } catch (err) { handleError(err); }
+  };
+
+  const deleteWatchlist = async (code) => {
+    try {
+      await removeFromWatchlist(code);
+      setWatchlist((items) => items.filter((item) => item !== code));
+    } catch (err) { handleError(err); }
   };
 
   const handleSingleSearch = async (code) => {
@@ -103,6 +128,12 @@ function App() {
         )}
 
         <StockResultList stocks={stocks} />
+
+        {stocks.length === 1 && (
+            <button type="button" onClick={addCurrentToWatchlist}>관심종목 추가</button>
+        )}
+
+        <Watchlist codes={watchlist} onSearch={handleSingleSearch} onRemove={deleteWatchlist} />
 
         <Suspense fallback={<div className="loading-text">차트를 불러오는 중...</div>}>
           <StockDailyChart
