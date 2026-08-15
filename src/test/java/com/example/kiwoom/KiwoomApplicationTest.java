@@ -37,4 +37,19 @@ class KiwoomApplicationTest {
                 .jsonPath("$.info.title").isEqualTo("Kiwoom Stock API")
                 .jsonPath("$.paths['/api/kiwoom/stock-price/{code}']").exists();
     }
+
+    @Test
+    void managesWatchlist() {
+        webTestClient.post().uri("/api/watchlist")
+                .bodyValue("{\"code\":\"005930\"}")
+                .header("Content-Type", "application/json")
+                .exchange().expectStatus().isCreated();
+
+        webTestClient.get().uri("/api/watchlist")
+                .exchange().expectStatus().isOk()
+                .expectBody().json("[\"005930\"]");
+
+        webTestClient.delete().uri("/api/watchlist/005930")
+                .exchange().expectStatus().isNoContent();
+    }
 }
