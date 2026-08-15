@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 public class KiwoomApiService {
@@ -47,6 +48,9 @@ public class KiwoomApiService {
     private final String apiKey;
     private final String apiSecret;
     private final Retry transientRetry;
+    private final Duration currentPriceCacheTtl;
+    private final Map<String, Mono<StockPriceResponse>> currentPriceCache =
+            new ConcurrentHashMap<>();
 
     /*
      * 최초 요청 시 접근 토큰을 발급하고,
@@ -66,6 +70,7 @@ public class KiwoomApiService {
         this.baseUrl = removeTrailingSlash(properties.baseUrl());
         this.apiKey = properties.key();
         this.apiSecret = properties.secret();
+        this.currentPriceCacheTtl = properties.currentPriceCacheTtl();
         this.transientRetry = Retry.backoff(
                         properties.maxRetries(),
                         properties.retryBackoff()
@@ -204,6 +209,18 @@ public class KiwoomApiService {
             return Mono.error(error);
         }
 
+        if (currentPriceCacheTtl.isZero() || currentPriceCacheTtl.isNegative()) {
+            return fetchStockCurrentPrice(normalizedCode);
+        }
+
+        return currentPriceCache.computeIfAbsent(normalizedCode, cacheKey ->
+                fetchStockCurrentPrice(cacheKey)
+                        .doOnError(error -> currentPriceCache.remove(cacheKey))
+                        .cache(currentPriceCacheTtl)
+        );
+    }
+
+    private Mono<StockPriceResponse> fetchStockCurrentPrice(String normalizedCode) {
         logger.info("주가 조회 요청: " + normalizedCode);
 
         return getAccessToken()

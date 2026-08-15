@@ -40,7 +40,8 @@ class KiwoomApiServiceTest {
                         Duration.ofSeconds(2),
                         5,
                         2,
-                        Duration.ofMillis(1)
+                        Duration.ofMillis(1),
+                        Duration.ZERO
                 ),
                 new ObjectMapper()
         );
@@ -112,6 +113,22 @@ class KiwoomApiServiceTest {
         assertEquals("+0.67", response.getChangeRate());
         assertEquals("/oauth2/token", server.takeRequest().getPath());
         assertEquals("/api/dostk/stkinfo", server.takeRequest().getPath());
+    }
+
+    @Test
+    @DisplayName("TTL 안의 같은 종목 현재가는 키움 API를 한 번만 호출한다")
+    void cachesCurrentPriceWithinTtl() {
+        service = createServiceWithCache(Duration.ofMinutes(1));
+        enqueueJson(200, """
+                {"return_code":0,"token":"access-token","expires_dt":"20991231235959"}
+                """);
+        enqueueJson(200, """
+                {"return_code":0,"stk_cd":"005930","cur_prc":"75000"}
+                """);
+
+        assertEquals("75000", service.getStockCurrentPrice("005930").block().getCurrentPrice());
+        assertEquals("75000", service.getStockCurrentPrice("005930").block().getCurrentPrice());
+        assertEquals(2, server.getRequestCount());
     }
 
     @Test
@@ -212,5 +229,17 @@ class KiwoomApiServiceTest {
                 .setResponseCode(status)
                 .setHeader("Content-Type", "application/json")
                 .setBody(body));
+    }
+
+    private KiwoomApiService createServiceWithCache(Duration cacheTtl) {
+        return new KiwoomApiService(
+                WebClient.create(),
+                new KiwoomApiProperties(
+                        server.url("/").toString(), "test-key", "test-secret",
+                        Duration.ofSeconds(1), Duration.ofSeconds(2), 5, 2,
+                        Duration.ofMillis(1), cacheTtl
+                ),
+                new ObjectMapper()
+        );
     }
 }

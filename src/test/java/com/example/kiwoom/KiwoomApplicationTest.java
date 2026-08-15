@@ -15,7 +15,8 @@ import org.springframework.test.web.reactive.server.WebTestClient;
         "kiwoom.api.response-timeout=2s",
         "kiwoom.api.max-connections=5",
         "kiwoom.api.max-retries=2",
-        "kiwoom.api.retry-backoff=1ms"
+        "kiwoom.api.retry-backoff=1ms",
+        "kiwoom.api.current-price-cache-ttl=3s"
         }
 )
 class KiwoomApplicationTest {
