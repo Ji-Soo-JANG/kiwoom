@@ -99,6 +99,8 @@ java -jar target/kiwoom-0.0.1-SNAPSHOT.jar
 
 브라우저: `http://localhost:8080`
 
+Spring 프로필은 `dev`, `test`, `prod`를 사용합니다. 운영 프로필에서는 Swagger UI와 OpenAPI JSON이 비활성화됩니다.
+
 ## 📚 API 명세
 
 ### REST API 엔드포인트
@@ -164,6 +166,12 @@ Spring Boot Actuator의 `GET /actuator/health`를 사용합니다.
 
 - Swagger UI: `http://localhost:8080/swagger-ui.html`
 - OpenAPI JSON: `http://localhost:8080/v3/api-docs`
+
+### 운영 상태
+
+- Health: `GET /actuator/health`
+- Info: `GET /actuator/info`
+- 외부 노출은 `health`, `info`로 제한하며 상세 health 정보는 기본적으로 숨깁니다.
 
 ## 🛠️ 기술 스택
 

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 
 import {
   getCurrentPrice,
@@ -12,8 +12,9 @@ import StockSearchForm
 import StockResultList
   from './components/StockResultList';
 
-import StockDailyChart
-  from './components/StockDailyChart';
+const StockDailyChart = lazy(() =>
+    import('./components/StockDailyChart')
+);
 
 import './App.css';
 
@@ -103,10 +104,12 @@ function App() {
 
         <StockResultList stocks={stocks} />
 
-        <StockDailyChart
-            stockCode={stocks[0]?.code}
-            dailyPrices={dailyPrices}
-        />
+        <Suspense fallback={<div className="loading-text">차트를 불러오는 중...</div>}>
+          <StockDailyChart
+              stockCode={stocks[0]?.code}
+              dailyPrices={dailyPrices}
+          />
+        </Suspense>
 
         {error && (
             <div className="error">

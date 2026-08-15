@@ -17,6 +17,15 @@ export default defineConfig({
 
   build: {
     outDir: '../src/main/resources/static',
-    emptyOutDir: true
+    emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('recharts')) {
+            return 'charts';
+          }
+        }
+      }
+    }
   }
 });

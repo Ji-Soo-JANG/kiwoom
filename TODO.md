@@ -40,7 +40,7 @@
 ## P1 — 설정 및 보안
 
 - [x] 키움 설정을 `@ConfigurationProperties`로 묶고 시작 시 필수값을 검증한다.
-- [ ] 개발/테스트/운영 프로필을 분리한다.
+- [x] 개발/테스트/운영 프로필을 분리했다.
 - [x] CORS 허용 origin을 `CORS_ALLOWED_ORIGINS` 환경 설정으로 이동했다.
 - [x] API 키와 secret이 소스, 로그, 정적 파일, 빌드 산출물에 포함되지 않는지 점검했다.
 - [ ] 의존성 취약점 및 오래된 버전을 점검하고 Spring Boot/React/Vite 업그레이드 정책을 정한다.
@@ -51,7 +51,7 @@
 - [ ] 종목 검색 폼, 결과 목록, 일봉 차트에 컴포넌트 테스트를 추가한다.
 - [ ] 프론트엔드 lint/format 명령과 CI 검사를 추가한다.
 - [x] Vite 빌드 결과가 Spring의 `static` 디렉터리에 배포되도록 설정했다.
-- [ ] 프론트엔드 번들을 코드 분할해 500 kB 크기 경고를 해소한다.
+- [x] 프론트엔드 차트 번들을 지연 로딩 및 별도 chunk로 분리했다.
 - [ ] 접근성(키보드 조작, label, 색상 대비)과 모바일 화면을 점검한다.
 
 ## P2 — 기능 확장
@@ -67,7 +67,7 @@
 - [x] README의 프로젝트 트리를 새 패키지 구조(`config`, `controller`, `dto`, `service`, `error`)로 갱신한다.
 - [ ] Java 21, Node.js, 환경변수 설정 및 로컬 실행 절차를 실제 환경에서 재검증한다.
 - [x] 백엔드 테스트와 프론트엔드 빌드를 실행하는 GitHub Actions CI를 추가했다.
-- [ ] 운영 상태 확인용 Actuator health endpoint와 노출 범위를 문서화한다.
+- [x] 운영 상태 확인용 Actuator health/info endpoint와 노출 범위를 문서화했다.
 
 ## 완료된 작업
 
