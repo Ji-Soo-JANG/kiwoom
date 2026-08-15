@@ -1,5 +1,6 @@
 package com.example.kiwoom.service;
 
+import com.example.kiwoom.config.KiwoomApiProperties;
 import com.example.kiwoom.dto.StockPriceResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.mockwebserver.MockResponse;
@@ -11,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -30,9 +32,14 @@ class KiwoomApiServiceTest {
         server.start();
         service = new KiwoomApiService(
                 WebClient.create(),
-                server.url("/").toString(),
-                "test-key",
-                "test-secret",
+                new KiwoomApiProperties(
+                        server.url("/").toString(),
+                        "test-key",
+                        "test-secret",
+                        Duration.ofSeconds(1),
+                        Duration.ofSeconds(2),
+                        5
+                ),
                 new ObjectMapper()
         );
     }

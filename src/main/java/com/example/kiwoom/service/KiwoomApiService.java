@@ -1,11 +1,11 @@
 package com.example.kiwoom.service;
 
+import com.example.kiwoom.config.KiwoomApiProperties;
 import com.example.kiwoom.dto.DailyPriceResponse;
 import com.example.kiwoom.dto.StockPriceResponse;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -44,16 +44,14 @@ public class KiwoomApiService {
 
     public KiwoomApiService(
             WebClient webClient,
-            @Value("${kiwoom.api.base-url}") String baseUrl,
-            @Value("${kiwoom.api.key}") String apiKey,
-            @Value("${kiwoom.api.secret}") String apiSecret,
+            KiwoomApiProperties properties,
             ObjectMapper objectMapper
     ) {
         this.webClient = webClient;
         this.objectMapper = objectMapper;
-        this.baseUrl = removeTrailingSlash(baseUrl);
-        this.apiKey = apiKey;
-        this.apiSecret = apiSecret;
+        this.baseUrl = removeTrailingSlash(properties.baseUrl());
+        this.apiKey = properties.key();
+        this.apiSecret = properties.secret();
 
         this.accessTokenMono = issueAccessToken().cache();
     }

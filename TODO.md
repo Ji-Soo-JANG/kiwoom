@@ -21,7 +21,7 @@
   - 현재 `Mono.cache()`는 최초 토큰을 계속 재사용하므로 만료 후 요청 실패 가능성이 있다.
 - [ ] 인증 실패 시 토큰을 한 번 갱신한 뒤 요청을 재시도하는 정책을 추가한다.
 - [ ] 429 및 일시적인 5xx 오류에 제한적인 재시도와 지수 백오프를 적용한다.
-- [ ] 연결/응답 timeout을 `application.properties`에서 조정할 수 있도록 설정화한다.
+- [x] 연결/응답 timeout과 최대 연결 수를 `application.properties`에서 조정할 수 있도록 설정화했다.
 - [ ] Kiwoom 응답 파싱 로직과 HTTP 호출 로직을 별도 client/mapper 클래스로 분리한다.
 - [ ] API 전체 응답을 로그에 남기는 방식을 점검하고 민감정보 및 과도한 데이터가 기록되지 않게 한다.
 
@@ -39,10 +39,10 @@
 
 ## P1 — 설정 및 보안
 
-- [ ] 키움 설정을 `@ConfigurationProperties`로 묶고 시작 시 필수값을 검증한다.
+- [x] 키움 설정을 `@ConfigurationProperties`로 묶고 시작 시 필수값을 검증한다.
 - [ ] 개발/테스트/운영 프로필을 분리한다.
 - [x] CORS 허용 origin을 `CORS_ALLOWED_ORIGINS` 환경 설정으로 이동했다.
-- [ ] API 키와 secret이 소스, 로그, 정적 파일, 빌드 산출물에 포함되지 않는지 점검한다.
+- [x] API 키와 secret이 소스, 로그, 정적 파일, 빌드 산출물에 포함되지 않는지 점검했다.
 - [ ] 의존성 취약점 및 오래된 버전을 점검하고 Spring Boot/React/Vite 업그레이드 정책을 정한다.
 
 ## P2 — 프론트엔드 품질
@@ -66,7 +66,7 @@
 
 - [x] README의 프로젝트 트리를 새 패키지 구조(`config`, `controller`, `dto`, `service`, `error`)로 갱신한다.
 - [ ] Java 21, Node.js, 환경변수 설정 및 로컬 실행 절차를 실제 환경에서 재검증한다.
-- [ ] 백엔드 테스트와 프론트엔드 빌드를 실행하는 CI 파이프라인을 추가한다.
+- [x] 백엔드 테스트와 프론트엔드 빌드를 실행하는 GitHub Actions CI를 추가했다.
 - [ ] 운영 상태 확인용 Actuator health endpoint와 노출 범위를 문서화한다.
 
 ## 완료된 작업

@@ -43,6 +43,22 @@ kiwoom/
 
 ### 1️⃣ 백엔드 준비
 
+필수 환경변수:
+
+```text
+KIWOOM_APP_KEY=키움 앱 키
+KIWOOM_SECRET_KEY=키움 시크릿 키
+```
+
+선택 환경변수:
+
+```text
+KIWOOM_CONNECT_TIMEOUT=3s
+KIWOOM_RESPONSE_TIMEOUT=10s
+KIWOOM_MAX_CONNECTIONS=20
+CORS_ALLOWED_ORIGINS=http://localhost:5173,http://localhost:8080
+```
+
 ```bash
 # IDE에서 프로젝트 재로드
 File → Invalidate Caches → Invalidate and Restart
