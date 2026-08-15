@@ -1,0 +1,26 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "model": "gemma-4-12b-agentic-fable5-composer2.5-v2-3.5x-tau2",
+  "provider": {
+    "lmstudio": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "LM Studio Local",
+      "options": {
+        "baseURL": "http://127.0.0.1:1234/v1"
+      },
+      "models": {
+        "gemma-4-12b-agentic-fable5-composer2.5-v2-3.5x-tau2": {
+          "name": "gemma-4-12b-agentic-fable5-composer2.5-v2-3.5x-tau2",
+          "limit": {
+            "context": 32768,
+            "output": 4096
+          }
+        }
+      }
+    }
+  },
+  "permission": {
+    "edit": "ask",
+    "bash": "ask"
+  }
+}

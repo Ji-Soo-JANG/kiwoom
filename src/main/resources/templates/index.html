@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kiwoom 주가 조회 시스템</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 5px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+
+        button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 5px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-single {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-single:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-multiple {
+            background: #764ba2;
+            color: white;
+        }
+
+        .btn-multiple:hover {
+            background: #643a8e;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(118, 75, 162, 0.4);
+        }
+
+        .info-text {
+            font-size: 12px;
+            color: #999;
+            margin-bottom: 20px;
+        }
+
+        .results {
+            display: none;
+            background: #f8f9fa;
+            border-radius: 5px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .results.show {
+            display: block;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .result-item {
+            background: white;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 3px;
+        }
+
+        .result-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .stock-code {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .stock-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            font-size: 13px;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .info-label {
+            color: #666;
+        }
+
+        .info-value {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .price-up {
+            color: #e74c3c;
+        }
+
+        .price-down {
+            color: #3498db;
+        }
+
+        .error {
+            background: #fee;
+            color: #c33;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+            border-left: 4px solid #e74c3c;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            color: #666;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📈 Kiwoom 주가 조회</h1>
+        <p class="subtitle">실시간 주식 종목 정보를 조회하세요</p>
+
+        <div class="input-group">
+            <label for="singleCode">종목 코드 (단일 조회)</label>
+            <input type="text" id="singleCode" placeholder="예: 005930 (삼성전자)">
+            <p class="info-text">종목 코드를 입력하고 조회 버튼을 클릭하세요</p>
+        </div>
+
+        <div class="button-group">
+            <button class="btn-single" onclick="searchSingle()">단일 조회</button>
+        </div>
+
+        <div class="input-group">
+            <label for="multipleCodes">종목 코드 (다중 조회)</label>
+            <input type="text" id="multipleCodes" placeholder="예: 005930,000660,035420">
+            <p class="info-text">여러 코드는 쉼표(,)로 구분하세요</p>
+        </div>
+
+        <div class="button-group">
+            <button class="btn-multiple" onclick="searchMultiple()">다중 조회</button>
+        </div>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <div class="loading-text">조회 중입니다...</div>
+        </div>
+
+        <div class="results" id="results">
+            <div id="resultContent"></div>
+        </div>
+
+        <div class="error" id="error" style="display: none;"></div>
+    </div>
+
+    <script>
+        function showLoading(show) {
+            document.getElementById('loading').classList.toggle('show', show);
+        }
+
+        function showError(message) {
+            const errorEl = document.getElementById('error');
+            errorEl.textContent = message;
+            errorEl.style.display = 'block';
+            document.getElementById('results').classList.remove('show');
+        }
+
+        function clearError() {
+            document.getElementById('error').style.display = 'none';
+        }
+
+        function searchSingle() {
+            const code = document
+                .getElementById('singleCode')
+                .value
+                .trim();
+
+            if (!code) {
+                showError('종목 코드를 입력하세요');
+                return;
+            }
+
+            clearError();
+            showLoading(true);
+
+            fetch(
+                `/api/kiwoom/stock-price/${encodeURIComponent(code)}`
+            )
+                .then(async response => {
+                    if (!response.ok) {
+                        const body = await response.text();
+
+                        throw new Error(
+                            body || `조회 실패 (${response.status})`
+                        );
+                    }
+
+                    return response.json();
+                })
+                .then(data => {
+                    showResults([data]);
+                })
+                .catch(error => {
+                    showError(
+                        '주가 조회 중 오류가 발생했습니다: '
+                        + error.message
+                    );
+                })
+                .finally(() => showLoading(false));
+        }
+
+        function searchMultiple() {
+            const codes = document.getElementById('multipleCodes').value.trim();
+            if (!codes) {
+                showError('종목 코드를 입력하세요');
+                return;
+            }
+
+            clearError();
+            showLoading(true);
+
+            `/api/kiwoom/stock-price/${encodeURIComponent(code)}`
+                .then(response => {
+                    if (!response.ok) throw new Error('조회 실패');
+                    return response.json();
+                })
+                .then(data => {
+                    showResults(data);
+                })
+                .catch(error => {
+                    showError('주가 조회 중 오류가 발생했습니다: ' + error.message);
+                })
+                .finally(() => showLoading(false));
+        }
+
+        function showResults(results) {
+            const resultContent = document.getElementById('resultContent');
+            resultContent.innerHTML = '';
+
+            if (!results || results.length === 0) {
+                showError('조회 결과가 없습니다');
+                return;
+            }
+
+            results.forEach(stock => {
+                const changeClass = parseFloat(stock.changeAmount) >= 0 ? 'price-up' : 'price-down';
+                const changeSign = parseFloat(stock.changeAmount) >= 0 ? '+' : '';
+
+                const item = document.createElement('div');
+                item.className = 'result-item';
+                item.innerHTML = `
+                    <div class="stock-code">${stock.code}</div>
+                    <div class="stock-info">
+                        <div class="info-row">
+                            <span class="info-label">현재가</span>
+                            <span class="info-value">${stock.currentPrice}원</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">변동가</span>
+                            <span class="info-value ${changeClass}">${changeSign}${stock.changeAmount}원</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">변동률</span>
+                            <span class="info-value ${changeClass}">${changeSign}${stock.changeRate}%</span>
+                        </div>
+                    </div>
+                `;
+                resultContent.appendChild(item);
+            });
+
+            document.getElementById('results').classList.add('show');
+        }
+
+        document.getElementById('singleCode').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') searchSingle();
+        });
+
+        document.getElementById('multipleCodes').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') searchMultiple();
+        });
+    </script>
+</body>
+</html>
