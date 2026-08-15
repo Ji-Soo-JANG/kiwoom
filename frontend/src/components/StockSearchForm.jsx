@@ -5,6 +5,7 @@ function StockSearchForm({
                              onSingleSearch,
                              onMultipleSearch
                          }) {
+    const [validationError, setValidationError] = useState('');
     const [singleCode, setSingleCode] =
         useState('');
 
@@ -14,9 +15,12 @@ function StockSearchForm({
     const submitSingle = () => {
         const code = singleCode.trim();
 
-        if (code) {
-            onSingleSearch(code);
+        if (!/^\d{6}$/.test(code)) {
+            setValidationError('종목 코드는 6자리 숫자로 입력하세요.');
+            return;
         }
+        setValidationError('');
+        onSingleSearch(code);
     };
 
     const submitMultiple = () => {
@@ -25,9 +29,12 @@ function StockSearchForm({
             .map((code) => code.trim())
             .filter(Boolean);
 
-        if (codes.length > 0) {
-            onMultipleSearch(codes);
+        if (codes.length === 0 || codes.some((code) => !/^\d{6}$/.test(code))) {
+            setValidationError('모든 종목 코드를 6자리 숫자로 입력하세요.');
+            return;
         }
+        setValidationError('');
+        onMultipleSearch(codes);
     };
 
     const handleEnter = (event, callback) => {
@@ -38,6 +45,7 @@ function StockSearchForm({
 
     return (
         <>
+            {validationError && <p className="error" role="alert">{validationError}</p>}
             <div className="input-group">
                 <label htmlFor="singleCode">
                     종목 코드 (단일 조회)
@@ -47,6 +55,9 @@ function StockSearchForm({
                     id="singleCode"
                     type="text"
                     maxLength={6}
+                    inputMode="numeric"
+                    pattern="[0-9]{6}"
+                    aria-describedby="stock-code-help"
                     value={singleCode}
                     disabled={loading}
                     placeholder="예: 005930 (삼성전자)"
@@ -57,6 +68,7 @@ function StockSearchForm({
                         handleEnter(event, submitSingle)
                     }
                 />
+                <small id="stock-code-help">6자리 숫자 종목 코드를 입력하세요.</small>
             </div>
 
             <div className="button-group">
