@@ -52,4 +52,24 @@ class KiwoomApplicationTest {
         webTestClient.delete().uri("/api/watchlist/005930")
                 .exchange().expectStatus().isNoContent();
     }
+
+    @Test
+    void managesPortfolioPositions() {
+        webTestClient.put().uri("/api/portfolio/005930")
+                .bodyValue("{\"quantity\":10,\"averagePrice\":70000}")
+                .header("Content-Type", "application/json")
+                .exchange().expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.code").isEqualTo("005930")
+                .jsonPath("$.quantity").isEqualTo(10)
+                .jsonPath("$.averagePrice").isEqualTo(70000);
+
+        webTestClient.get().uri("/api/portfolio")
+                .exchange().expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$[0].code").isEqualTo("005930");
+
+        webTestClient.delete().uri("/api/portfolio/005930")
+                .exchange().expectStatus().isNoContent();
+    }
 }
