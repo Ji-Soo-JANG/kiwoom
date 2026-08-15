@@ -3,6 +3,7 @@ package com.example.kiwoom.service;
 import com.example.kiwoom.config.KiwoomApiProperties;
 import com.example.kiwoom.dto.DailyPriceResponse;
 import com.example.kiwoom.dto.StockPriceResponse;
+import com.example.kiwoom.error.KiwoomAuthenticationException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -13,18 +14,26 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
+import java.util.concurrent.atomic.AtomicReference;
 
 @Service
 public class KiwoomApiService {
 
     private static final int MAX_STOCK_CODES = 20;
+    private static final ZoneId SEOUL_ZONE = ZoneId.of("Asia/Seoul");
+    private static final Duration TOKEN_REFRESH_MARGIN = Duration.ofMinutes(1);
+    private static final DateTimeFormatter TOKEN_EXPIRY_FORMAT =
+            DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
 
     private static final Logger logger =
             Logger.getLogger(KiwoomApiService.class.getName());
@@ -40,7 +49,9 @@ public class KiwoomApiService {
      * 최초 요청 시 접근 토큰을 발급하고,
      * 이후 요청에서는 같은 토큰을 재사용합니다.
      */
-    private final Mono<String> accessTokenMono;
+    private final AtomicReference<AccessToken> cachedAccessToken =
+            new AtomicReference<>();
+    private Mono<AccessToken> tokenRefreshMono;
 
     public KiwoomApiService(
             WebClient webClient,
@@ -53,13 +64,12 @@ public class KiwoomApiService {
         this.apiKey = properties.key();
         this.apiSecret = properties.secret();
 
-        this.accessTokenMono = issueAccessToken().cache();
     }
 
     /**
      * 키움 접근 토큰을 발급합니다.
      */
-    private Mono<String> issueAccessToken() {
+    private Mono<AccessToken> issueAccessToken() {
         Map<String, String> requestBody = Map.of(
                 "grant_type", "client_credentials",
                 "appkey", apiKey,
@@ -111,7 +121,7 @@ public class KiwoomApiService {
     /**
      * 접근 토큰 발급 응답을 파싱합니다.
      */
-    private Mono<String> parseAccessTokenResponse(String jsonBody) {
+    private Mono<AccessToken> parseAccessTokenResponse(String jsonBody) {
         try {
             JsonNode root = objectMapper.readTree(jsonBody);
 
@@ -128,6 +138,7 @@ public class KiwoomApiService {
             }
 
             String token = root.path("token").asText();
+            String expiresAtText = root.path("expires_dt").asText();
 
             if (token == null || token.isBlank()) {
                 return Mono.error(new RuntimeException(
@@ -136,9 +147,20 @@ public class KiwoomApiService {
                 ));
             }
 
-            return Mono.just(token);
+            if (expiresAtText == null || expiresAtText.isBlank()) {
+                return Mono.error(new RuntimeException(
+                        "토큰 발급 응답에 expires_dt가 없습니다"
+                ));
+            }
 
-        } catch (JsonProcessingException e) {
+            Instant expiresAt = LocalDateTime.parse(
+                    expiresAtText,
+                    TOKEN_EXPIRY_FORMAT
+            ).atZone(SEOUL_ZONE).toInstant();
+
+            return Mono.just(new AccessToken(token, expiresAt));
+
+        } catch (JsonProcessingException | DateTimeParseException e) {
             return Mono.error(new RuntimeException(
                     "토큰 응답 JSON 파싱 실패: "
                             + e.getMessage(),
@@ -162,12 +184,16 @@ public class KiwoomApiService {
 
         logger.info("주가 조회 요청: " + normalizedCode);
 
-        return accessTokenMono
+        return getAccessToken()
                 .flatMap(token ->
                         requestStockCurrentPrice(
                                 normalizedCode,
-                                token
+                                token.value()
                         )
+                )
+                .onErrorResume(
+                        KiwoomAuthenticationException.class,
+                        error -> retryStockCurrentPrice(normalizedCode)
                 )
                 .timeout(Duration.ofSeconds(10))
                 .doOnError(error ->
@@ -203,6 +229,14 @@ public class KiwoomApiService {
                 .bodyValue(requestBody)
                 .retrieve()
                 .onStatus(
+                        status -> status.value() == 401,
+                        response -> response.bodyToMono(String.class)
+                                .defaultIfEmpty("")
+                                .map(body -> new KiwoomAuthenticationException(
+                                        "키움 인증이 만료되었습니다"
+                                ))
+                )
+                .onStatus(
                         status -> status.isError(),
                         response -> response.bodyToMono(String.class)
                                 .defaultIfEmpty("")
@@ -236,11 +270,6 @@ public class KiwoomApiService {
             String jsonBody
     ) {
         try {
-            logger.info(
-                    "주가 조회 응답: "
-                            + abbreviate(jsonBody, 500)
-            );
-
             JsonNode root = objectMapper.readTree(jsonBody);
 
             int returnCode = root.path("return_code").asInt(0);
@@ -448,12 +477,15 @@ public class KiwoomApiService {
             );
         }
 
-        return accessTokenMono.flatMap(token ->
+        return getAccessToken().flatMap(token ->
                 requestDailyPrices(
                         normalizedCode,
                         normalizedBaseDate,
-                        token
+                        token.value()
                 )
+        ).onErrorResume(
+                KiwoomAuthenticationException.class,
+                error -> retryDailyPrices(normalizedCode, normalizedBaseDate)
         );
     }
 
@@ -487,6 +519,14 @@ public class KiwoomApiService {
                 .bodyValue(requestBody)
                 .retrieve()
                 .onStatus(
+                        status -> status.value() == 401,
+                        response -> response.bodyToMono(String.class)
+                                .defaultIfEmpty("")
+                                .map(body -> new KiwoomAuthenticationException(
+                                        "키움 인증이 만료되었습니다"
+                                ))
+                )
+                .onStatus(
                         status -> status.isError(),
                         response -> response
                                 .bodyToMono(String.class)
@@ -509,11 +549,6 @@ public class KiwoomApiService {
             String jsonBody
     ) {
         try {
-            logger.info(
-                    "일봉 응답: "
-                            + abbreviate(jsonBody, 500)
-            );
-
             JsonNode root = objectMapper.readTree(jsonBody);
 
             int returnCode =
@@ -602,5 +637,61 @@ public class KiwoomApiService {
         }
 
         return normalizedCode;
+    }
+
+    private Mono<AccessToken> getAccessToken() {
+        return Mono.defer(() -> {
+            AccessToken token = cachedAccessToken.get();
+            if (token != null && token.isUsable()) {
+                return Mono.just(token);
+            }
+            return refreshAccessToken();
+        });
+    }
+
+    private synchronized Mono<AccessToken> refreshAccessToken() {
+        AccessToken token = cachedAccessToken.get();
+        if (token != null && token.isUsable()) {
+            return Mono.just(token);
+        }
+        if (tokenRefreshMono == null) {
+            tokenRefreshMono = issueAccessToken()
+                    .doOnNext(cachedAccessToken::set)
+                    .doFinally(signal -> clearTokenRefresh())
+                    .cache();
+        }
+        return tokenRefreshMono;
+    }
+
+    private synchronized void clearTokenRefresh() {
+        tokenRefreshMono = null;
+    }
+
+    private void invalidateAccessToken() {
+        cachedAccessToken.set(null);
+    }
+
+    private Mono<StockPriceResponse> retryStockCurrentPrice(String code) {
+        invalidateAccessToken();
+        return getAccessToken().flatMap(token ->
+                requestStockCurrentPrice(code, token.value())
+        );
+    }
+
+    private Mono<List<DailyPriceResponse>> retryDailyPrices(
+            String code,
+            String baseDate
+    ) {
+        invalidateAccessToken();
+        return getAccessToken().flatMap(token ->
+                requestDailyPrices(code, baseDate, token.value())
+        );
+    }
+
+    private record AccessToken(String value, Instant expiresAt) {
+
+        private boolean isUsable() {
+            return expiresAt.isAfter(Instant.now().plus(TOKEN_REFRESH_MARGIN));
+        }
     }
 }

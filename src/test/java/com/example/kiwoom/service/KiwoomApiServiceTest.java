@@ -95,7 +95,7 @@ class KiwoomApiServiceTest {
     @DisplayName("토큰을 발급받아 현재가 응답을 변환한다")
     void getsCurrentPrice() throws InterruptedException {
         enqueueJson(200, """
-                {"return_code":0,"token":"access-token"}
+                {"return_code":0,"token":"access-token","expires_dt":"20991231235959"}
                 """);
         enqueueJson(200, """
                 {"return_code":0,"stk_cd":"005930","cur_prc":"-75,000","pred_pre":"+500","flu_rt":"+0.67"}
@@ -108,6 +108,55 @@ class KiwoomApiServiceTest {
         assertEquals("75000", response.getCurrentPrice());
         assertEquals("+500", response.getChangeAmount());
         assertEquals("+0.67", response.getChangeRate());
+        assertEquals("/oauth2/token", server.takeRequest().getPath());
+        assertEquals("/api/dostk/stkinfo", server.takeRequest().getPath());
+    }
+
+    @Test
+    @DisplayName("401 응답이면 토큰을 갱신하고 한 번 재시도한다")
+    void refreshesTokenAfterUnauthorized() throws InterruptedException {
+        enqueueJson(200, """
+                {"return_code":0,"token":"expired-token","expires_dt":"20991231235959"}
+                """);
+        enqueueJson(401, "unauthorized");
+        enqueueJson(200, """
+                {"return_code":0,"token":"new-token","expires_dt":"20991231235959"}
+                """);
+        enqueueJson(200, """
+                {"return_code":0,"stk_cd":"005930","cur_prc":"75000"}
+                """);
+
+        StockPriceResponse response = service.getStockCurrentPrice("005930").block();
+
+        assertNotNull(response);
+        assertEquals("75000", response.getCurrentPrice());
+        assertEquals("/oauth2/token", server.takeRequest().getPath());
+        assertEquals("/api/dostk/stkinfo", server.takeRequest().getPath());
+        assertEquals("/oauth2/token", server.takeRequest().getPath());
+        assertEquals("/api/dostk/stkinfo", server.takeRequest().getPath());
+    }
+
+    @Test
+    @DisplayName("만료된 토큰은 다음 요청 전에 재발급한다")
+    void refreshesExpiredToken() throws InterruptedException {
+        enqueueJson(200, """
+                {"return_code":0,"token":"old-token","expires_dt":"20200101000000"}
+                """);
+        enqueueJson(200, """
+                {"return_code":0,"stk_cd":"005930","cur_prc":"70000"}
+                """);
+        enqueueJson(200, """
+                {"return_code":0,"token":"new-token","expires_dt":"20991231235959"}
+                """);
+        enqueueJson(200, """
+                {"return_code":0,"stk_cd":"005930","cur_prc":"71000"}
+                """);
+
+        assertEquals("70000", service.getStockCurrentPrice("005930").block().getCurrentPrice());
+        assertEquals("71000", service.getStockCurrentPrice("005930").block().getCurrentPrice());
+
+        assertEquals("/oauth2/token", server.takeRequest().getPath());
+        assertEquals("/api/dostk/stkinfo", server.takeRequest().getPath());
         assertEquals("/oauth2/token", server.takeRequest().getPath());
         assertEquals("/api/dostk/stkinfo", server.takeRequest().getPath());
     }
