@@ -33,7 +33,7 @@
 - [x] `baseDate`가 실제 유효한 `yyyyMMdd` 날짜인지 검증했다.
 - [ ] 다중 종목 조회에서 일부 종목만 실패했을 때의 정책을 정의한다.
   - 전체 실패 또는 종목별 성공/실패 결과 반환 중 하나를 선택한다.
-- [ ] OpenAPI/Swagger 문서를 도입하거나 README의 API 명세를 실제 구현과 동기화한다.
+- [x] OpenAPI/Swagger 문서를 도입하고 README의 API 명세를 실제 구현과 동기화했다.
   - 단일 조회 실제 경로: `GET /api/kiwoom/stock-price/{code}`
   - 일봉 조회 경로: `GET /api/kiwoom/stock-price/{code}/daily`
 

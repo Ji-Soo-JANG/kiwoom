@@ -160,6 +160,11 @@ Spring Boot Actuator의 `GET /actuator/health`를 사용합니다.
 }
 ```
 
+### API 문서
+
+- Swagger UI: `http://localhost:8080/swagger-ui.html`
+- OpenAPI JSON: `http://localhost:8080/v3/api-docs`
+
 ## 🛠️ 기술 스택
 
 ### 백엔드
