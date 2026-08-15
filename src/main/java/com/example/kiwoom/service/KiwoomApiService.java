@@ -390,6 +390,7 @@ public class KiwoomApiService {
 
     /**
      * 여러 종목의 현재가를 조회합니다.
+     * 한 종목이라도 조회에 실패하면 일부 목록을 반환하지 않고 전체 요청을 실패시킵니다.
      */
     public Mono<List<StockPriceResponse>> getMultipleStockPrices(
             List<String> codes

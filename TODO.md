@@ -31,8 +31,7 @@
   - 예: `code`, `message`, `timestamp`, `path`
 - [x] 종목 코드를 6자리 숫자로 검증하고 다중 조회의 빈 값, 중복 값, 최대 개수를 제한했다.
 - [x] `baseDate`가 실제 유효한 `yyyyMMdd` 날짜인지 검증했다.
-- [ ] 다중 종목 조회에서 일부 종목만 실패했을 때의 정책을 정의한다.
-  - 전체 실패 또는 종목별 성공/실패 결과 반환 중 하나를 선택한다.
+- [x] 다중 종목 조회는 한 종목이라도 실패하면 전체 요청을 실패 처리하도록 정책과 테스트를 추가했다.
 - [x] OpenAPI/Swagger 문서를 도입하고 README의 API 명세를 실제 구현과 동기화했다.
   - 단일 조회 실제 경로: `GET /api/kiwoom/stock-price/{code}`
   - 일봉 조회 경로: `GET /api/kiwoom/stock-price/{code}/daily`

@@ -95,6 +95,23 @@ class KiwoomApiServiceTest {
     }
 
     @Test
+    @DisplayName("다중 조회 중 한 종목이 실패하면 전체 요청을 실패 처리한다")
+    void failsEntireMultipleRequestWhenOneStockFails() {
+        enqueueJson(200, """
+                {"return_code":0,"token":"access-token","expires_dt":"20991231235959"}
+                """);
+        enqueueJson(200, """
+                {"return_code":0,"stk_cd":"005930","cur_prc":"75000"}
+                """);
+        enqueueJson(400, "invalid stock");
+
+        RuntimeException error = assertThrows(RuntimeException.class,
+                () -> service.getMultipleStockPrices(List.of("005930", "000660")).block());
+
+        assertTrue(error.getMessage().contains("주가 조회 API 호출 실패"));
+    }
+
+    @Test
     @DisplayName("토큰을 발급받아 현재가 응답을 변환한다")
     void getsCurrentPrice() throws InterruptedException {
         enqueueJson(200, """
