@@ -38,7 +38,9 @@ class KiwoomApiServiceTest {
                         "test-secret",
                         Duration.ofSeconds(1),
                         Duration.ofSeconds(2),
-                        5
+                        5,
+                        2,
+                        Duration.ofMillis(1)
                 ),
                 new ObjectMapper()
         );
@@ -165,11 +167,33 @@ class KiwoomApiServiceTest {
     @DisplayName("키움 HTTP 오류를 예외로 전달한다")
     void propagatesHttpError() {
         enqueueJson(500, "server error");
+        enqueueJson(500, "server error");
+        enqueueJson(500, "server error");
 
         RuntimeException error = assertThrows(RuntimeException.class,
                 () -> service.getStockCurrentPrice("005930").block());
 
-        assertTrue(error.getMessage().contains("접근 토큰 발급 실패"));
+        assertTrue(error.getMessage().contains("일시적인 키움 API 오류"));
+    }
+
+    @Test
+    @DisplayName("429 응답이면 지수 백오프로 재시도한다")
+    void retriesRateLimitResponse() throws InterruptedException {
+        enqueueJson(200, """
+                {"return_code":0,"token":"access-token","expires_dt":"20991231235959"}
+                """);
+        enqueueJson(429, "rate limited");
+        enqueueJson(200, """
+                {"return_code":0,"stk_cd":"005930","cur_prc":"72000"}
+                """);
+
+        StockPriceResponse response = service.getStockCurrentPrice("005930").block();
+
+        assertNotNull(response);
+        assertEquals("72000", response.getCurrentPrice());
+        assertEquals("/oauth2/token", server.takeRequest().getPath());
+        assertEquals("/api/dostk/stkinfo", server.takeRequest().getPath());
+        assertEquals("/api/dostk/stkinfo", server.takeRequest().getPath());
     }
 
     @Test

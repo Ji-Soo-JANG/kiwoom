@@ -4,6 +4,7 @@ import com.example.kiwoom.config.KiwoomApiProperties;
 import com.example.kiwoom.dto.DailyPriceResponse;
 import com.example.kiwoom.dto.StockPriceResponse;
 import com.example.kiwoom.error.KiwoomAuthenticationException;
+import com.example.kiwoom.error.RetryableKiwoomException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.util.retry.Retry;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -44,6 +46,7 @@ public class KiwoomApiService {
     private final String baseUrl;
     private final String apiKey;
     private final String apiSecret;
+    private final Retry transientRetry;
 
     /*
      * 최초 요청 시 접근 토큰을 발급하고,
@@ -63,6 +66,15 @@ public class KiwoomApiService {
         this.baseUrl = removeTrailingSlash(properties.baseUrl());
         this.apiKey = properties.key();
         this.apiSecret = properties.secret();
+        this.transientRetry = Retry.backoff(
+                        properties.maxRetries(),
+                        properties.retryBackoff()
+                )
+                .maxBackoff(properties.retryBackoff().multipliedBy(8))
+                .filter(RetryableKiwoomException.class::isInstance)
+                .onRetryExhaustedThrow(
+                        (spec, signal) -> signal.failure()
+                );
 
     }
 
@@ -85,6 +97,15 @@ public class KiwoomApiService {
                 .bodyValue(requestBody)
                 .retrieve()
                 .onStatus(
+                        status -> status.value() == 429
+                                || status.is5xxServerError(),
+                        response -> Mono.just(
+                                new RetryableKiwoomException(
+                                        response.statusCode()
+                                )
+                        )
+                )
+                .onStatus(
                         status -> status.isError(),
                         response -> response.bodyToMono(String.class)
                                 .defaultIfEmpty("")
@@ -106,6 +127,7 @@ public class KiwoomApiService {
                 )
                 .bodyToMono(String.class)
                 .flatMap(this::parseAccessTokenResponse)
+                .retryWhen(transientRetry)
                 .timeout(Duration.ofSeconds(10))
                 .doOnSuccess(token ->
                         logger.info("키움 접근 토큰 발급 성공")
@@ -237,6 +259,15 @@ public class KiwoomApiService {
                                 ))
                 )
                 .onStatus(
+                        status -> status.value() == 429
+                                || status.is5xxServerError(),
+                        response -> Mono.just(
+                                new RetryableKiwoomException(
+                                        response.statusCode()
+                                )
+                        )
+                )
+                .onStatus(
                         status -> status.isError(),
                         response -> response.bodyToMono(String.class)
                                 .defaultIfEmpty("")
@@ -259,7 +290,8 @@ public class KiwoomApiService {
                 .bodyToMono(String.class)
                 .flatMap(body ->
                         parseStockPriceResponse(code, body)
-                );
+                )
+                .retryWhen(transientRetry);
     }
 
     /**
@@ -527,6 +559,15 @@ public class KiwoomApiService {
                                 ))
                 )
                 .onStatus(
+                        status -> status.value() == 429
+                                || status.is5xxServerError(),
+                        response -> Mono.just(
+                                new RetryableKiwoomException(
+                                        response.statusCode()
+                                )
+                        )
+                )
+                .onStatus(
                         status -> status.isError(),
                         response -> response
                                 .bodyToMono(String.class)
@@ -542,6 +583,7 @@ public class KiwoomApiService {
                 )
                 .bodyToMono(String.class)
                 .flatMap(this::parseDailyPrices)
+                .retryWhen(transientRetry)
                 .timeout(Duration.ofSeconds(15));
     }
 

@@ -16,6 +16,8 @@ public record KiwoomApiProperties(
         @NotBlank String secret,
         @NotNull Duration connectTimeout,
         @NotNull Duration responseTimeout,
-        @Positive int maxConnections
+        @Positive int maxConnections,
+        @Positive int maxRetries,
+        @NotNull Duration retryBackoff
 ) {
 }

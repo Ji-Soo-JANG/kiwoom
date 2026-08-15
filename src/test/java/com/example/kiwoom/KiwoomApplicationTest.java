@@ -9,7 +9,9 @@ import org.springframework.boot.test.context.SpringBootTest;
         "kiwoom.api.secret=test-secret",
         "kiwoom.api.connect-timeout=1s",
         "kiwoom.api.response-timeout=2s",
-        "kiwoom.api.max-connections=5"
+        "kiwoom.api.max-connections=5",
+        "kiwoom.api.max-retries=2",
+        "kiwoom.api.retry-backoff=1ms"
 })
 class KiwoomApplicationTest {
 
