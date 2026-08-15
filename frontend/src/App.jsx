@@ -6,7 +6,11 @@ import {
   getMultiplePrices,
   getWatchlist,
   addToWatchlist,
-  removeFromWatchlist
+  removeFromWatchlist,
+  getPortfolio,
+  savePortfolioPosition,
+  removePortfolioPosition,
+  getPortfolioValuation
 } from './api/kiwoomApi';
 
 import StockSearchForm
@@ -15,6 +19,7 @@ import StockSearchForm
 import StockResultList
   from './components/StockResultList';
 import Watchlist from './components/Watchlist';
+import Portfolio from './components/Portfolio';
 
 const StockDailyChart = lazy(() =>
     import('./components/StockDailyChart')
@@ -33,11 +38,44 @@ function App() {
   const [error, setError] =
       useState('');
   const [watchlist, setWatchlist] = useState([]);
+  const [portfolio, setPortfolio] = useState([]);
+  const [valuations, setValuations] = useState([]);
+  const [portfolioLoading, setPortfolioLoading] = useState(false);
 
   useEffect(() => {
     getWatchlist().then(setWatchlist)
         .catch(() => setError('관심종목을 불러오지 못했습니다.'));
+    getPortfolio().then(setPortfolio)
+        .catch(() => setError('포트폴리오를 불러오지 못했습니다.'));
   }, []);
+
+  const savePosition = async (code, quantity, averagePrice) => {
+    setPortfolioLoading(true);
+    setError('');
+    try {
+      await savePortfolioPosition(code, quantity, averagePrice);
+      setPortfolio(await getPortfolio());
+      setValuations([]);
+    } catch (err) { handleError(err); throw err; }
+    finally { setPortfolioLoading(false); }
+  };
+
+  const deletePosition = async (code) => {
+    setError('');
+    try {
+      await removePortfolioPosition(code);
+      setPortfolio((items) => items.filter((item) => item.code !== code));
+      setValuations((items) => items.filter((item) => item.code !== code));
+    } catch (err) { handleError(err); }
+  };
+
+  const valuatePortfolio = async () => {
+    setPortfolioLoading(true);
+    setError('');
+    try { setValuations(await getPortfolioValuation()); }
+    catch (err) { handleError(err); }
+    finally { setPortfolioLoading(false); }
+  };
 
   const initializeSearch = () => {
     setLoading(true);
@@ -134,6 +172,9 @@ function App() {
         )}
 
         <Watchlist codes={watchlist} onSearch={handleSingleSearch} onRemove={deleteWatchlist} />
+
+        <Portfolio positions={portfolio} valuations={valuations} loading={portfolioLoading}
+                   onSave={savePosition} onRemove={deletePosition} onValuate={valuatePortfolio}/>
 
         <Suspense fallback={<div className="loading-text">차트를 불러오는 중...</div>}>
           <StockDailyChart

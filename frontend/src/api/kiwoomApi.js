@@ -46,3 +46,21 @@ export const removeFromWatchlist = async (code) => {
     const response = await fetch(`/api/watchlist/${encodeURIComponent(code)}`, {method: 'DELETE'});
     if (!response.ok) throw new Error(`관심종목 삭제 실패 (${response.status})`);
 };
+
+export const getPortfolio = () => requestJson('/api/portfolio');
+
+export const savePortfolioPosition = (code, quantity, averagePrice) => requestJson(
+    `/api/portfolio/${encodeURIComponent(code)}`,
+    {
+        method: 'PUT',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({quantity, averagePrice})
+    }
+);
+
+export const removePortfolioPosition = async (code) => {
+    const response = await fetch(`/api/portfolio/${encodeURIComponent(code)}`, {method: 'DELETE'});
+    if (!response.ok) throw new Error(`포트폴리오 삭제 실패 (${response.status})`);
+};
+
+export const getPortfolioValuation = () => requestJson('/api/portfolio/valuation');

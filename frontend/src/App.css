@@ -47,7 +47,7 @@ label {
   font-weight: 500;
 }
 
-input[type="text"] {
+input[type="text"], input[type="number"], input:not([type]) {
   width: 100%;
   padding: 12px;
   border: 2px solid #e0e0e0;
@@ -56,7 +56,7 @@ input[type="text"] {
   transition: border-color 0.3s;
 }
 
-input[type="text"]:focus {
+input[type="text"]:focus, input[type="number"]:focus, input:not([type]):focus {
   outline: none;
   border-color: #667eea;
 }
@@ -233,4 +233,39 @@ button:disabled {
 .chart-wrapper {
   width: 100%;
   height: 350px;
+}
+
+.watchlist, .portfolio {
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.watchlist h2, .portfolio h2 {
+  margin-bottom: 16px;
+}
+
+.portfolio-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 12px;
+  margin-bottom: 18px;
+}
+
+.portfolio-form button { grid-column: 1 / -1; }
+.portfolio-list { list-style: none; margin-bottom: 16px; }
+.portfolio-list li { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.portfolio-list li span { flex: 1; }
+.portfolio-list li button { flex: 0 0 auto; }
+.valuation-table-wrapper { overflow-x: auto; margin-top: 16px; }
+.valuation-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.valuation-table caption { font-weight: 600; margin-bottom: 8px; }
+.valuation-table th, .valuation-table td { padding: 8px; border-bottom: 1px solid #e0e0e0; text-align: right; white-space: nowrap; }
+.valuation-table th:first-child, .valuation-table td:first-child { text-align: left; }
+
+@media (max-width: 520px) {
+  body { padding: 8px; align-items: flex-start; }
+  .container { padding: 20px 14px; }
+  .portfolio-form { grid-template-columns: 1fr; }
+  .portfolio-form button { grid-column: auto; }
 }
