@@ -291,6 +291,7 @@ button:focus-visible, input:focus-visible {
 }
 
 .portfolio-form button { grid-column: 1 / -1; }
+.portfolio-form button + button { margin-top: -4px; background: #eaecf0; color: #344054; }
 .portfolio-list { list-style: none; margin-bottom: 16px; }
 .portfolio-list li { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
 .portfolio-list li span { flex: 1; }
@@ -300,6 +301,12 @@ button:focus-visible, input:focus-visible {
 .valuation-table caption { font-weight: 600; margin-bottom: 8px; }
 .valuation-table th, .valuation-table td { padding: 8px; border-bottom: 1px solid #e0e0e0; text-align: right; white-space: nowrap; }
 .valuation-table th:first-child, .valuation-table td:first-child { text-align: left; }
+.portfolio-summary { margin-top: 18px; padding: 16px; border-radius: 8px; background: #f8f9fa; }
+.portfolio-summary h3 { margin-bottom: 12px; }
+.portfolio-summary dl { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.portfolio-summary dl div { padding: 10px; background: white; border-radius: 5px; }
+.portfolio-summary dt { color: #667085; font-size: 12px; }
+.portfolio-summary dd { margin-top: 4px; font-size: 16px; font-weight: 700; }
 .alert-heading { display: flex; align-items: center; gap: 8px; }
 .alert-badge { min-width: 24px; padding: 3px 8px; border-radius: 999px; background: #b42318; color: white; font-size: 12px; text-align: center; }
 .alert-form { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; margin-bottom: 16px; }
@@ -319,6 +326,7 @@ button:focus-visible, input:focus-visible {
   .container { padding: 20px 14px; }
   .portfolio-form { grid-template-columns: 1fr; }
   .portfolio-form button { grid-column: auto; }
+  .portfolio-summary dl { grid-template-columns: 1fr; }
   .alert-form { grid-template-columns: 1fr; }
   .alert-form button { grid-column: auto; }
   .main-nav { grid-template-columns: 1fr 1fr; }

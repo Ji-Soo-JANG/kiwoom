@@ -13,7 +13,8 @@ describe('Portfolio', () => {
     it('submits a position and renders its valuation', async () => {
         const onSave = vi.fn().mockResolvedValue();
         render(<Portfolio positions={[{code: '005930', quantity: 10, averagePrice: 70000}]}
-                          valuations={[{code: '005930', currentPrice: 75000, evaluationAmount: 750000,
+                          valuations={[{code: '005930', quantity: 10, averagePrice: 70000,
+                              purchaseAmount: 700000, currentPrice: 75000, evaluationAmount: 750000,
                               profitLoss: 50000, returnRate: 7.14}]} loading={false}
                           onSave={onSave} onRemove={vi.fn()} onValuate={vi.fn()}/>);
         fireEvent.change(screen.getByLabelText('종목 코드'), {target: {value: '000660'}});
@@ -21,7 +22,24 @@ describe('Portfolio', () => {
         fireEvent.change(screen.getByLabelText('평균 매입가'), {target: {value: '180000'}});
         fireEvent.click(screen.getByRole('button', {name: '저장'}));
         expect(onSave).toHaveBeenCalledWith('000660', 2, 180000);
-        expect(screen.getByText('750,000원')).toBeInTheDocument();
-        expect(screen.getByText('7.14%')).toBeInTheDocument();
+        expect(screen.getAllByText('750,000원')).toHaveLength(2);
+        expect(screen.getAllByText('7.14%')).toHaveLength(2);
+        expect(screen.getByText('700,000원')).toBeInTheDocument();
+        expect(screen.getByText('100.0%')).toBeInTheDocument();
+    });
+
+    it('기존 포지션을 폼에서 수정한다', async () => {
+        const onSave = vi.fn().mockResolvedValue();
+        render(<Portfolio positions={[{code: '005930', quantity: 10, averagePrice: 70000}]}
+                          valuations={[]} loading={false} onSave={onSave}
+                          onRemove={vi.fn()} onValuate={vi.fn()}/>);
+
+        fireEvent.click(screen.getByRole('button', {name: '005930 포트폴리오 수정'}));
+        expect(screen.getByLabelText('종목 코드')).toHaveValue('005930');
+        expect(screen.getByLabelText('종목 코드')).toHaveAttribute('readonly');
+        fireEvent.change(screen.getByLabelText('보유 수량'), {target: {value: '12'}});
+        fireEvent.click(screen.getByRole('button', {name: '수정 저장'}));
+
+        expect(onSave).toHaveBeenCalledWith('005930', 12, 70000);
     });
 });
