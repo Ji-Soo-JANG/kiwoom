@@ -36,6 +36,10 @@ class KiwoomApiServiceTest {
     }
 
     private KiwoomApiProperties properties(Duration cacheTtl) {
+        return properties(cacheTtl, Duration.ZERO);
+    }
+
+    private KiwoomApiProperties properties(Duration cacheTtl, Duration dailyCacheTtl) {
         return new KiwoomApiProperties(
                         server.url("/").toString(),
                         "test-key",
@@ -44,7 +48,7 @@ class KiwoomApiServiceTest {
                         Duration.ofSeconds(2),
                         5,
                         2,
-                        Duration.ofMillis(1), cacheTtl
+                        Duration.ofMillis(1), cacheTtl, dailyCacheTtl
         );
     }
 
@@ -147,6 +151,29 @@ class KiwoomApiServiceTest {
         assertEquals("75000", service.getStockCurrentPrice("005930").block().getCurrentPrice());
         assertEquals("75000", service.getStockCurrentPrice("005930").block().getCurrentPrice());
         assertEquals(2, server.getRequestCount());
+    }
+
+    @Test
+    @DisplayName("TTL 안의 같은 종목·기준일 일봉은 키움 API를 한 번만 호출한다")
+    void cachesDailyPricesByCodeAndDateWithinTtl() {
+        KiwoomApiProperties properties = properties(Duration.ZERO, Duration.ofMinutes(1));
+        service = new KiwoomApiService(
+                new KiwoomHttpClient(WebClient.create(), properties),
+                new KiwoomResponseMapper(new ObjectMapper()), properties);
+        enqueueJson(200, """
+                {"return_code":0,"token":"access-token","expires_dt":"20991231235959"}
+                """);
+        enqueueJson(200, """
+                {"return_code":0,"stk_dt_pole_chart_qry":[
+                  {"dt":"20260815","open_pric":"70000","high_pric":"71000","low_pric":"69000","cur_prc":"70500","trde_qty":"1000"}
+                ]}
+                """);
+
+        assertEquals(1, service.getDailyPrices("005930", "20260816").block().size());
+        assertEquals(1, service.getDailyPrices("005930", "20260816").block().size());
+        assertEquals(2, server.getRequestCount());
+        assertEquals(1, service.getDailyPriceCacheStats().hits());
+        assertEquals(1, service.getDailyPriceCacheStats().apiCalls());
     }
 
     @Test

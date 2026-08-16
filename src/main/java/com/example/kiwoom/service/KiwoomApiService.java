@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Logger;
 
 @Service
@@ -34,7 +35,11 @@ public class KiwoomApiService {
     private final String apiKey;
     private final String apiSecret;
     private final Duration currentPriceCacheTtl;
+    private final Duration dailyPriceCacheTtl;
     private final Map<String, Mono<StockPriceResponse>> currentPriceCache = new ConcurrentHashMap<>();
+    private final Map<DailyCacheKey, Mono<List<DailyPriceResponse>>> dailyPriceCache = new ConcurrentHashMap<>();
+    private final AtomicLong dailyCacheHits = new AtomicLong();
+    private final AtomicLong dailyApiCalls = new AtomicLong();
     private final AtomicReference<AccessToken> cachedAccessToken = new AtomicReference<>();
     private Mono<AccessToken> tokenRefreshMono;
 
@@ -45,6 +50,7 @@ public class KiwoomApiService {
         this.apiKey = properties.key();
         this.apiSecret = properties.secret();
         this.currentPriceCacheTtl = properties.currentPriceCacheTtl();
+        this.dailyPriceCacheTtl = properties.dailyPriceCacheTtl();
     }
 
     public Mono<StockPriceResponse> getStockCurrentPrice(String code) {
@@ -102,9 +108,31 @@ public class KiwoomApiService {
         catch (DateTimeParseException error) {
             return Mono.error(new IllegalArgumentException("기준일자는 유효한 yyyyMMdd 날짜여야 합니다"));
         }
-        return getAccessToken().flatMap(token -> requestDailyPrices(normalizedCode, date, token.value()))
-                .onErrorResume(KiwoomAuthenticationException.class,
-                        error -> retryDailyPrices(normalizedCode, date));
+        DailyCacheKey key = new DailyCacheKey(normalizedCode, date);
+        if (dailyPriceCacheTtl.isZero() || dailyPriceCacheTtl.isNegative()) {
+            return fetchDailyPrices(key);
+        }
+        Mono<List<DailyPriceResponse>> cached = dailyPriceCache.get(key);
+        if (cached != null) {
+            dailyCacheHits.incrementAndGet();
+            return cached;
+        }
+        return dailyPriceCache.computeIfAbsent(key, cacheKey -> fetchDailyPrices(cacheKey)
+                .doOnError(error -> dailyPriceCache.remove(cacheKey))
+                .cache(dailyPriceCacheTtl));
+    }
+
+    private Mono<List<DailyPriceResponse>> fetchDailyPrices(DailyCacheKey key) {
+        return Mono.defer(() -> {
+            dailyApiCalls.incrementAndGet();
+            return getAccessToken().flatMap(token -> requestDailyPrices(key.code(), key.baseDate(), token.value()))
+                    .onErrorResume(KiwoomAuthenticationException.class,
+                            error -> retryDailyPrices(key.code(), key.baseDate()));
+        });
+    }
+
+    public DailyPriceCacheStats getDailyPriceCacheStats() {
+        return new DailyPriceCacheStats(dailyCacheHits.get(), dailyApiCalls.get(), dailyPriceCache.size());
     }
 
     private Mono<List<DailyPriceResponse>> requestDailyPrices(String code, String date, String token) {
@@ -162,4 +190,7 @@ public class KiwoomApiService {
     private record AccessToken(String value, Instant expiresAt) {
         private boolean isUsable() { return expiresAt.isAfter(Instant.now().plus(TOKEN_REFRESH_MARGIN)); }
     }
+
+    private record DailyCacheKey(String code, String baseDate) {}
+    public record DailyPriceCacheStats(long hits, long apiCalls, int entries) {}
 }

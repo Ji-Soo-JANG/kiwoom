@@ -21,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
         "kiwoom.api.max-retries=2",
         "kiwoom.api.retry-backoff=1ms",
         "kiwoom.api.current-price-cache-ttl=3s",
+        "kiwoom.api.daily-price-cache-ttl=10m",
         "spring.r2dbc.url=r2dbc:h2:mem:///kiwoom-test;MODE=PostgreSQL;DB_CLOSE_DELAY=-1",
         "spring.datasource.url=jdbc:h2:mem:flyway-test;MODE=PostgreSQL;DB_CLOSE_DELAY=-1",
         "spring.datasource.username=sa",

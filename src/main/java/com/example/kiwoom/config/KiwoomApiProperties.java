@@ -19,6 +19,7 @@ public record KiwoomApiProperties(
         @Positive int maxConnections,
         @Positive int maxRetries,
         @NotNull Duration retryBackoff,
-        @NotNull Duration currentPriceCacheTtl
+        @NotNull Duration currentPriceCacheTtl,
+        @NotNull Duration dailyPriceCacheTtl
 ) {
 }
