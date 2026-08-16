@@ -98,6 +98,13 @@ volume까지 삭제하는 `docker compose down -v`는 초기화가 필요한 경
 의존성 업데이트 주기와 보안 반영 기준은 [`docs/dependency-policy.md`](docs/dependency-policy.md)를 따릅니다.
 목표가·기술지표 앱 알림의 데이터 모델과 API 계획은 [`docs/alert-design.md`](docs/alert-design.md)를 따릅니다.
 로컬 빌드 산출물과 템플릿 엔진 결정은 [`docs/build-decisions.md`](docs/build-decisions.md)를 따릅니다.
+IntelliJ, Docker와 Vite 개발 서버 실행은 [`docs/local-development.md`](docs/local-development.md)를 따릅니다.
+
+로컬 개발 환경을 한 번에 시작하려면 다음 명령을 사용합니다.
+
+```powershell
+.\scripts\start-dev.ps1
+```
 
 ```powershell
 # Windows
