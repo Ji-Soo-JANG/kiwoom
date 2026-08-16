@@ -4,6 +4,7 @@ import com.example.kiwoom.client.KiwoomHttpClient;
 import com.example.kiwoom.config.KiwoomApiProperties;
 import com.example.kiwoom.dto.DailyPriceResponse;
 import com.example.kiwoom.dto.StockPriceResponse;
+import com.example.kiwoom.dto.StockSearchResult;
 import com.example.kiwoom.error.KiwoomAuthenticationException;
 import com.example.kiwoom.mapper.KiwoomResponseMapper;
 import io.micrometer.core.instrument.Counter;
@@ -14,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -24,6 +26,7 @@ import java.time.format.DateTimeParseException;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Comparator;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -49,6 +52,7 @@ public class KiwoomApiService {
     private final AtomicReference<AccessToken> cachedAccessToken = new AtomicReference<>();
     private final TechnicalIndicatorService indicatorService;
     private Mono<AccessToken> tokenRefreshMono;
+    private final Mono<List<StockSearchResult>> stockCatalog;
 
     public KiwoomApiService(KiwoomHttpClient client, KiwoomResponseMapper mapper,
                             KiwoomApiProperties properties, MeterRegistry meterRegistry,
@@ -69,6 +73,8 @@ public class KiwoomApiService {
                 .tag("type", "current").register(meterRegistry);
         Gauge.builder("kiwoom.cache.entries", dailyPriceCache, Map::size)
                 .tag("type", "daily").register(meterRegistry);
+        this.stockCatalog = fetchStockCatalog().cache(
+                value -> Duration.ofHours(12), error -> Duration.ZERO, () -> Duration.ZERO, Schedulers.parallel());
     }
 
     public Mono<StockPriceResponse> getStockCurrentPrice(String code) {
@@ -157,6 +163,45 @@ public class KiwoomApiService {
 
     public DailyPriceCacheStats getDailyPriceCacheStats() {
         return new DailyPriceCacheStats((long) dailyCacheHits.count(), (long) dailyApiCalls.count(), dailyPriceCache.size());
+    }
+
+    public Mono<List<StockSearchResult>> searchStocks(String query, String market) {
+        if (query == null || query.isBlank()) return Mono.just(List.of());
+        String keyword = query.trim().toLowerCase();
+        String normalizedMarket = market == null || market.isBlank() ? "ALL" : market.trim().toUpperCase();
+        if (!List.of("ALL", "KOSPI", "KOSDAQ").contains(normalizedMarket)) {
+            return Mono.error(new IllegalArgumentException("시장은 ALL, KOSPI, KOSDAQ 중 하나여야 합니다"));
+        }
+        return stockCatalog.map(items -> items.stream()
+                .filter(item -> normalizedMarket.equals("ALL") || item.market().equals(normalizedMarket))
+                .filter(item -> item.code().contains(keyword) || item.name().toLowerCase().contains(keyword))
+                .sorted(Comparator.comparing((StockSearchResult item) -> !item.code().startsWith(keyword))
+                        .thenComparing(item -> !item.name().toLowerCase().startsWith(keyword))
+                        .thenComparing(StockSearchResult::name))
+                .limit(20).toList());
+    }
+
+    private Mono<List<StockSearchResult>> fetchStockCatalog() {
+        return getAccessToken().flatMap(token -> requestStockCatalog(token.value()))
+                .onErrorResume(KiwoomAuthenticationException.class, error -> {
+                    invalidateAccessToken();
+                    return getAccessToken().flatMap(token -> requestStockCatalog(token.value()));
+                });
+    }
+
+    private Mono<List<StockSearchResult>> requestStockCatalog(String token) {
+        return Mono.zip(
+                requestStockList("0", "KOSPI", token),
+                requestStockList("10", "KOSDAQ", token),
+                (kospi, kosdaq) -> {
+                    List<StockSearchResult> result = new java.util.ArrayList<>(kospi);
+                    result.addAll(kosdaq);
+                    return List.copyOf(result);
+                });
+    }
+
+    private Mono<List<StockSearchResult>> requestStockList(String marketType, String market, String token) {
+        return client.requestStockList(marketType, token).map(body -> mapper.parseStockList(market, body));
     }
 
     private Mono<List<DailyPriceResponse>> requestDailyPrices(String code, String date, String token) {

@@ -2,6 +2,7 @@ package com.example.kiwoom.controller;
 
 import com.example.kiwoom.dto.DailyPriceResponse;
 import com.example.kiwoom.dto.StockPriceResponse;
+import com.example.kiwoom.dto.StockSearchResult;
 import com.example.kiwoom.service.KiwoomApiService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -68,5 +69,14 @@ public class KiwoomController {
                 code,
                 baseDate
         );
+    }
+
+    @GetMapping("/stocks/search")
+    @Operation(summary = "종목 코드·이름 자동완성 검색")
+    public Mono<List<StockSearchResult>> searchStocks(
+            @RequestParam String q,
+            @RequestParam(required = false, defaultValue = "ALL") String market
+    ) {
+        return kiwoomApiService.searchStocks(q, market);
     }
 }

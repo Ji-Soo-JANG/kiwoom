@@ -55,6 +55,11 @@ public class KiwoomHttpClient {
         ), "일봉 API 호출 실패");
     }
 
+    public Mono<String> requestStockList(String marketType, String accessToken) {
+        return post("/api/dostk/stkinfo", accessToken, "ka10099", Map.of("mrkt_tp", marketType),
+                "종목 목록 API 호출 실패");
+    }
+
     private Mono<String> post(String path, String token, String apiId,
                               Map<String, String> body, String failureMessage) {
         return Mono.defer(() -> {

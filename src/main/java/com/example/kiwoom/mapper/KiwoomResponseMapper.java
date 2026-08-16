@@ -2,6 +2,7 @@ package com.example.kiwoom.mapper;
 
 import com.example.kiwoom.dto.DailyPriceResponse;
 import com.example.kiwoom.dto.StockPriceResponse;
+import com.example.kiwoom.dto.StockSearchResult;
 import com.example.kiwoom.error.KiwoomApiException;
 import com.example.kiwoom.error.KiwoomErrorCode;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -73,6 +74,26 @@ public class KiwoomResponseMapper {
             return result;
         } catch (JsonProcessingException error) {
             throw invalidResponse("일봉 응답 JSON 파싱 실패");
+        }
+    }
+
+    public List<StockSearchResult> parseStockList(String market, String json) {
+        try {
+            JsonNode root = objectMapper.readTree(json);
+            verifySuccess(root, "키움 종목 목록 조회 오류");
+            JsonNode array = root.path("list");
+            if (!array.isArray()) throw invalidResponse("종목 목록 배열을 찾을 수 없습니다");
+            List<StockSearchResult> result = new ArrayList<>();
+            for (JsonNode item : array) {
+                String code = item.path("code").asText();
+                String name = item.path("name").asText();
+                if (code.matches("\\d{6}") && !name.isBlank()) {
+                    result.add(new StockSearchResult(code, name, market));
+                }
+            }
+            return result;
+        } catch (JsonProcessingException error) {
+            throw invalidResponse("종목 목록 응답 JSON 파싱 실패");
         }
     }
 

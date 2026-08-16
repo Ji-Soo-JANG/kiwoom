@@ -240,6 +240,15 @@ button:focus-visible, input:focus-visible {
   color: #666;
   font-size: 14px;
 }
+.stock-market-label { margin-top: 10px; }
+#stock-market { width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 5px; background: white; }
+.stock-suggestions { list-style: none; border: 1px solid #d0d5dd; border-radius: 5px; margin-top: 6px; max-height: 220px; overflow-y: auto; }
+.stock-suggestions li + li { border-top: 1px solid #eaecf0; }
+.stock-suggestions button { width: 100%; display: flex; justify-content: space-between; background: white; text-align: left; }
+.stock-suggestions button:hover { background: #f2f4f7; }
+.stock-suggestions span { color: #667085; font-weight: 400; }
+.recent-stocks { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 10px; font-size: 12px; color: #667085; }
+.recent-stocks button { flex: 0 0 auto; padding: 5px 8px; font-size: 12px; background: #f2f4f7; }
 
 .empty-state { margin-top: 20px; padding: 16px; background: #f8f9fa; color: #555; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }

@@ -212,6 +212,15 @@ GET /api/kiwoom/stock-price/005930/daily?baseDate=20260816
 
 `baseDate`를 생략하면 서울 시간 기준 오늘 날짜를 사용합니다.
 
+#### 3-1. 종목명 자동완성
+
+```http
+GET /api/kiwoom/stocks/search?q=삼성&market=KOSPI
+```
+
+`market`은 `ALL`, `KOSPI`, `KOSDAQ`을 지원합니다. 키움 `ka10099`의 코스피·코스닥
+종목 목록을 서버에서 12시간 캐시하며 최대 20개의 코드·종목명 후보를 반환합니다.
+
 #### 4. 헬스 체크
 
 Spring Boot Actuator의 `GET /actuator/health`를 사용합니다.

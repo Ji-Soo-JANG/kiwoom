@@ -78,6 +78,8 @@ export const removePortfolioPosition = (code) => requestJson(
     `/api/portfolio/${encodeURIComponent(code)}`, {method: 'DELETE'});
 
 export const getPortfolioValuation = () => requestJson('/api/portfolio/valuation');
+export const searchStocks = (query, market = 'ALL') => requestJson(
+    `/api/kiwoom/stocks/search?q=${encodeURIComponent(query)}&market=${encodeURIComponent(market)}`);
 
 export const getAlertRules = () => requestJson('/api/alerts/rules');
 export const createAlertRule = (code, conditionType, threshold) => requestJson(

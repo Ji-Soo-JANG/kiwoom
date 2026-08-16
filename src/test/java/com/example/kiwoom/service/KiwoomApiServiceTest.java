@@ -3,6 +3,7 @@ package com.example.kiwoom.service;
 import com.example.kiwoom.config.KiwoomApiProperties;
 import com.example.kiwoom.client.KiwoomHttpClient;
 import com.example.kiwoom.dto.StockPriceResponse;
+import com.example.kiwoom.dto.StockSearchResult;
 import com.example.kiwoom.error.KiwoomApiException;
 import com.example.kiwoom.error.KiwoomErrorCode;
 import com.example.kiwoom.mapper.KiwoomResponseMapper;
@@ -212,6 +213,27 @@ class KiwoomApiServiceTest {
         assertEquals(2, server.getRequestCount());
         assertEquals(1, service.getDailyPriceCacheStats().hits());
         assertEquals(1, service.getDailyPriceCacheStats().apiCalls());
+    }
+
+    @Test
+    @DisplayName("종목명과 시장으로 종목 목록을 검색한다")
+    void searchesStockCatalogByNameAndMarket() {
+        enqueueJson(200, """
+                {"return_code":0,"token":"access-token","expires_dt":"20991231235959"}
+                """);
+        enqueueJson(200, """
+                {"return_code":0,"list":[{"code":"005930","name":"삼성전자"}]}
+                """);
+        enqueueJson(200, """
+                {"return_code":0,"list":[{"code":"035720","name":"카카오"}]}
+                """);
+
+        List<StockSearchResult> result = service.searchStocks("삼성", "KOSPI").block();
+
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        assertEquals("005930", result.getFirst().code());
+        assertEquals("KOSPI", result.getFirst().market());
     }
 
     @Test
