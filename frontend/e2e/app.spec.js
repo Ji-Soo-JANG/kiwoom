@@ -20,8 +20,9 @@ async function mockApi(page, overrides = {}) {
     if (key === 'GET /api/watchlist') return json(route, state.watchlist);
     if (key === 'POST /api/watchlist') {
       const { code } = request.postDataJSON();
-      if (!state.watchlist.includes(code)) state.watchlist.push(code);
-      return json(route, code, 201);
+      if (!state.watchlist.some((item) => item.code === code))
+        state.watchlist.push({ code, groupName: '기본', note: '' });
+      return json(route, { code, groupName: '기본', note: '' }, 201);
     }
     if (key === 'GET /api/portfolio') return json(route, state.portfolio);
     if (request.method() === 'PUT' && url.pathname.startsWith('/api/portfolio/')) {
@@ -87,6 +88,15 @@ test('포트폴리오를 등록하고 현재가로 평가한다', async ({ page 
           evaluationAmount: 750000,
           profitLoss: 50000,
           returnRate: 7.14
+        }
+      ]),
+    'GET /api/portfolio/transactions/profit-trend': (route) =>
+      json(route, [
+        {
+          date: '2026-08-16',
+          realizedProfitLoss: 0,
+          unrealizedProfitLoss: 50000,
+          totalProfitLoss: 50000
         }
       ])
   });

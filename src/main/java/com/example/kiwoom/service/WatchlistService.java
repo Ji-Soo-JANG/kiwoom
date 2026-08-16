@@ -1,5 +1,7 @@
 package com.example.kiwoom.service;
 
+import com.example.kiwoom.dto.WatchlistItem;
+import com.example.kiwoom.dto.WatchlistRequest;
 import com.example.kiwoom.repository.WatchlistRepository;
 import java.util.List;
 import org.springframework.stereotype.Service;
@@ -13,13 +15,16 @@ public class WatchlistService {
         this.repository = repository;
     }
 
-    public Mono<List<String>> findAll(String username) {
+    public Mono<List<WatchlistItem>> findAll(String username) {
         return repository.findAll(username).collectList();
     }
 
-    public Mono<String> add(String username, String code) {
-        String normalized = validate(code);
-        return repository.add(username, normalized).thenReturn(normalized);
+    public Mono<WatchlistItem> save(String username, WatchlistRequest request) {
+        String code = validate(request.code());
+        String groupName = normalizeText(request.groupName(), "기본", 50, "그룹명");
+        String note = normalizeText(request.note(), "", 500, "메모");
+        WatchlistItem item = new WatchlistItem(code, groupName, note);
+        return repository.save(username, item).thenReturn(item);
     }
 
     public Mono<Void> remove(String username, String code) {
@@ -31,5 +36,11 @@ public class WatchlistService {
             throw new IllegalArgumentException("종목 코드는 6자리 숫자여야 합니다");
         }
         return code.trim();
+    }
+
+    private String normalizeText(String value, String defaultValue, int maxLength, String label) {
+        String normalized = value == null || value.isBlank() ? defaultValue : value.trim();
+        if (normalized.length() > maxLength) throw new IllegalArgumentException(label + "이 너무 깁니다");
+        return normalized;
     }
 }

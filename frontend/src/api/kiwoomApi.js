@@ -64,11 +64,17 @@ export const getMultiplePrices = (codes) => {
 };
 
 export const getWatchlist = () => requestJson('/api/watchlist');
-export const addToWatchlist = (code) =>
+export const addToWatchlist = (code, groupName = '기본', note = '') =>
   requestJson('/api/watchlist', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ code })
+    body: JSON.stringify({ code, groupName, note })
+  });
+export const updateWatchlistItem = (code, groupName, note) =>
+  requestJson(`/api/watchlist/${encodeURIComponent(code)}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ code, groupName, note })
   });
 export const removeFromWatchlist = (code) =>
   requestJson(`/api/watchlist/${encodeURIComponent(code)}`, { method: 'DELETE' });
@@ -110,3 +116,13 @@ export const getAlertEvents = (unreadOnly = false, page = 0, size = 20) =>
   requestJson(`/api/alerts/events?unreadOnly=${unreadOnly}&page=${page}&size=${size}`);
 export const markAlertRead = (id) =>
   requestJson(`/api/alerts/events/${id}/read`, { method: 'POST' });
+
+export const getPortfolioProfitTrend = () =>
+  requestJson('/api/portfolio/transactions/profit-trend');
+
+export const importPortfolioTrades = (csv) =>
+  requestJson('/api/portfolio/transactions/import', {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/csv' },
+    body: csv
+  });

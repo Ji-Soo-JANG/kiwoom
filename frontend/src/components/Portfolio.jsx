@@ -2,7 +2,16 @@ import { useState } from 'react';
 
 const formatNumber = (value) => Number(value).toLocaleString('ko-KR');
 
-function Portfolio({ positions, valuations, loading, onSave, onRemove, onValuate }) {
+function Portfolio({
+  positions,
+  valuations,
+  profitTrend = [],
+  loading,
+  onSave,
+  onRemove,
+  onValuate,
+  onImportTrades
+}) {
   const [code, setCode] = useState('');
   const [quantity, setQuantity] = useState('');
   const [averagePrice, setAveragePrice] = useState('');
@@ -127,6 +136,39 @@ function Portfolio({ positions, valuations, loading, onSave, onRemove, onValuate
       <button type="button" onClick={onValuate} disabled={loading || positions.length === 0}>
         {loading ? '평가 중...' : '현재가로 평가'}
       </button>
+
+      <div className="portfolio-tools">
+        <a href="/api/portfolio/transactions/export" download>
+          거래 CSV 내보내기
+        </a>
+        <label>
+          거래 CSV 가져오기
+          <input
+            type="file"
+            accept=".csv,text/csv"
+            onChange={async (event) => {
+              const file = event.target.files?.[0];
+              if (file && onImportTrades) await onImportTrades(await file.text());
+              event.target.value = '';
+            }}
+          />
+        </label>
+      </div>
+
+      {profitTrend.length > 0 && (
+        <section aria-labelledby="profit-trend-title">
+          <h3 id="profit-trend-title">기간별 손익 추이</h3>
+          <ul>
+            {profitTrend.map((point) => (
+              <li key={point.date}>
+                {point.date} · 실현 {formatNumber(point.realizedProfitLoss)}원 · 미실현{' '}
+                {formatNumber(point.unrealizedProfitLoss)}원 · 합계{' '}
+                {formatNumber(point.totalProfitLoss)}원
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {valuations.length > 0 && (
         <>

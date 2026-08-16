@@ -1,5 +1,6 @@
 package com.example.kiwoom.controller;
 
+import com.example.kiwoom.dto.WatchlistItem;
 import com.example.kiwoom.dto.WatchlistRequest;
 import com.example.kiwoom.service.WatchlistService;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -21,14 +22,25 @@ public class WatchlistController {
     }
 
     @GetMapping
-    public Mono<List<String>> findAll(Principal principal) {
+    public Mono<List<WatchlistItem>> findAll(Principal principal) {
         return service.findAll(principal.getName());
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public Mono<String> add(Principal principal, @Valid @RequestBody WatchlistRequest request) {
-        return service.add(principal.getName(), request.code());
+    public Mono<WatchlistItem> add(
+            Principal principal, @Valid @RequestBody WatchlistRequest request) {
+        return service.save(principal.getName(), request);
+    }
+
+    @PutMapping("/{code}")
+    public Mono<WatchlistItem> update(
+            Principal principal,
+            @PathVariable String code,
+            @Valid @RequestBody WatchlistRequest request) {
+        return service.save(
+                principal.getName(),
+                new WatchlistRequest(code, request.groupName(), request.note()));
     }
 
     @DeleteMapping("/{code}")

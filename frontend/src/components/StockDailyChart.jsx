@@ -70,7 +70,9 @@ const PriceTooltip = ({ active, payload, label }) => {
 };
 
 function StockDailyChart({ stockCode, dailyPrices }) {
-  const [period, setPeriod] = useState(60);
+  const [period, setPeriod] = useState(() =>
+    Number(localStorage.getItem('kiwoom.chart.period') ?? 60)
+  );
   const enriched = useMemo(
     () =>
       addTechnicalIndicators(dailyPrices).map((item) => ({
@@ -98,7 +100,14 @@ function StockDailyChart({ stockCode, dailyPrices }) {
         </h2>
         <label>
           조회 기간
-          <select value={period} onChange={(event) => setPeriod(Number(event.target.value))}>
+          <select
+            value={period}
+            onChange={(event) => {
+              const value = Number(event.target.value);
+              setPeriod(value);
+              localStorage.setItem('kiwoom.chart.period', String(value));
+            }}
+          >
             {periods.map((item) => (
               <option key={item.value} value={item.value}>
                 {item.label}
@@ -186,6 +195,15 @@ function StockDailyChart({ stockCode, dailyPrices }) {
       <p className="chart-zoom-help">
         아래 범위 선택기를 드래그해 모든 패널을 확대·축소할 수 있습니다.
       </p>
+      <button
+        type="button"
+        onClick={() => {
+          localStorage.removeItem('kiwoom.chart.period');
+          setPeriod(60);
+        }}
+      >
+        차트 설정 초기화
+      </button>
       <p className="sr-only">최근 종가 {number(latest.closePrice)}원.</p>
     </section>
   );

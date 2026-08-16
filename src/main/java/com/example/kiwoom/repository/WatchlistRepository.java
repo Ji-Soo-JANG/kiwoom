@@ -1,5 +1,6 @@
 package com.example.kiwoom.repository;
 
+import com.example.kiwoom.dto.WatchlistItem;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.r2dbc.core.DatabaseClient;
 import org.springframework.stereotype.Repository;
@@ -14,17 +15,30 @@ public class WatchlistRepository {
         this.database = database;
     }
 
-    public Flux<String> findAll(String username) {
-        return database.sql("SELECT code FROM watchlist WHERE username = :username ORDER BY code")
+    public Flux<WatchlistItem> findAll(String username) {
+        return database.sql(
+                        "SELECT code, group_name, note FROM watchlist WHERE username = :username ORDER BY group_name, code")
                 .bind("username", username)
-                .map((row, metadata) -> row.get("code", String.class))
+                .map(
+                        (row, metadata) ->
+                                new WatchlistItem(
+                                        row.get("code", String.class),
+                                        row.get("group_name", String.class),
+                                        row.get("note", String.class)))
                 .all();
     }
 
-    public Mono<Void> add(String username, String code) {
-        return database.sql("INSERT INTO watchlist(username, code) VALUES (:username, :code)")
+    public Mono<Void> save(String username, WatchlistItem item) {
+        return database.sql(
+                        """
+                INSERT INTO watchlist(username, code, group_name, note)
+                VALUES (:username, :code, :groupName, :note)
+                ON CONFLICT (username, code) DO UPDATE SET group_name = EXCLUDED.group_name, note = EXCLUDED.note
+                """)
                 .bind("username", username)
-                .bind("code", code)
+                .bind("code", item.code())
+                .bind("groupName", item.groupName())
+                .bind("note", item.note())
                 .fetch()
                 .rowsUpdated()
                 .then()

@@ -62,9 +62,16 @@ class KiwoomApplicationTest {
 
     @Test
     void isolatesWatchlistsByAuthenticatedUser() {
-        watchlistRepository.add("alice", "035420").block();
+        watchlistRepository
+                .save("alice", new com.example.kiwoom.dto.WatchlistItem("035420", "기본", ""))
+                .block();
 
-        assertThat(watchlistRepository.findAll("alice").collectList().block())
+        assertThat(
+                        watchlistRepository
+                                .findAll("alice")
+                                .map(com.example.kiwoom.dto.WatchlistItem::code)
+                                .collectList()
+                                .block())
                 .containsExactly("035420");
         assertThat(watchlistRepository.findAll("bob").collectList().block()).isEmpty();
 

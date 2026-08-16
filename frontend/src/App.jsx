@@ -9,10 +9,13 @@ import {
   getWatchlist,
   addToWatchlist,
   removeFromWatchlist,
+  updateWatchlistItem,
   getPortfolio,
   savePortfolioPosition,
   removePortfolioPosition,
-  getPortfolioValuation
+  getPortfolioValuation,
+  getPortfolioProfitTrend,
+  importPortfolioTrades
 } from './api/kiwoomApi';
 
 import StockSearchForm from './components/StockSearchForm';
@@ -36,6 +39,7 @@ function App({ currentUser, onLogout }) {
 
   const [error, setError] = useState('');
   const [valuations, setValuations] = useState([]);
+  const [profitTrend, setProfitTrend] = useState([]);
   const [searched, setSearched] = useState(false);
 
   const watchlistQuery = useQuery({ queryKey: ['watchlist'], queryFn: getWatchlist });
@@ -70,6 +74,10 @@ function App({ currentUser, onLogout }) {
     mutationFn: removeFromWatchlist,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['watchlist'] })
   });
+  const updateWatchlistMutation = useMutation({
+    mutationFn: ({ code, groupName, note }) => updateWatchlistItem(code, groupName, note),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['watchlist'] })
+  });
 
   const portfolioLoading =
     portfolioQuery.isLoading ||
@@ -99,7 +107,21 @@ function App({ currentUser, onLogout }) {
   const valuatePortfolio = async () => {
     setError('');
     try {
-      await valuationMutation.mutateAsync();
+      const [nextValuations, nextTrend] = await Promise.all([
+        valuationMutation.mutateAsync(),
+        getPortfolioProfitTrend()
+      ]);
+      setValuations(nextValuations);
+      setProfitTrend(nextTrend);
+    } catch (err) {
+      handleError(err);
+    }
+  };
+
+  const importTrades = async (csv) => {
+    try {
+      await importPortfolioTrades(csv);
+      queryClient.invalidateQueries({ queryKey: ['portfolio'] });
     } catch (err) {
       handleError(err);
     }
@@ -129,6 +151,14 @@ function App({ currentUser, onLogout }) {
   const deleteWatchlist = async (code) => {
     try {
       await removeWatchlistMutation.mutateAsync(code);
+    } catch (err) {
+      handleError(err);
+    }
+  };
+
+  const updateWatchlist = async (code, groupName, note) => {
+    try {
+      await updateWatchlistMutation.mutateAsync({ code, groupName, note });
     } catch (err) {
       handleError(err);
     }
@@ -234,6 +264,7 @@ function App({ currentUser, onLogout }) {
               codes={watchlist}
               onSearch={searchFromWatchlist}
               onRemove={deleteWatchlist}
+              onUpdate={updateWatchlist}
             />
           }
         />
@@ -244,10 +275,12 @@ function App({ currentUser, onLogout }) {
             <Portfolio
               positions={portfolio}
               valuations={valuations}
+              profitTrend={profitTrend}
               loading={portfolioLoading}
               onSave={savePosition}
               onRemove={deletePosition}
               onValuate={valuatePortfolio}
+              onImportTrades={importTrades}
             />
           }
         />
