@@ -78,4 +78,33 @@ class KiwoomApplicationTest {
         webTestClient.delete().uri("/api/portfolio/005930")
                 .exchange().expectStatus().isNoContent();
     }
+
+    @Test
+    void recordsTradesAndCalculatesPositionAndRealizedProfit() {
+        webTestClient.post().uri("/api/portfolio/transactions")
+                .bodyValue("{\"code\":\"000660\",\"type\":\"BUY\",\"quantity\":10,\"price\":100000,\"fee\":1000}")
+                .header("Content-Type", "application/json")
+                .exchange().expectStatus().isCreated()
+                .expectBody().jsonPath("$.id").isNumber()
+                .jsonPath("$.realizedProfitLoss").isEqualTo(0);
+
+        webTestClient.post().uri("/api/portfolio/transactions")
+                .bodyValue("{\"code\":\"000660\",\"type\":\"SELL\",\"quantity\":4,\"price\":110000,\"fee\":500,\"tax\":300}")
+                .header("Content-Type", "application/json")
+                .exchange().expectStatus().isCreated()
+                .expectBody().jsonPath("$.realizedProfitLoss").isEqualTo(38800);
+
+        webTestClient.get().uri("/api/portfolio")
+                .exchange().expectStatus().isOk().expectBody()
+                .jsonPath("$[0].code").isEqualTo("000660")
+                .jsonPath("$[0].quantity").isEqualTo(6)
+                .jsonPath("$[0].averagePrice").isEqualTo(100100);
+
+        webTestClient.get().uri("/api/portfolio/transactions")
+                .exchange().expectStatus().isOk().expectBody()
+                .jsonPath("$.length()").isEqualTo(2);
+
+        webTestClient.delete().uri("/api/portfolio/000660")
+                .exchange().expectStatus().isNoContent();
+    }
 }

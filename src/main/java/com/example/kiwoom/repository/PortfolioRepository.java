@@ -21,6 +21,14 @@ public class PortfolioRepository {
                 .all();
     }
 
+    public Mono<PortfolioPosition> findByCode(String code) {
+        return database.sql("SELECT code, quantity, average_price FROM portfolio_position WHERE code = :code")
+                .bind("code", code)
+                .map((row, metadata) -> new PortfolioPosition(row.get("code", String.class),
+                        row.get("quantity", BigDecimal.class), row.get("average_price", BigDecimal.class)))
+                .one();
+    }
+
     public Mono<PortfolioPosition> save(PortfolioPosition position) {
         return database.sql("""
                 UPDATE portfolio_position SET quantity = :quantity, average_price = :averagePrice,

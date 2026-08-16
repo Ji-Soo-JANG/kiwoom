@@ -81,8 +81,8 @@ DATABASE_R2DBC_URL=r2dbc:postgresql://localhost:5432/kiwoom
 DATABASE_JDBC_URL=jdbc:postgresql://localhost:5432/kiwoom
 ```
 
-PostgreSQL은 Docker Compose로 실행할 수 있습니다. 최초 실행 시 Flyway가 관심 종목과
-포트폴리오 테이블을 자동 생성하며, 데이터는 Docker volume에 유지됩니다.
+PostgreSQL은 Docker Compose로 실행할 수 있습니다. 최초 실행 시 Flyway가 관심 종목,
+포트폴리오, 거래 내역 테이블을 자동 생성하며 데이터는 Docker volume에 유지됩니다.
 
 ```powershell
 Copy-Item .env.example .env
@@ -195,6 +195,31 @@ GET /api/kiwoom/stock-price/005930/daily?baseDate=20260816
 
 Spring Boot Actuator의 `GET /actuator/health`를 사용합니다.
 
+#### 5. 포트폴리오 거래 내역
+
+매수·매도 거래를 등록하면 포지션 수량과 이동평균 매입가가 함께 갱신됩니다. 매수
+수수료는 평균 매입가에 포함하고, 매도 수수료와 세금은 실현 손익에서 차감합니다.
+
+```http
+POST /api/portfolio/transactions
+Content-Type: application/json
+
+{
+  "code": "005930",
+  "type": "BUY",
+  "quantity": 10,
+  "price": 70000,
+  "fee": 500,
+  "tax": 0
+}
+```
+
+```http
+GET /api/portfolio/transactions
+```
+
+보유 수량을 초과한 매도와 0 이하의 수량·가격은 HTTP 400으로 거부됩니다.
+
 ### 오류 응답
 
 잘못된 입력은 HTTP 400, 키움 연동 오류는 HTTP 502로 반환됩니다.
@@ -243,6 +268,7 @@ Spring Boot Actuator의 `GET /actuator/health`를 사용합니다.
 ✅ **모던 UI** - React 기반 반응형 인터페이스  
 ✅ **CORS 지원** - 크로스 오리진 요청 처리  
 ✅ **에러 핸들링** - 일관된 JSON 오류 응답 제공  
+✅ **거래 원장** - 매수·매도 기록, 이동평균 매입가 및 실현 손익 계산
 
 ## 🧪 테스트
 
