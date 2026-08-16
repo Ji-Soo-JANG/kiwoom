@@ -18,7 +18,7 @@ export class ApiError extends Error {
 }
 
 const requestJson = async (url, options) => {
-  const response = await fetch(url, options);
+  const response = await fetch(url, { credentials: 'include', ...options });
 
   if (!response.ok) {
     const body = await response.text();
@@ -34,6 +34,9 @@ const requestJson = async (url, options) => {
   if (response.status === 204) return null;
   return response.json();
 };
+
+export const getCurrentUser = () => requestJson('/api/auth/me');
+export const logout = () => requestJson('/api/auth/logout', { method: 'POST' });
 
 export const getCurrentPrice = (code) => {
   const encodedCode = encodeURIComponent(code);

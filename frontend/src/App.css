@@ -23,6 +23,24 @@ body {
   width: 100%;
 }
 
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.session-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.session-controls button {
+  width: auto;
+  margin: 0;
+}
+
 h1 {
   color: #333;
   margin-bottom: 10px;

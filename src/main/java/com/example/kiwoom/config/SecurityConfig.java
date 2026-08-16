@@ -11,6 +11,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.server.SecurityWebFilterChain;
 import org.springframework.security.web.server.authentication.HttpStatusServerEntryPoint;
+import org.springframework.security.web.server.authentication.RedirectServerAuthenticationSuccessHandler;
 import org.springframework.security.web.server.authentication.logout.HttpStatusReturningServerLogoutSuccessHandler;
 
 @Configuration
@@ -33,12 +34,18 @@ public class SecurityConfig {
     }
 
     @Bean
-    SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http) {
+    SecurityWebFilterChain securityWebFilterChain(
+            ServerHttpSecurity http,
+            @Value("${app.security.login-success-url:/}") String loginSuccessUrl) {
+        RedirectServerAuthenticationSuccessHandler loginSuccessHandler =
+                new RedirectServerAuthenticationSuccessHandler(loginSuccessUrl);
         return http.csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .authorizeExchange(
                         exchange ->
                                 exchange.pathMatchers(
                                                 "/",
+                                                "/login",
+                                                "/login.html",
                                                 "/index.html",
                                                 "/assets/**",
                                                 "/actuator/health")
@@ -52,7 +59,8 @@ public class SecurityConfig {
                                         .pathMatchers(
                                                 "/api/watchlist/**",
                                                 "/api/portfolio/**",
-                                                "/api/alerts/**")
+                                                "/api/alerts/**",
+                                                "/api/auth/**")
                                         .authenticated()
                                         .pathMatchers("/api/kiwoom/**")
                                         .authenticated()
@@ -62,24 +70,13 @@ public class SecurityConfig {
                         errors ->
                                 errors.authenticationEntryPoint(
                                         new HttpStatusServerEntryPoint(HttpStatus.UNAUTHORIZED)))
-                .formLogin(
-                        form ->
-                                form.authenticationSuccessHandler(
-                                        (webFilterExchange, authentication) -> {
-                                            webFilterExchange
-                                                    .getExchange()
-                                                    .getResponse()
-                                                    .setStatusCode(HttpStatus.NO_CONTENT);
-                                            return webFilterExchange
-                                                    .getExchange()
-                                                    .getResponse()
-                                                    .setComplete();
-                                        }))
+                .formLogin(form -> form.authenticationSuccessHandler(loginSuccessHandler))
                 .logout(
                         logout ->
-                                logout.logoutSuccessHandler(
-                                        new HttpStatusReturningServerLogoutSuccessHandler(
-                                                HttpStatus.NO_CONTENT)))
+                                logout.logoutUrl("/api/auth/logout")
+                                        .logoutSuccessHandler(
+                                                new HttpStatusReturningServerLogoutSuccessHandler(
+                                                        HttpStatus.NO_CONTENT)))
                 .build();
     }
 }

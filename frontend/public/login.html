@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Kiwoom 로그인</title>
+    <style>
+      :root {
+        font-family: system-ui, sans-serif;
+        color: #172033;
+        background: #f4f7fb;
+      }
+      body {
+        min-height: 100vh;
+        margin: 0;
+        display: grid;
+        place-items: center;
+      }
+      main {
+        width: min(360px, calc(100% - 40px));
+        padding: 32px;
+        border-radius: 16px;
+        background: white;
+        box-shadow: 0 16px 50px rgb(28 43 72 / 12%);
+      }
+      h1 {
+        margin: 0 0 8px;
+        font-size: 1.5rem;
+      }
+      p {
+        margin: 0 0 24px;
+        color: #647089;
+      }
+      label {
+        display: block;
+        margin-top: 16px;
+        font-weight: 700;
+      }
+      input {
+        box-sizing: border-box;
+        width: 100%;
+        margin-top: 8px;
+        padding: 12px;
+        border: 1px solid #cbd3e1;
+        border-radius: 8px;
+        font: inherit;
+      }
+      button {
+        width: 100%;
+        margin-top: 24px;
+        padding: 12px;
+        border: 0;
+        border-radius: 8px;
+        color: white;
+        background: #3157d5;
+        font: inherit;
+        font-weight: 700;
+        cursor: pointer;
+      }
+      #error {
+        display: none;
+        margin-top: 16px;
+        color: #b42318;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Kiwoom 로그인</h1>
+      <p>IntelliJ 실행 설정의 계정으로 로그인하세요.</p>
+      <form method="post" action="/login">
+        <label for="username">아이디</label>
+        <input id="username" name="username" autocomplete="username" required autofocus />
+        <label for="password">비밀번호</label>
+        <input
+          id="password"
+          name="password"
+          type="password"
+          autocomplete="current-password"
+          required
+        />
+        <button type="submit">로그인</button>
+      </form>
+      <p id="error" role="alert">아이디 또는 비밀번호가 올바르지 않습니다.</p>
+    </main>
+    <script>
+      if (new URLSearchParams(window.location.search).has('error')) {
+        document.querySelector('#error').style.display = 'block';
+      }
+    </script>
+  </body>
+</html>

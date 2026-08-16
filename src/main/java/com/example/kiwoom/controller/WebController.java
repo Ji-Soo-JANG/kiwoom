@@ -20,4 +20,12 @@ public class WebController {
                 .contentType(MediaType.TEXT_HTML)
                 .body(new ClassPathResource("static/index.html"));
     }
+
+    @GetMapping(value = "/login", produces = MediaType.TEXT_HTML_VALUE)
+    @ResponseBody
+    public ResponseEntity<Resource> login() {
+        return ResponseEntity.ok()
+                .contentType(MediaType.TEXT_HTML)
+                .body(new ClassPathResource("static/login.html"));
+    }
 }

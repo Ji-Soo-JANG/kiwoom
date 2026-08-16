@@ -340,4 +340,36 @@ class KiwoomApplicationTest {
                 .expectBody(String.class)
                 .value(body -> assertThat(body).contains("id=\"root\""));
     }
+
+    @Test
+    void servesLoginPage() {
+        webTestClient
+                .get()
+                .uri("/login")
+                .exchange()
+                .expectStatus()
+                .isOk()
+                .expectHeader()
+                .contentTypeCompatibleWith("text/html")
+                .expectBody(String.class)
+                .value(
+                        body ->
+                                assertThat(body)
+                                        .contains("name=\"username\"")
+                                        .contains("name=\"password\""));
+    }
+
+    @Test
+    @WithMockUser(username = "local-user")
+    void returnsCurrentUser() {
+        webTestClient
+                .get()
+                .uri("/api/auth/me")
+                .exchange()
+                .expectStatus()
+                .isOk()
+                .expectBody()
+                .jsonPath("$.username")
+                .isEqualTo("local-user");
+    }
 }

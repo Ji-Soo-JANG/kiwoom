@@ -26,7 +26,7 @@ const StockDailyChart = lazy(() => import('./components/StockDailyChart'));
 
 import './App.css';
 
-function App() {
+function App({ currentUser, onLogout }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [stocks, setStocks] = useState([]);
@@ -170,7 +170,17 @@ function App() {
 
   return (
     <div className="container">
-      <h1>📈 Kiwoom 주가 조회</h1>
+      <header className="app-header">
+        <h1>📈 Kiwoom 주가 조회</h1>
+        {currentUser && (
+          <div className="session-controls">
+            <span>{currentUser.username}</span>
+            <button type="button" onClick={onLogout}>
+              로그아웃
+            </button>
+          </div>
+        )}
+      </header>
 
       <p className="subtitle">실시간 주식 종목 정보를 조회하세요</p>
 

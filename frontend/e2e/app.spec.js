@@ -15,6 +15,7 @@ async function mockApi(page, overrides = {}) {
     const key = `${request.method()} ${url.pathname}`;
     if (overrides[key]) return overrides[key](route, state);
 
+    if (key === 'GET /api/auth/me') return json(route, { username: 'e2e-user' });
     if (key === 'GET /api/watchlist') return json(route, state.watchlist);
     if (key === 'POST /api/watchlist') {
       const { code } = request.postDataJSON();
