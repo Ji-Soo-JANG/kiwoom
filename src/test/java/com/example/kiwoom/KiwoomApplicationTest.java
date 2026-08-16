@@ -146,6 +146,25 @@ class KiwoomApplicationTest {
 
     @Test
     @WithMockUser(username = "admin", roles = "ADMIN")
+    void validatesChangeRateAlertRuleThreshold() {
+        AlertRule created = webTestClient.post().uri("/api/alerts/rules")
+                .bodyValue("{\"code\":\"035420\",\"conditionType\":\"CHANGE_RATE_ABOVE\",\"threshold\":5}")
+                .header("Content-Type", "application/json")
+                .exchange().expectStatus().isCreated()
+                .expectBody(AlertRule.class).returnResult().getResponseBody();
+
+        assertThat(created).isNotNull();
+        assertThat(created.threshold()).isEqualByComparingTo("5");
+        webTestClient.post().uri("/api/alerts/rules")
+                .bodyValue("{\"code\":\"035420\",\"conditionType\":\"CHANGE_RATE_BELOW\",\"threshold\":101}")
+                .header("Content-Type", "application/json")
+                .exchange().expectStatus().isBadRequest();
+        webTestClient.delete().uri("/api/alerts/rules/{id}", created.id())
+                .exchange().expectStatus().isNoContent();
+    }
+
+    @Test
+    @WithMockUser(username = "admin", roles = "ADMIN")
     void managesPortfolioPositions() {
         webTestClient.put().uri("/api/portfolio/005930")
                 .bodyValue("{\"quantity\":10,\"averagePrice\":70000}")

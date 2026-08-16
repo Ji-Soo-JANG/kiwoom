@@ -6,8 +6,10 @@
 한다. 사용자가 화면을 열거나 새로 고침할 때 조건을 평가하며, 백그라운드 스케줄러와
 외부 메시지 인프라는 도입하지 않는다.
 
-목표가 이상/이하와 RSI(14) 이상/이하, MACD·Signal 상향/하향 교차 조건을 지원한다.
+목표가 이상/이하, 일간 급등/급락, RSI(14) 이상/이하, MACD·Signal 상향/하향 교차 조건을 지원한다.
 지표는 백엔드가 일봉 데이터의 오래된 순서부터 계산해 API 응답과 알림 평가에 함께 사용한다.
+일간 등락률은 `(최신 종가 - 직전 거래일 종가) / 직전 거래일 종가 × 100`으로 계산한다.
+급등은 등락률이 양수 기준값 이상일 때, 급락은 등락률이 음수 기준값의 절댓값 이상일 때 충족된다.
 
 ## 데이터 모델
 
@@ -18,8 +20,8 @@
 | `id` | 알림 규칙 식별자 |
 | `username` | 데이터 격리에 사용하는 인증 사용자 |
 | `code` | 6자리 종목 코드 |
-| `condition_type` | `PRICE_ABOVE`, `PRICE_BELOW`, `RSI_ABOVE`, `RSI_BELOW`, `MACD_CROSS_UP`, `MACD_CROSS_DOWN` |
-| `threshold` | 가격 또는 RSI 기준값. MACD 교차는 null |
+| `condition_type` | `PRICE_ABOVE`, `PRICE_BELOW`, `CHANGE_RATE_ABOVE`, `CHANGE_RATE_BELOW`, `RSI_ABOVE`, `RSI_BELOW`, `MACD_CROSS_UP`, `MACD_CROSS_DOWN` |
+| `threshold` | 가격, 등락률 또는 RSI 기준값. MACD 교차는 null |
 | `enabled` | 규칙 활성화 여부 |
 | `last_state` | 직전 평가의 충족 여부. 경계 교차 판정에 사용 |
 | `created_at`, `updated_at` | 생성·변경 시각 |
@@ -65,7 +67,7 @@
 ## 프론트엔드
 
 - 헤더에 읽지 않은 알림 개수 배지를 표시한다.
-- 알림 설정 화면에서 종목, 이상/이하, 목표가, 활성 여부를 관리한다.
+- 알림 설정 화면에서 종목, 목표가·급등락·보조지표 조건, 기준값, 활성 여부를 관리한다.
 - 평가 버튼 또는 화면 진입 시 `POST /api/alerts/evaluate`를 호출한다.
 - 종목 없음·호출 제한·장 운영시간 오류는 기존 `ApiError` 안내를 재사용한다.
 

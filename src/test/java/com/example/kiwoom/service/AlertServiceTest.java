@@ -62,4 +62,20 @@ class AlertServiceTest {
 
         assertEquals(List.of(event), service.evaluate("alice").collectList().block());
     }
+
+    @Test
+    void evaluatesDailyDropRateAgainstPositiveThreshold() {
+        AlertRule rule = new AlertRule(3L, "005930", AlertConditionType.CHANGE_RATE_BELOW,
+                new BigDecimal("5"), true, false);
+        DailyPriceResponse previous = new DailyPriceResponse("20260815", 100, 100, 100, 100, 1);
+        DailyPriceResponse latest = new DailyPriceResponse("20260816", 94, 95, 93, 94, 2);
+        AlertEvent event = new AlertEvent(12L, 3L, "005930", AlertConditionType.CHANGE_RATE_BELOW,
+                new BigDecimal("-6.0"), new BigDecimal("5"), OffsetDateTime.now(), null);
+        when(repository.findEnabledRules("alice")).thenReturn(Flux.just(rule));
+        when(kiwoomApiService.getDailyPrices("005930", null)).thenReturn(Mono.just(List.of(previous, latest)));
+        when(repository.transitionToTriggered("alice", 3L)).thenReturn(Mono.just(true));
+        when(repository.addEvent("alice", rule, new BigDecimal("-6.0"))).thenReturn(Mono.just(event));
+
+        assertEquals(List.of(event), service.evaluate("alice").collectList().block());
+    }
 }

@@ -28,6 +28,6 @@ describe('App routes', () => {
         expect(screen.queryByLabelText('종목 코드 (단일 조회)')).not.toBeInTheDocument();
 
         fireEvent.click(screen.getByRole('link', {name: '알림'}));
-        expect(await screen.findByRole('heading', {name: '목표가 알림'})).toBeInTheDocument();
+        expect(await screen.findByRole('heading', {name: '주가·지표 알림'})).toBeInTheDocument();
     });
 });

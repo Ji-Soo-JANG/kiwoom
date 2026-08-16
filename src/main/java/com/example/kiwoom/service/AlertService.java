@@ -67,6 +67,7 @@ public class AlertService {
         if (prices.isEmpty()) return Mono.empty();
         DailyPriceResponse latest = prices.get(prices.size() - 1);
         Double value = switch (type) {
+            case CHANGE_RATE_ABOVE, CHANGE_RATE_BELOW -> changeRate(prices);
             case RSI_ABOVE, RSI_BELOW -> latest.getRsi();
             case MACD_CROSS_UP, MACD_CROSS_DOWN -> latest.getMacd() == null || latest.getSignal() == null
                     ? null : latest.getMacd() - latest.getSignal();
@@ -77,14 +78,23 @@ public class AlertService {
 
     private Mono<AlertEvent> evaluateRule(String username, AlertRule rule, BigDecimal value) {
         boolean matched = switch (rule.conditionType()) {
-            case PRICE_ABOVE, RSI_ABOVE -> value.compareTo(rule.threshold()) >= 0;
+            case PRICE_ABOVE, RSI_ABOVE, CHANGE_RATE_ABOVE -> value.compareTo(rule.threshold()) >= 0;
             case PRICE_BELOW, RSI_BELOW -> value.compareTo(rule.threshold()) <= 0;
+            case CHANGE_RATE_BELOW -> value.compareTo(rule.threshold().negate()) <= 0;
             case MACD_CROSS_UP -> value.signum() > 0;
             case MACD_CROSS_DOWN -> value.signum() < 0;
         };
         if (!matched) return repository.resetState(username, rule.id()).then(Mono.empty());
         return repository.transitionToTriggered(username, rule.id())
                 .flatMap(changed -> changed ? repository.addEvent(username, rule, value) : Mono.empty());
+    }
+
+    private Double changeRate(List<DailyPriceResponse> prices) {
+        if (prices.size() < 2) return null;
+        long previousClose = prices.get(prices.size() - 2).getClosePrice();
+        if (previousClose == 0) return null;
+        long latestClose = prices.get(prices.size() - 1).getClosePrice();
+        return (latestClose - previousClose) * 100d / previousClose;
     }
 
     public Flux<AlertEvent> findEvents(String username, boolean unreadOnly) {
@@ -116,6 +126,9 @@ public class AlertService {
         if ((type == AlertConditionType.RSI_ABOVE || type == AlertConditionType.RSI_BELOW)
                 && (threshold.compareTo(BigDecimal.ZERO) < 0 || threshold.compareTo(BigDecimal.valueOf(100)) > 0))
             throw new IllegalArgumentException("RSI 기준값은 0부터 100 사이여야 합니다");
+        if ((type == AlertConditionType.CHANGE_RATE_ABOVE || type == AlertConditionType.CHANGE_RATE_BELOW)
+                && (threshold.signum() <= 0 || threshold.compareTo(BigDecimal.valueOf(100)) > 0))
+            throw new IllegalArgumentException("등락률 기준값은 0 초과 100 이하여야 합니다");
     }
 
     private <T> Mono<T> notFound(String message) {
