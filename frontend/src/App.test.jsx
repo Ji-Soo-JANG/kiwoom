@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import App from './App';
@@ -33,5 +33,32 @@ describe('App routes', () => {
 
     fireEvent.click(screen.getByRole('link', { name: '알림' }));
     expect(await screen.findByRole('heading', { name: '주가·지표 알림' })).toBeInTheDocument();
+  });
+
+  it('관심종목 추가 API에 종목 코드만 전달한다', async () => {
+    api.getCurrentPrice.mockResolvedValue({
+      code: '005930',
+      currentPrice: '70000',
+      changeAmount: '1000',
+      changeRate: '1.45'
+    });
+    api.getDailyPrices.mockResolvedValue([]);
+    api.addToWatchlist.mockResolvedValue({ code: '005930', groupName: '기본', note: '' });
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={client}>
+        <MemoryRouter initialEntries={['/']}>
+          <App />
+        </MemoryRouter>
+      </QueryClientProvider>
+    );
+
+    fireEvent.change(screen.getByLabelText('종목 코드 (단일 조회)'), {
+      target: { value: '005930' }
+    });
+    fireEvent.click(screen.getByRole('button', { name: '단일 조회' }));
+    fireEvent.click(await screen.findByRole('button', { name: '관심종목 추가' }));
+
+    await waitFor(() => expect(api.addToWatchlist).toHaveBeenCalledWith('005930'));
   });
 });

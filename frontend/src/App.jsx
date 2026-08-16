@@ -67,7 +67,7 @@ function App({ currentUser, onLogout }) {
     onSuccess: setValuations
   });
   const addWatchlistMutation = useMutation({
-    mutationFn: addToWatchlist,
+    mutationFn: (code) => addToWatchlist(code),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['watchlist'] })
   });
   const removeWatchlistMutation = useMutation({
