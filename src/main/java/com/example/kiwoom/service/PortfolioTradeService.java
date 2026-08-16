@@ -23,22 +23,22 @@ public class PortfolioTradeService {
         this.tradeRepository = tradeRepository;
     }
 
-    public Flux<PortfolioTrade> findAll() { return tradeRepository.findAll(); }
+    public Flux<PortfolioTrade> findAll(String username) { return tradeRepository.findAll(username); }
 
     @Transactional(transactionManager = "connectionFactoryTransactionManager")
-    public Mono<PortfolioTrade> record(PortfolioTradeRequest request) {
+    public Mono<PortfolioTrade> record(String username, PortfolioTradeRequest request) {
         PortfolioTradeRequest normalized = validate(request);
-        return portfolioRepository.findByCode(normalized.code())
+        return portfolioRepository.findByCode(username, normalized.code())
                 .map(position -> calculate(normalized, position))
                 .switchIfEmpty(Mono.fromSupplier(() -> calculate(normalized, null)))
-                .flatMap(this::persist);
+                .flatMap(result -> persist(username, result));
     }
 
-    private Mono<PortfolioTrade> persist(TradeResult result) {
+    private Mono<PortfolioTrade> persist(String username, TradeResult result) {
         Mono<?> positionChange = result.position() == null
-                ? portfolioRepository.remove(result.trade().code())
-                : portfolioRepository.save(result.position());
-        return positionChange.then(tradeRepository.save(result.trade()));
+                ? portfolioRepository.remove(username, result.trade().code())
+                : portfolioRepository.save(username, result.position());
+        return positionChange.then(tradeRepository.save(username, result.trade()));
     }
 
     private TradeResult calculate(PortfolioTradeRequest request, PortfolioPosition current) {

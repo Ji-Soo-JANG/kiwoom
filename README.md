@@ -76,6 +76,8 @@ KIWOOM_RETRY_BACKOFF=200ms
 KIWOOM_CURRENT_PRICE_CACHE_TTL=3s
 CORS_ALLOWED_ORIGINS=http://localhost:5173,http://localhost:8080
 POSTGRES_PASSWORD=안전한 데이터베이스 비밀번호
+APP_USERNAME=관리자 로그인 아이디
+APP_PASSWORD=안전한 로그인 비밀번호
 DATABASE_USERNAME=kiwoom
 DATABASE_R2DBC_URL=r2dbc:postgresql://localhost:5432/kiwoom
 DATABASE_JDBC_URL=jdbc:postgresql://localhost:5432/kiwoom
@@ -140,6 +142,20 @@ java -jar target/kiwoom-0.0.1-SNAPSHOT.jar
 ```
 
 브라우저: `http://localhost:8080`
+
+보호된 API는 세션 로그인이 필요합니다. `APP_USERNAME`, `APP_PASSWORD`로 로그인하면
+발급된 `SESSION` 쿠키가 이후 요청에 사용됩니다. 운영 환경에서는 기본값을 사용하지 마세요.
+
+```powershell
+curl.exe -c session.txt -X POST http://localhost:8080/login `
+  -H "Content-Type: application/x-www-form-urlencoded" `
+  --data-urlencode "username=$env:APP_USERNAME" `
+  --data-urlencode "password=$env:APP_PASSWORD"
+curl.exe -b session.txt http://localhost:8080/api/portfolio
+```
+
+로그아웃은 `POST /logout`입니다. 헬스 체크와 정적 화면을 제외한 주가·관심 종목·
+포트폴리오 API는 인증이 필요하고, Swagger와 관리 endpoint는 관리자 권한이 필요합니다.
 
 Spring 프로필은 `dev`, `test`, `prod`를 사용합니다. 운영 프로필에서는 Swagger UI와 OpenAPI JSON이 비활성화됩니다.
 
@@ -249,6 +265,7 @@ GET /api/portfolio/transactions
 ### 백엔드
 - **Spring Boot 3.2.5** - 웹 프레임워크
 - **Spring WebFlux** - 반응형 웹 프레임워크
+- **Spring Security** - 세션 로그인 및 API 접근 제어
 - **Reactor** - 비동기 처리 (Mono, Flux)
 - **Jackson** - JSON 처리
 - **Thymeleaf** - HTML 템플릿 엔진
@@ -269,6 +286,7 @@ GET /api/portfolio/transactions
 ✅ **CORS 지원** - 크로스 오리진 요청 처리  
 ✅ **에러 핸들링** - 일관된 JSON 오류 응답 제공  
 ✅ **거래 원장** - 매수·매도 기록, 이동평균 매입가 및 실현 손익 계산
+✅ **사용자 보안** - 세션 인증과 사용자별 관심 종목·포트폴리오 데이터 격리
 
 ## 🧪 테스트
 

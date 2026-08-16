@@ -11,14 +11,14 @@ public class WatchlistService {
 
     public WatchlistService(WatchlistRepository repository) { this.repository = repository; }
 
-    public Mono<List<String>> findAll() { return repository.findAll().collectList(); }
+    public Mono<List<String>> findAll(String username) { return repository.findAll(username).collectList(); }
 
-    public Mono<String> add(String code) {
+    public Mono<String> add(String username, String code) {
         String normalized = validate(code);
-        return repository.add(normalized).thenReturn(normalized);
+        return repository.add(username, normalized).thenReturn(normalized);
     }
 
-    public Mono<Void> remove(String code) { return repository.remove(validate(code)); }
+    public Mono<Void> remove(String username, String code) { return repository.remove(username, validate(code)); }
 
     private String validate(String code) {
         if (code == null || !code.trim().matches("\\d{6}")) {

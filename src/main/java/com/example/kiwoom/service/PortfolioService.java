@@ -22,24 +22,24 @@ public class PortfolioService {
         this.repository = repository;
     }
 
-    public Flux<PortfolioPosition> findAll() {
-        return repository.findAll();
+    public Flux<PortfolioPosition> findAll(String username) {
+        return repository.findAll(username);
     }
 
-    public Mono<PortfolioPosition> save(PortfolioPosition position) {
+    public Mono<PortfolioPosition> save(String username, PortfolioPosition position) {
         validate(position);
-        return repository.save(position);
+        return repository.save(username, position);
     }
 
-    public Mono<Void> remove(String code) {
+    public Mono<Void> remove(String username, String code) {
         if (code == null || !code.matches("\\d{6}")) {
             throw new IllegalArgumentException("종목 코드는 6자리 숫자여야 합니다");
         }
-        return repository.remove(code);
+        return repository.remove(username, code);
     }
 
-    public Mono<List<PortfolioValuation>> valuate() {
-        return findAll()
+    public Mono<List<PortfolioValuation>> valuate(String username) {
+        return findAll(username)
                 .flatMap(position -> kiwoomApiService.getStockCurrentPrice(position.code())
                         .map(price -> calculate(position, new BigDecimal(price.getCurrentPrice()))), 3)
                 .collectSortedList(Comparator.comparing(PortfolioValuation::code));

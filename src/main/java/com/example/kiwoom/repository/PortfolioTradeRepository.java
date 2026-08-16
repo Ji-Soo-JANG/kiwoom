@@ -16,11 +16,11 @@ public class PortfolioTradeRepository {
 
     public PortfolioTradeRepository(DatabaseClient database) { this.database = database; }
 
-    public Mono<PortfolioTrade> save(PortfolioTrade trade) {
+    public Mono<PortfolioTrade> save(String username, PortfolioTrade trade) {
         return database.sql("""
-                INSERT INTO portfolio_trade(code, trade_type, quantity, price, fee, tax, realized_profit_loss, traded_at)
-                VALUES (:code, :type, :quantity, :price, :fee, :tax, :realized, :tradedAt)
-                """).bind("code", trade.code()).bind("type", trade.type().name())
+                INSERT INTO portfolio_trade(username, code, trade_type, quantity, price, fee, tax, realized_profit_loss, traded_at)
+                VALUES (:username, :code, :type, :quantity, :price, :fee, :tax, :realized, :tradedAt)
+                """).bind("username", username).bind("code", trade.code()).bind("type", trade.type().name())
                 .bind("quantity", trade.quantity()).bind("price", trade.price())
                 .bind("fee", trade.fee()).bind("tax", trade.tax())
                 .bind("realized", trade.realizedProfitLoss()).bind("tradedAt", trade.tradedAt())
@@ -31,11 +31,11 @@ public class PortfolioTradeRepository {
                 .one();
     }
 
-    public Flux<PortfolioTrade> findAll() {
+    public Flux<PortfolioTrade> findAll(String username) {
         return database.sql("""
                 SELECT id, code, trade_type, quantity, price, fee, tax, realized_profit_loss, traded_at
-                FROM portfolio_trade ORDER BY traded_at DESC, id DESC
-                """).map((row, metadata) -> new PortfolioTrade(
+                FROM portfolio_trade WHERE username = :username ORDER BY traded_at DESC, id DESC
+                """).bind("username", username).map((row, metadata) -> new PortfolioTrade(
                         row.get("id", Long.class), row.get("code", String.class),
                         TradeType.valueOf(row.get("trade_type", String.class)),
                         row.get("quantity", BigDecimal.class), row.get("price", BigDecimal.class),

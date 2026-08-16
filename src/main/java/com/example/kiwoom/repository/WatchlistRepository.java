@@ -12,19 +12,20 @@ public class WatchlistRepository {
 
     public WatchlistRepository(DatabaseClient database) { this.database = database; }
 
-    public Flux<String> findAll() {
-        return database.sql("SELECT code FROM watchlist ORDER BY code")
+    public Flux<String> findAll(String username) {
+        return database.sql("SELECT code FROM watchlist WHERE username = :username ORDER BY code")
+                .bind("username", username)
                 .map((row, metadata) -> row.get("code", String.class)).all();
     }
 
-    public Mono<Void> add(String code) {
-        return database.sql("INSERT INTO watchlist(code) VALUES (:code)")
-                .bind("code", code).fetch().rowsUpdated().then()
+    public Mono<Void> add(String username, String code) {
+        return database.sql("INSERT INTO watchlist(username, code) VALUES (:username, :code)")
+                .bind("username", username).bind("code", code).fetch().rowsUpdated().then()
                 .onErrorResume(DuplicateKeyException.class, error -> Mono.empty());
     }
 
-    public Mono<Void> remove(String code) {
-        return database.sql("DELETE FROM watchlist WHERE code = :code")
-                .bind("code", code).fetch().rowsUpdated().then();
+    public Mono<Void> remove(String username, String code) {
+        return database.sql("DELETE FROM watchlist WHERE username = :username AND code = :code")
+                .bind("username", username).bind("code", code).fetch().rowsUpdated().then();
     }
 }

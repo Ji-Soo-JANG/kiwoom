@@ -8,6 +8,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import java.security.Principal;
 
 @RestController
 @RequestMapping("/api/portfolio/transactions")
@@ -18,11 +19,11 @@ public class PortfolioTradeController {
     public PortfolioTradeController(PortfolioTradeService service) { this.service = service; }
 
     @GetMapping
-    public Flux<PortfolioTrade> findAll() { return service.findAll(); }
+    public Flux<PortfolioTrade> findAll(Principal principal) { return service.findAll(principal.getName()); }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public Mono<PortfolioTrade> record(@RequestBody PortfolioTradeRequest request) {
-        return service.record(request);
+    public Mono<PortfolioTrade> record(Principal principal, @RequestBody PortfolioTradeRequest request) {
+        return service.record(principal.getName(), request);
     }
 }

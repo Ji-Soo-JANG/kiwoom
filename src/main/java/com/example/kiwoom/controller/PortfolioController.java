@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Flux;
 import java.util.List;
+import java.security.Principal;
 
 @RestController
 @RequestMapping("/api/portfolio")
@@ -18,17 +19,17 @@ public class PortfolioController {
     public PortfolioController(PortfolioService service) { this.service = service; }
 
     @GetMapping
-    public Flux<PortfolioPosition> findAll() { return service.findAll(); }
+    public Flux<PortfolioPosition> findAll(Principal principal) { return service.findAll(principal.getName()); }
 
     @PutMapping("/{code}")
-    public Mono<PortfolioPosition> save(@PathVariable String code, @RequestBody PortfolioPosition request) {
-        return service.save(new PortfolioPosition(code, request.quantity(), request.averagePrice()));
+    public Mono<PortfolioPosition> save(Principal principal, @PathVariable String code, @RequestBody PortfolioPosition request) {
+        return service.save(principal.getName(), new PortfolioPosition(code, request.quantity(), request.averagePrice()));
     }
 
     @DeleteMapping("/{code}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public Mono<Void> remove(@PathVariable String code) { return service.remove(code); }
+    public Mono<Void> remove(Principal principal, @PathVariable String code) { return service.remove(principal.getName(), code); }
 
     @GetMapping("/valuation")
-    public Mono<List<PortfolioValuation>> valuate() { return service.valuate(); }
+    public Mono<List<PortfolioValuation>> valuate(Principal principal) { return service.valuate(principal.getName()); }
 }

@@ -14,41 +14,42 @@ public class PortfolioRepository {
 
     public PortfolioRepository(DatabaseClient database) { this.database = database; }
 
-    public Flux<PortfolioPosition> findAll() {
-        return database.sql("SELECT code, quantity, average_price FROM portfolio_position ORDER BY code")
+    public Flux<PortfolioPosition> findAll(String username) {
+        return database.sql("SELECT code, quantity, average_price FROM portfolio_position WHERE username = :username ORDER BY code")
+                .bind("username", username)
                 .map((row, metadata) -> new PortfolioPosition(row.get("code", String.class),
                         row.get("quantity", BigDecimal.class), row.get("average_price", BigDecimal.class)))
                 .all();
     }
 
-    public Mono<PortfolioPosition> findByCode(String code) {
-        return database.sql("SELECT code, quantity, average_price FROM portfolio_position WHERE code = :code")
-                .bind("code", code)
+    public Mono<PortfolioPosition> findByCode(String username, String code) {
+        return database.sql("SELECT code, quantity, average_price FROM portfolio_position WHERE username = :username AND code = :code")
+                .bind("username", username).bind("code", code)
                 .map((row, metadata) -> new PortfolioPosition(row.get("code", String.class),
                         row.get("quantity", BigDecimal.class), row.get("average_price", BigDecimal.class)))
                 .one();
     }
 
-    public Mono<PortfolioPosition> save(PortfolioPosition position) {
+    public Mono<PortfolioPosition> save(String username, PortfolioPosition position) {
         return database.sql("""
                 UPDATE portfolio_position SET quantity = :quantity, average_price = :averagePrice,
-                  updated_at = CURRENT_TIMESTAMP WHERE code = :code
+                  updated_at = CURRENT_TIMESTAMP WHERE username = :username AND code = :code
                 """)
-                .bind("code", position.code()).bind("quantity", position.quantity())
+                .bind("username", username).bind("code", position.code()).bind("quantity", position.quantity())
                 .bind("averagePrice", position.averagePrice()).fetch().rowsUpdated()
-                .flatMap(updated -> updated > 0 ? Mono.just(position) : insert(position));
+                .flatMap(updated -> updated > 0 ? Mono.just(position) : insert(username, position));
     }
 
-    private Mono<PortfolioPosition> insert(PortfolioPosition position) {
+    private Mono<PortfolioPosition> insert(String username, PortfolioPosition position) {
         return database.sql("""
-                INSERT INTO portfolio_position(code, quantity, average_price)
-                VALUES (:code, :quantity, :averagePrice)
-                """).bind("code", position.code()).bind("quantity", position.quantity())
+                INSERT INTO portfolio_position(username, code, quantity, average_price)
+                VALUES (:username, :code, :quantity, :averagePrice)
+                """).bind("username", username).bind("code", position.code()).bind("quantity", position.quantity())
                 .bind("averagePrice", position.averagePrice()).fetch().rowsUpdated().thenReturn(position);
     }
 
-    public Mono<Void> remove(String code) {
-        return database.sql("DELETE FROM portfolio_position WHERE code = :code")
-                .bind("code", code).fetch().rowsUpdated().then();
+    public Mono<Void> remove(String username, String code) {
+        return database.sql("DELETE FROM portfolio_position WHERE username = :username AND code = :code")
+                .bind("username", username).bind("code", code).fetch().rowsUpdated().then();
     }
 }

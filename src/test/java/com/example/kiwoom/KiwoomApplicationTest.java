@@ -4,6 +4,10 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.web.reactive.server.WebTestClient;
+import org.springframework.security.test.context.support.WithMockUser;
+import com.example.kiwoom.repository.WatchlistRepository;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(
         webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
@@ -29,11 +33,31 @@ class KiwoomApplicationTest {
     @Autowired
     private WebTestClient webTestClient;
 
+    @Autowired
+    private WatchlistRepository watchlistRepository;
+
     @Test
     void contextLoads() {
     }
 
     @Test
+    void rejectsUnauthenticatedPortfolioRequest() {
+        webTestClient.get().uri("/api/portfolio")
+                .exchange().expectStatus().isUnauthorized();
+    }
+
+    @Test
+    void isolatesWatchlistsByAuthenticatedUser() {
+        watchlistRepository.add("alice", "035420").block();
+
+        assertThat(watchlistRepository.findAll("alice").collectList().block()).containsExactly("035420");
+        assertThat(watchlistRepository.findAll("bob").collectList().block()).isEmpty();
+
+        watchlistRepository.remove("alice", "035420").block();
+    }
+
+    @Test
+    @WithMockUser(username = "admin", roles = "ADMIN")
     void exposesOpenApiDocument() {
         webTestClient.get()
                 .uri("/v3/api-docs")
@@ -45,6 +69,7 @@ class KiwoomApplicationTest {
     }
 
     @Test
+    @WithMockUser(username = "admin", roles = "ADMIN")
     void managesWatchlist() {
         webTestClient.post().uri("/api/watchlist")
                 .bodyValue("{\"code\":\"005930\"}")
@@ -60,6 +85,7 @@ class KiwoomApplicationTest {
     }
 
     @Test
+    @WithMockUser(username = "admin", roles = "ADMIN")
     void managesPortfolioPositions() {
         webTestClient.put().uri("/api/portfolio/005930")
                 .bodyValue("{\"quantity\":10,\"averagePrice\":70000}")
@@ -80,6 +106,7 @@ class KiwoomApplicationTest {
     }
 
     @Test
+    @WithMockUser(username = "admin", roles = "ADMIN")
     void recordsTradesAndCalculatesPositionAndRealizedProfit() {
         webTestClient.post().uri("/api/portfolio/transactions")
                 .bodyValue("{\"code\":\"000660\",\"type\":\"BUY\",\"quantity\":10,\"price\":100000,\"fee\":1000}")
