@@ -23,4 +23,21 @@ describe('Watchlist', () => {
     expect(onSearch).toHaveBeenCalledWith('005930');
     expect(onRemove).toHaveBeenCalledWith('005930');
   });
+  it('그룹과 메모 수정 동작을 전달한다', () => {
+    const onUpdate = vi.fn();
+    vi.spyOn(window, 'prompt').mockReturnValueOnce('장기').mockReturnValueOnce('분할 매수');
+    render(
+      <Watchlist
+        codes={[{ code: '005930', groupName: '반도체', note: '' }]}
+        onSearch={vi.fn()}
+        onRemove={vi.fn()}
+        onUpdate={onUpdate}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '005930 관심종목 메모 수정' }));
+
+    expect(onUpdate).toHaveBeenCalledWith('005930', '장기', '분할 매수');
+    vi.restoreAllMocks();
+  });
 });

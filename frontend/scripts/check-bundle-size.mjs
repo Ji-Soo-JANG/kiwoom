@@ -1,3 +1,4 @@
+/* global console */
 import { readdir, stat } from 'node:fs/promises';
 import { resolve } from 'node:path';
 

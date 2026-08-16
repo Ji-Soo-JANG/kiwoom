@@ -1,6 +1,8 @@
 CREATE TABLE IF NOT EXISTS watchlist (
     username VARCHAR(100) NOT NULL,
     code VARCHAR(6) NOT NULL,
+    group_name VARCHAR(50) NOT NULL DEFAULT '기본',
+    note VARCHAR(500) NOT NULL DEFAULT '',
     PRIMARY KEY (username, code),
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

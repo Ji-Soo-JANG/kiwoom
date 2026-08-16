@@ -29,20 +29,39 @@ public class WatchlistRepository {
     }
 
     public Mono<Void> save(String username, WatchlistItem item) {
+        return update(username, item)
+                .flatMap(
+                        updated ->
+                                updated > 0
+                                        ? Mono.empty()
+                                        : database.sql(
+                                                        """
+                                                INSERT INTO watchlist(username, code, group_name, note)
+                                                VALUES (:username, :code, :groupName, :note)
+                                                """)
+                                                .bind("username", username)
+                                                .bind("code", item.code())
+                                                .bind("groupName", item.groupName())
+                                                .bind("note", item.note())
+                                                .fetch()
+                                                .rowsUpdated()
+                                                .then())
+                .onErrorResume(DuplicateKeyException.class, error -> update(username, item).then())
+                .then();
+    }
+
+    private Mono<Long> update(String username, WatchlistItem item) {
         return database.sql(
                         """
-                INSERT INTO watchlist(username, code, group_name, note)
-                VALUES (:username, :code, :groupName, :note)
-                ON CONFLICT (username, code) DO UPDATE SET group_name = EXCLUDED.group_name, note = EXCLUDED.note
+                UPDATE watchlist SET group_name = :groupName, note = :note
+                WHERE username = :username AND code = :code
                 """)
                 .bind("username", username)
                 .bind("code", item.code())
                 .bind("groupName", item.groupName())
                 .bind("note", item.note())
                 .fetch()
-                .rowsUpdated()
-                .then()
-                .onErrorResume(DuplicateKeyException.class, error -> Mono.empty());
+                .rowsUpdated();
     }
 
     public Mono<Void> remove(String username, String code) {

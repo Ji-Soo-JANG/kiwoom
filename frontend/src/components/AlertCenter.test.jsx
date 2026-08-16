@@ -73,8 +73,18 @@ describe('AlertCenter', () => {
       readAt: null
     };
     api.getAlertEvents
-      .mockResolvedValueOnce([unreadEvent])
-      .mockResolvedValueOnce([{ ...unreadEvent, readAt: '2026-08-16T01:00:00Z' }]);
+      .mockResolvedValueOnce({
+        content: [unreadEvent],
+        page: 0,
+        size: 20,
+        totalElements: 1
+      })
+      .mockResolvedValueOnce({
+        content: [{ ...unreadEvent, readAt: '2026-08-16T01:00:00Z' }],
+        page: 0,
+        size: 20,
+        totalElements: 1
+      });
     api.markAlertRead.mockResolvedValue(null);
     renderAlert();
 
