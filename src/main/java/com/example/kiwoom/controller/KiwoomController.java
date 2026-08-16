@@ -1,5 +1,6 @@
 package com.example.kiwoom.controller;
 
+import com.example.kiwoom.dto.AccountPortfolioResponse;
 import com.example.kiwoom.dto.DailyPriceResponse;
 import com.example.kiwoom.dto.MarketRankingsResponse;
 import com.example.kiwoom.dto.StockPriceResponse;
@@ -71,6 +72,12 @@ public class KiwoomController {
     @Operation(summary = "급등·급락·거래량 상위 종목 조회")
     public Mono<MarketRankingsResponse> marketRankings() {
         return kiwoomApiService.getMarketRankings();
+    }
+
+    @GetMapping("/account/portfolio")
+    @Operation(summary = "키움 계좌 평가잔고 조회")
+    public Mono<AccountPortfolioResponse> accountPortfolio() {
+        return kiwoomApiService.getAccountPortfolio();
     }
 
     @GetMapping("/admin/stock-catalog")

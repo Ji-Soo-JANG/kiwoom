@@ -9,20 +9,14 @@ import {
   getWatchlist,
   addToWatchlist,
   removeFromWatchlist,
-  updateWatchlistItem,
-  getPortfolio,
-  savePortfolioPosition,
-  removePortfolioPosition,
-  getPortfolioValuation,
-  getPortfolioProfitTrend,
-  importPortfolioTrades
+  updateWatchlistItem
 } from './api/kiwoomApi';
 
 import StockSearchForm from './components/StockSearchForm';
 
 import StockResultList from './components/StockResultList';
 import Watchlist from './components/Watchlist';
-import Portfolio from './components/Portfolio';
+import AccountPortfolio from './components/AccountPortfolio';
 import AlertCenter from './components/AlertCenter';
 import MarketDiscovery from './components/MarketDiscovery';
 
@@ -39,34 +33,10 @@ function App({ currentUser, onLogout }) {
   const [loading, setLoading] = useState(false);
 
   const [error, setError] = useState('');
-  const [valuations, setValuations] = useState([]);
-  const [profitTrend, setProfitTrend] = useState([]);
   const [searched, setSearched] = useState(false);
 
   const watchlistQuery = useQuery({ queryKey: ['watchlist'], queryFn: getWatchlist });
-  const portfolioQuery = useQuery({ queryKey: ['portfolio'], queryFn: getPortfolio });
   const watchlist = watchlistQuery.data ?? [];
-  const portfolio = portfolioQuery.data ?? [];
-
-  const savePositionMutation = useMutation({
-    mutationFn: ({ code, quantity, averagePrice }) =>
-      savePortfolioPosition(code, quantity, averagePrice),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['portfolio'] });
-      setValuations([]);
-    }
-  });
-  const removePositionMutation = useMutation({
-    mutationFn: removePortfolioPosition,
-    onSuccess: (_, code) => {
-      queryClient.invalidateQueries({ queryKey: ['portfolio'] });
-      setValuations((items) => items.filter((item) => item.code !== code));
-    }
-  });
-  const valuationMutation = useMutation({
-    mutationFn: getPortfolioValuation,
-    onSuccess: setValuations
-  });
   const addWatchlistMutation = useMutation({
     mutationFn: (code) => addToWatchlist(code),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['watchlist'] })
@@ -80,53 +50,6 @@ function App({ currentUser, onLogout }) {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['watchlist'] })
   });
 
-  const portfolioLoading =
-    portfolioQuery.isLoading ||
-    savePositionMutation.isPending ||
-    removePositionMutation.isPending ||
-    valuationMutation.isPending;
-
-  const savePosition = async (code, quantity, averagePrice) => {
-    setError('');
-    try {
-      await savePositionMutation.mutateAsync({ code, quantity, averagePrice });
-    } catch (err) {
-      handleError(err);
-      throw err;
-    }
-  };
-
-  const deletePosition = async (code) => {
-    setError('');
-    try {
-      await removePositionMutation.mutateAsync(code);
-    } catch (err) {
-      handleError(err);
-    }
-  };
-
-  const valuatePortfolio = async () => {
-    setError('');
-    try {
-      const [nextValuations, nextTrend] = await Promise.all([
-        valuationMutation.mutateAsync(),
-        getPortfolioProfitTrend()
-      ]);
-      setValuations(nextValuations);
-      setProfitTrend(nextTrend);
-    } catch (err) {
-      handleError(err);
-    }
-  };
-
-  const importTrades = async (csv) => {
-    try {
-      await importPortfolioTrades(csv);
-      queryClient.invalidateQueries({ queryKey: ['portfolio'] });
-    } catch (err) {
-      handleError(err);
-    }
-  };
 
   const initializeSearch = () => {
     setLoading(true);
@@ -166,12 +89,12 @@ function App({ currentUser, onLogout }) {
   };
 
   const searchFromWatchlist = (code) => {
-    navigate('/');
     handleSingleSearch(code);
   };
 
   const handleSingleSearch = async (code) => {
     initializeSearch();
+    navigate('/chart');
 
     try {
       const [stock, daily] = await Promise.all([getCurrentPrice(code), getDailyPrices(code)]);
@@ -187,6 +110,7 @@ function App({ currentUser, onLogout }) {
 
   const handleMultipleSearch = async (codes) => {
     initializeSearch();
+    navigate('/chart');
 
     try {
       const data = await getMultiplePrices(codes);
@@ -219,6 +143,7 @@ function App({ currentUser, onLogout }) {
         <NavLink to="/" end>
           종목 검색
         </NavLink>
+        <NavLink to="/chart">차트</NavLink>
         <NavLink to="/discover">종목 발견</NavLink>
         <NavLink to="/watchlist">관심 종목</NavLink>
         <NavLink to="/portfolio">포트폴리오</NavLink>
@@ -229,21 +154,27 @@ function App({ currentUser, onLogout }) {
         <Route
           path="/"
           element={
-            <>
-              <StockSearchForm
-                loading={loading}
-                onSingleSearch={handleSingleSearch}
-                onMultipleSearch={handleMultipleSearch}
-              />
+            <StockSearchForm
+              loading={loading}
+              onSingleSearch={handleSingleSearch}
+              onMultipleSearch={handleMultipleSearch}
+            />
+          }
+        />
 
+        <Route
+          path="/chart"
+          element={
+            <>
+              {!searched && !loading && (
+                <p className="empty-state">종목 검색 또는 종목 발견 탭에서 종목을 선택하세요.</p>
+              )}
               {loading && (
                 <div className="loading" role="status" aria-live="polite">
                   <div className="spinner" aria-hidden="true" />
-
                   <div className="loading-text">조회 중입니다...</div>
                 </div>
               )}
-
               <StockResultList stocks={stocks} searched={searched} loading={loading} />
 
               {stocks.length === 1 && (
@@ -264,7 +195,6 @@ function App({ currentUser, onLogout }) {
           element={
             <MarketDiscovery
               onSelectStock={(code) => {
-                navigate('/');
                 handleSingleSearch(code);
               }}
             />
@@ -286,15 +216,10 @@ function App({ currentUser, onLogout }) {
         <Route
           path="/portfolio"
           element={
-            <Portfolio
-              positions={portfolio}
-              valuations={valuations}
-              profitTrend={profitTrend}
-              loading={portfolioLoading}
-              onSave={savePosition}
-              onRemove={deletePosition}
-              onValuate={valuatePortfolio}
-              onImportTrades={importTrades}
+            <AccountPortfolio
+              onSelectStock={(code) => {
+                handleSingleSearch(code);
+              }}
             />
           }
         />
@@ -303,10 +228,9 @@ function App({ currentUser, onLogout }) {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
 
-      {(error || watchlistQuery.error || portfolioQuery.error) && (
+      {(error || watchlistQuery.error) && (
         <div className="error" role="alert">
-          {error ||
-            `데이터를 불러오지 못했습니다: ${(watchlistQuery.error || portfolioQuery.error).message}`}
+          {error || `데이터를 불러오지 못했습니다: ${watchlistQuery.error.message}`}
         </div>
       )}
     </div>

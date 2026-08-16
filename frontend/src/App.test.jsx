@@ -11,7 +11,15 @@ describe('App routes', () => {
   beforeEach(() => {
     vi.resetAllMocks();
     api.getWatchlist.mockResolvedValue([]);
-    api.getPortfolio.mockResolvedValue([]);
+    api.getAccountPortfolio.mockResolvedValue({
+      accountNumber: '1234567890',
+      totalPurchaseAmount: 0,
+      totalEvaluationAmount: 0,
+      totalProfitLoss: 0,
+      totalReturnRate: 0,
+      estimatedAssets: 0,
+      positions: []
+    });
     api.getAlertRules.mockResolvedValue([]);
     api.getAlertEvents.mockResolvedValue({ content: [], page: 0, size: 20, totalElements: 0 });
   });
@@ -28,7 +36,9 @@ describe('App routes', () => {
     expect(screen.getByLabelText('종목 검색')).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('link', { name: '포트폴리오' }));
-    expect(await screen.findByRole('heading', { name: '포트폴리오' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { name: '내 계좌 포트폴리오' })
+    ).toBeInTheDocument();
     expect(screen.queryByLabelText('종목 검색')).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('link', { name: '알림' }));

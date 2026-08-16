@@ -1,5 +1,7 @@
 package com.example.kiwoom.mapper;
 
+import com.example.kiwoom.dto.AccountPortfolioResponse;
+import com.example.kiwoom.dto.AccountPosition;
 import com.example.kiwoom.dto.DailyPriceResponse;
 import com.example.kiwoom.dto.MarketRankingItem;
 import com.example.kiwoom.dto.StockPriceResponse;
@@ -141,6 +143,58 @@ public class KiwoomResponseMapper {
         }
     }
 
+    public String parseAccountNumber(String json) {
+        try {
+            JsonNode root = objectMapper.readTree(json);
+            verifySuccess(root, "키움 계좌번호 조회 오류");
+            String accountNumber = root.path("acctNo").asText();
+            if (accountNumber.isBlank()) accountNumber = root.path("acct_no").asText();
+            if (accountNumber.isBlank()) throw invalidResponse("계좌번호 응답이 없습니다");
+            return accountNumber;
+        } catch (JsonProcessingException error) {
+            throw invalidResponse("계좌번호 응답 JSON 파싱 실패");
+        }
+    }
+
+    public AccountPortfolioResponse parseAccountPortfolio(
+            String accountNumber, String json, Instant updatedAt) {
+        try {
+            JsonNode root = objectMapper.readTree(json);
+            verifySuccess(root, "키움 계좌 평가잔고 조회 오류");
+            JsonNode array = root.path("acnt_evlt_remn_indv_tot");
+            if (!array.isArray()) throw invalidResponse("계좌 보유종목 배열을 찾을 수 없습니다");
+            List<AccountPosition> positions = new ArrayList<>();
+            for (JsonNode item : array) {
+                String code = normalizeRankingCode(firstText(item, "stk_cd", "stk_no"));
+                String name = firstText(item, "stk_nm", "stk_name");
+                if (!code.matches("\\d{6}") || name.isBlank()) continue;
+                positions.add(
+                        new AccountPosition(
+                                code,
+                                name,
+                                absoluteLong(firstText(item, "rmnd_qty", "hold_qty")),
+                                absoluteLong(firstText(item, "trde_able_qty", "ord_psbl_qty")),
+                                absoluteLong(firstText(item, "pur_pric", "avg_pric")),
+                                absoluteLong(firstText(item, "cur_prc")),
+                                absoluteLong(firstText(item, "pur_amt")),
+                                absoluteLong(firstText(item, "evlt_amt")),
+                                signedLong(firstText(item, "evltv_prft", "evlt_pl")),
+                                decimal(firstText(item, "prft_rt", "evltv_prft_rt"))));
+            }
+            return new AccountPortfolioResponse(
+                    accountNumber,
+                    absoluteLong(firstText(root, "tot_pur_amt")),
+                    absoluteLong(firstText(root, "tot_evlt_amt")),
+                    signedLong(firstText(root, "tot_evlt_pl")),
+                    decimal(firstText(root, "tot_prft_rt")),
+                    absoluteLong(firstText(root, "prsm_dpst_aset_amt")),
+                    List.copyOf(positions),
+                    updatedAt);
+        } catch (JsonProcessingException | NumberFormatException error) {
+            throw invalidResponse("계좌 평가잔고 응답 JSON 파싱 실패");
+        }
+    }
+
     private String firstText(JsonNode node, String... fields) {
         for (String field : fields) {
             String value = node.path(field).asText();
@@ -156,6 +210,10 @@ public class KiwoomResponseMapper {
 
     private long absoluteLong(String value) {
         return Math.abs(Long.parseLong(value.trim().replace(",", "").replace("+", "")));
+    }
+
+    private long signedLong(String value) {
+        return Long.parseLong(value.trim().replace(",", "").replace("+", ""));
     }
 
     private double decimal(String value) {

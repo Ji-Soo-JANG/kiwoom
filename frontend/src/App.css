@@ -95,6 +95,44 @@ body {
     grid-template-columns: 1fr;
   }
 }
+.account-summary {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 24px;
+}
+.account-summary div {
+  padding: 14px;
+  border-radius: 8px;
+  background: #f8f9fc;
+}
+.account-summary dt {
+  color: #667085;
+  font-size: 12px;
+}
+.account-summary dd {
+  margin-top: 6px;
+  font-size: 16px;
+  font-weight: 700;
+}
+.account-portfolio .valuation-table tbody tr {
+  cursor: pointer;
+}
+.account-portfolio .valuation-table td button {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  background: transparent;
+  text-align: left;
+}
+.account-portfolio .valuation-table td button small {
+  color: #98a2b3;
+}
+@media (max-width: 850px) {
+  .account-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
 
 .app-header {
   display: flex;

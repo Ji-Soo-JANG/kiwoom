@@ -94,6 +94,19 @@ public class KiwoomHttpClient {
                 "종목 목록 API 호출 실패");
     }
 
+    public Mono<String> requestAccountNumber(String accessToken) {
+        return post("/api/dostk/acnt", accessToken, "ka00001", Map.of(), "계좌번호 조회 API 호출 실패");
+    }
+
+    public Mono<String> requestAccountPortfolio(String accessToken) {
+        return post(
+                "/api/dostk/acnt",
+                accessToken,
+                "kt00018",
+                Map.of("qry_tp", "1", "dmst_stex_tp", "KRX"),
+                "계좌 평가잔고 API 호출 실패");
+    }
+
     public Mono<String> requestChangeRateRanking(
             String marketType, String sortType, String accessToken) {
         return post(

@@ -2,6 +2,7 @@ package com.example.kiwoom.service;
 
 import com.example.kiwoom.client.KiwoomHttpClient;
 import com.example.kiwoom.config.KiwoomApiProperties;
+import com.example.kiwoom.dto.AccountPortfolioResponse;
 import com.example.kiwoom.dto.DailyPriceResponse;
 import com.example.kiwoom.dto.MarketRankingItem;
 import com.example.kiwoom.dto.MarketRankingsResponse;
@@ -60,6 +61,7 @@ public class KiwoomApiService {
     private volatile Instant stockCatalogRefreshedAt;
     private volatile int stockCatalogSize;
     private volatile Mono<MarketRankingsResponse> marketRankings;
+    private volatile Mono<AccountPortfolioResponse> accountPortfolio;
 
     public KiwoomApiService(
             KiwoomHttpClient client,
@@ -87,6 +89,7 @@ public class KiwoomApiService {
                 .register(meterRegistry);
         this.stockCatalog = createStockCatalog();
         this.marketRankings = createMarketRankings();
+        this.accountPortfolio = createAccountPortfolio();
     }
 
     public Mono<StockPriceResponse> getStockCurrentPrice(String code) {
@@ -331,6 +334,41 @@ public class KiwoomApiService {
 
     public Mono<MarketRankingsResponse> getMarketRankings() {
         return marketRankings;
+    }
+
+    public Mono<AccountPortfolioResponse> getAccountPortfolio() {
+        return accountPortfolio;
+    }
+
+    private Mono<AccountPortfolioResponse> createAccountPortfolio() {
+        return fetchAccountPortfolio()
+                .cache(
+                        value -> Duration.ofSeconds(10),
+                        error -> Duration.ZERO,
+                        () -> Duration.ZERO,
+                        Schedulers.parallel());
+    }
+
+    private Mono<AccountPortfolioResponse> fetchAccountPortfolio() {
+        return getAccessToken()
+                .flatMap(token -> requestAccountPortfolio(token.value()))
+                .onErrorResume(
+                        KiwoomAuthenticationException.class,
+                        error -> {
+                            invalidateAccessToken();
+                            return getAccessToken()
+                                    .flatMap(token -> requestAccountPortfolio(token.value()));
+                        });
+    }
+
+    private Mono<AccountPortfolioResponse> requestAccountPortfolio(String token) {
+        return client.requestAccountNumber(token)
+                .map(mapper::parseAccountNumber)
+                .zipWith(client.requestAccountPortfolio(token))
+                .map(
+                        result ->
+                                mapper.parseAccountPortfolio(
+                                        result.getT1(), result.getT2(), Instant.now()));
     }
 
     private Mono<MarketRankingsResponse> createMarketRankings() {

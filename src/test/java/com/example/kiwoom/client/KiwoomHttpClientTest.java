@@ -88,6 +88,25 @@ class KiwoomHttpClientTest {
         assertTrue(volumeRequest.getBody().readUtf8().contains("\"mrkt_tp\":\"101\""));
     }
 
+    @Test
+    void sendsAccountPortfolioRequests() throws InterruptedException {
+        server.enqueue(new MockResponse().setResponseCode(200).setBody("{\"return_code\":0}"));
+        server.enqueue(new MockResponse().setResponseCode(200).setBody("{\"return_code\":0}"));
+        KiwoomHttpClient client = client(Duration.ofSeconds(1));
+
+        client.requestAccountNumber("token").block();
+        client.requestAccountPortfolio("token").block();
+
+        var numberRequest = server.takeRequest();
+        var portfolioRequest = server.takeRequest();
+        assertEquals("/api/dostk/acnt", numberRequest.getPath());
+        assertEquals("ka00001", numberRequest.getHeader("api-id"));
+        assertEquals("kt00018", portfolioRequest.getHeader("api-id"));
+        String body = portfolioRequest.getBody().readUtf8();
+        assertTrue(body.contains("\"qry_tp\":\"1\""));
+        assertTrue(body.contains("\"dmst_stex_tp\":\"KRX\""));
+    }
+
     private KiwoomHttpClient client(Duration responseTimeout) {
         KiwoomApiProperties properties =
                 new KiwoomApiProperties(

@@ -166,6 +166,33 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/kiwoom/account/portfolio": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                200: components["responses"]["AccountPortfolio"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/watchlist": {
         parameters: {
             query?: never;
@@ -748,6 +775,42 @@ export interface components {
             /** Format: date-time */
             updatedAt: string;
         };
+        AccountPosition: {
+            code: string;
+            name: string;
+            /** Format: int64 */
+            quantity: number;
+            /** Format: int64 */
+            availableQuantity: number;
+            /** Format: int64 */
+            averagePrice: number;
+            /** Format: int64 */
+            currentPrice: number;
+            /** Format: int64 */
+            purchaseAmount: number;
+            /** Format: int64 */
+            evaluationAmount: number;
+            /** Format: int64 */
+            profitLoss: number;
+            /** Format: double */
+            returnRate: number;
+        };
+        AccountPortfolioResponse: {
+            accountNumber: string;
+            /** Format: int64 */
+            totalPurchaseAmount: number;
+            /** Format: int64 */
+            totalEvaluationAmount: number;
+            /** Format: int64 */
+            totalProfitLoss: number;
+            /** Format: double */
+            totalReturnRate: number;
+            /** Format: int64 */
+            estimatedAssets: number;
+            positions: components["schemas"]["AccountPosition"][];
+            /** Format: date-time */
+            updatedAt: string;
+        };
         WatchlistRequest: {
             code: string;
             groupName?: string;
@@ -900,6 +963,15 @@ export interface components {
             };
             content: {
                 "application/json": components["schemas"]["MarketRankingsResponse"];
+            };
+        };
+        /** @description OK */
+        AccountPortfolio: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["AccountPortfolioResponse"];
             };
         };
         /** @description OK */

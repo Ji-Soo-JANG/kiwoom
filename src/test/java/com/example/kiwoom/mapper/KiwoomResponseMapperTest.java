@@ -111,4 +111,28 @@ class KiwoomResponseMapperTest {
         assertEquals(3.25, result.changeRate());
         assertEquals(1234567, result.volume());
     }
+
+    @Test
+    void parsesAccountNumberAndPortfolio() {
+        assertEquals(
+                "1234567890",
+                mapper.parseAccountNumber("{\"return_code\":0,\"acctNo\":\"1234567890\"}"));
+        String json =
+                """
+                {"return_code":0,"tot_pur_amt":"700000","tot_evlt_amt":"750000",
+                 "tot_evlt_pl":"+50000","tot_prft_rt":"7.14","prsm_dpst_aset_amt":"1000000",
+                 "acnt_evlt_remn_indv_tot":[
+                   {"stk_cd":"A005930_AL","stk_nm":"삼성전자","rmnd_qty":"10",
+                    "trde_able_qty":"10","pur_pric":"70000","cur_prc":"+75000",
+                    "pur_amt":"700000","evlt_amt":"750000","evltv_prft":"+50000","prft_rt":"7.14"}
+                 ]}
+                """;
+
+        var result = mapper.parseAccountPortfolio("1234567890", json, java.time.Instant.EPOCH);
+
+        assertEquals(750000, result.totalEvaluationAmount());
+        assertEquals("005930", result.positions().getFirst().code());
+        assertEquals(10, result.positions().getFirst().quantity());
+        assertEquals(50000, result.positions().getFirst().profitLoss());
+    }
 }
