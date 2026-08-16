@@ -1,6 +1,7 @@
 package com.example.kiwoom.controller;
 
 import com.example.kiwoom.dto.DailyPriceResponse;
+import com.example.kiwoom.dto.MarketRankingsResponse;
 import com.example.kiwoom.dto.StockPriceResponse;
 import com.example.kiwoom.dto.StockSearchResult;
 import com.example.kiwoom.service.KiwoomApiService;
@@ -64,6 +65,12 @@ public class KiwoomController {
             @RequestParam(required = false, defaultValue = "ALL") String market,
             @RequestParam(required = false, defaultValue = "ALL") String productType) {
         return kiwoomApiService.searchStocks(q, market, productType);
+    }
+
+    @GetMapping("/market-rankings")
+    @Operation(summary = "급등·급락·거래량 상위 종목 조회")
+    public Mono<MarketRankingsResponse> marketRankings() {
+        return kiwoomApiService.getMarketRankings();
     }
 
     @GetMapping("/admin/stock-catalog")

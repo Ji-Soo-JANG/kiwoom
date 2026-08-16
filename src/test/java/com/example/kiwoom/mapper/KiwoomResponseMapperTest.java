@@ -94,4 +94,21 @@ class KiwoomResponseMapperTest {
         assertEquals(StockProductType.PREFERRED, results.get(5).productType());
         assertEquals(StockProductType.SPAC, results.get(6).productType());
     }
+
+    @Test
+    void parsesMarketRankingItems() {
+        String json =
+                """
+                {"return_code":0,"pred_pre_flu_rt_upper":[
+                  {"stk_cd":"005930","stk_nm":"삼성전자","cur_prc":"+75,000","flu_rt":"+3.25","now_trde_qty":"1234567"}
+                ]}
+                """;
+
+        var result = mapper.parseRanking("pred_pre_flu_rt_upper", json).getFirst();
+
+        assertEquals("005930", result.code());
+        assertEquals(75000, result.currentPrice());
+        assertEquals(3.25, result.changeRate());
+        assertEquals(1234567, result.volume());
+    }
 }

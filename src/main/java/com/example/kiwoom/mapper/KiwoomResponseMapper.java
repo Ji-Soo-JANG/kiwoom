@@ -1,6 +1,7 @@
 package com.example.kiwoom.mapper;
 
 import com.example.kiwoom.dto.DailyPriceResponse;
+import com.example.kiwoom.dto.MarketRankingItem;
 import com.example.kiwoom.dto.StockPriceResponse;
 import com.example.kiwoom.dto.StockSearchResult;
 import com.example.kiwoom.error.KiwoomApiException;
@@ -106,6 +107,52 @@ public class KiwoomResponseMapper {
         } catch (JsonProcessingException error) {
             throw invalidResponse("종목 목록 응답 JSON 파싱 실패");
         }
+    }
+
+    public List<MarketRankingItem> parseRanking(String arrayName, String json) {
+        try {
+            JsonNode root = objectMapper.readTree(json);
+            verifySuccess(root, "키움 순위 조회 오류");
+            JsonNode array = root.path(arrayName);
+            if (!array.isArray()) throw invalidResponse("순위 배열을 찾을 수 없습니다: " + arrayName);
+            List<MarketRankingItem> result = new ArrayList<>();
+            for (JsonNode item : array) {
+                String code = item.path("stk_cd").asText();
+                String name = item.path("stk_nm").asText();
+                if (!code.matches("\\d{6}") || name.isBlank()) continue;
+                result.add(
+                        new MarketRankingItem(
+                                code,
+                                name,
+                                absoluteLong(item.path("cur_prc").asText("0")),
+                                decimal(item.path("flu_rt").asText("0")),
+                                absoluteLong(
+                                        firstText(
+                                                item,
+                                                "trde_qty",
+                                                "now_trde_qty",
+                                                "acc_trde_qty"))));
+            }
+            return result.stream().limit(10).toList();
+        } catch (JsonProcessingException | NumberFormatException error) {
+            throw invalidResponse("순위 응답 JSON 파싱 실패");
+        }
+    }
+
+    private String firstText(JsonNode node, String... fields) {
+        for (String field : fields) {
+            String value = node.path(field).asText();
+            if (!value.isBlank()) return value;
+        }
+        return "0";
+    }
+
+    private long absoluteLong(String value) {
+        return Math.abs(Long.parseLong(value.trim().replace(",", "").replace("+", "")));
+    }
+
+    private double decimal(String value) {
+        return Double.parseDouble(value.trim().replace(",", "").replace("+", ""));
     }
 
     private void verifySuccess(JsonNode root, String message) {

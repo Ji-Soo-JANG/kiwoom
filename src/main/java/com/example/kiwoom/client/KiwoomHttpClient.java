@@ -94,6 +94,42 @@ public class KiwoomHttpClient {
                 "종목 목록 API 호출 실패");
     }
 
+    public Mono<String> requestChangeRateRanking(String sortType, String accessToken) {
+        return post(
+                "/api/dostk/rkinfo",
+                accessToken,
+                "ka10027",
+                Map.of(
+                        "mrkt_tp", "000",
+                        "sort_tp", sortType,
+                        "trde_qty_cnd", "0000",
+                        "stk_cnd", "0",
+                        "crd_cnd", "0",
+                        "updown_incls", "1",
+                        "pric_cnd", "0",
+                        "trde_prica_cnd", "0",
+                        "stex_tp", "3"),
+                "등락률 순위 API 호출 실패");
+    }
+
+    public Mono<String> requestVolumeRanking(String accessToken) {
+        return post(
+                "/api/dostk/rkinfo",
+                accessToken,
+                "ka10030",
+                Map.of(
+                        "mrkt_tp", "000",
+                        "sort_tp", "1",
+                        "mang_stk_incls", "0",
+                        "crd_tp", "0",
+                        "trde_qty_tp", "0",
+                        "pric_tp", "0",
+                        "trde_prica_tp", "0",
+                        "mrkt_open_tp", "0",
+                        "stex_tp", "3"),
+                "거래량 순위 API 호출 실패");
+    }
+
     private Mono<String> post(
             String path,
             String token,

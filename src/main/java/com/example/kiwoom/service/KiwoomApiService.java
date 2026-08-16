@@ -3,6 +3,7 @@ package com.example.kiwoom.service;
 import com.example.kiwoom.client.KiwoomHttpClient;
 import com.example.kiwoom.config.KiwoomApiProperties;
 import com.example.kiwoom.dto.DailyPriceResponse;
+import com.example.kiwoom.dto.MarketRankingsResponse;
 import com.example.kiwoom.dto.StockPriceResponse;
 import com.example.kiwoom.dto.StockProductType;
 import com.example.kiwoom.dto.StockSearchResult;
@@ -57,6 +58,7 @@ public class KiwoomApiService {
     private volatile Mono<List<StockSearchResult>> stockCatalog;
     private volatile Instant stockCatalogRefreshedAt;
     private volatile int stockCatalogSize;
+    private volatile Mono<MarketRankingsResponse> marketRankings;
 
     public KiwoomApiService(
             KiwoomHttpClient client,
@@ -83,6 +85,7 @@ public class KiwoomApiService {
                 .tag("type", "daily")
                 .register(meterRegistry);
         this.stockCatalog = createStockCatalog();
+        this.marketRankings = createMarketRankings();
     }
 
     public Mono<StockPriceResponse> getStockCurrentPrice(String code) {
@@ -323,6 +326,48 @@ public class KiwoomApiService {
 
     public StockCatalogStatus stockCatalogStatus() {
         return new StockCatalogStatus(stockCatalogRefreshedAt, stockCatalogSize);
+    }
+
+    public Mono<MarketRankingsResponse> getMarketRankings() {
+        return marketRankings;
+    }
+
+    private Mono<MarketRankingsResponse> createMarketRankings() {
+        return fetchMarketRankings()
+                .cache(
+                        value -> Duration.ofSeconds(30),
+                        error -> Duration.ZERO,
+                        () -> Duration.ZERO,
+                        Schedulers.parallel());
+    }
+
+    private Mono<MarketRankingsResponse> fetchMarketRankings() {
+        return getAccessToken()
+                .flatMap(token -> requestMarketRankings(token.value()))
+                .onErrorResume(
+                        KiwoomAuthenticationException.class,
+                        error -> {
+                            invalidateAccessToken();
+                            return getAccessToken()
+                                    .flatMap(token -> requestMarketRankings(token.value()));
+                        });
+    }
+
+    private Mono<MarketRankingsResponse> requestMarketRankings(String token) {
+        return Mono.zip(
+                        client.requestChangeRateRanking("1", token)
+                                .map(body -> mapper.parseRanking("pred_pre_flu_rt_upper", body)),
+                        client.requestChangeRateRanking("2", token)
+                                .map(body -> mapper.parseRanking("pred_pre_flu_rt_upper", body)),
+                        client.requestVolumeRanking(token)
+                                .map(body -> mapper.parseRanking("tdy_trde_qty_upper", body)))
+                .map(
+                        rankings ->
+                                new MarketRankingsResponse(
+                                        rankings.getT1(),
+                                        rankings.getT2(),
+                                        rankings.getT3(),
+                                        Instant.now()));
     }
 
     private Mono<List<StockSearchResult>> createStockCatalog() {

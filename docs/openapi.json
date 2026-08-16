@@ -7,6 +7,7 @@
     "/api/kiwoom/stock-prices": { "get": { "responses": { "200": { "$ref": "#/components/responses/StockPrices" } } } },
     "/api/kiwoom/stock-price/{code}/daily": { "get": { "responses": { "200": { "$ref": "#/components/responses/DailyPrices" } } } },
     "/api/kiwoom/stocks/search": { "get": { "responses": { "200": { "$ref": "#/components/responses/StockSearchResults" } } } },
+    "/api/kiwoom/market-rankings": { "get": { "responses": { "200": { "$ref": "#/components/responses/MarketRankings" } } } },
     "/api/watchlist": {
       "get": { "responses": { "200": { "$ref": "#/components/responses/Watchlist" } } },
       "post": { "requestBody": { "$ref": "#/components/requestBodies/WatchlistRequest" }, "responses": { "201": { "$ref": "#/components/responses/WatchlistItem" } } }
@@ -48,6 +49,8 @@
       "StockPriceResponse": { "type": "object", "required": ["code", "currentPrice", "changeAmount", "changeRate"], "properties": { "code": { "type": "string" }, "currentPrice": { "type": "string" }, "changeAmount": { "type": "string" }, "changeRate": { "type": "string" } } },
       "DailyPriceResponse": { "type": "object", "required": ["date", "openPrice", "highPrice", "lowPrice", "closePrice", "volume"], "properties": { "date": { "type": "string" }, "openPrice": { "type": "integer", "format": "int64" }, "highPrice": { "type": "integer", "format": "int64" }, "lowPrice": { "type": "integer", "format": "int64" }, "closePrice": { "type": "integer", "format": "int64" }, "volume": { "type": "integer", "format": "int64" }, "rsi": { "type": "number", "nullable": true }, "macd": { "type": "number", "nullable": true }, "signal": { "type": "number", "nullable": true } } },
       "StockSearchResult": { "type": "object", "required": ["code", "name", "market", "productType", "productTypeLabel"], "properties": { "code": { "type": "string" }, "name": { "type": "string" }, "market": { "type": "string" }, "productType": { "type": "string", "enum": ["STOCK", "PREFERRED", "ETF", "ETN", "REIT", "SPAC"] }, "productTypeLabel": { "type": "string" } } },
+      "MarketRankingItem": { "type": "object", "required": ["code", "name", "currentPrice", "changeRate", "volume"], "properties": { "code": { "type": "string" }, "name": { "type": "string" }, "currentPrice": { "type": "integer", "format": "int64" }, "changeRate": { "type": "number", "format": "double" }, "volume": { "type": "integer", "format": "int64" } } },
+      "MarketRankingsResponse": { "type": "object", "required": ["gainers", "losers", "mostTraded", "updatedAt"], "properties": { "gainers": { "type": "array", "items": { "$ref": "#/components/schemas/MarketRankingItem" } }, "losers": { "type": "array", "items": { "$ref": "#/components/schemas/MarketRankingItem" } }, "mostTraded": { "type": "array", "items": { "$ref": "#/components/schemas/MarketRankingItem" } }, "updatedAt": { "type": "string", "format": "date-time" } } },
       "WatchlistRequest": { "type": "object", "required": ["code"], "properties": { "code": { "type": "string" }, "groupName": { "type": "string" }, "note": { "type": "string" } } },
       "WatchlistItem": { "type": "object", "required": ["code", "groupName", "note"], "properties": { "code": { "type": "string" }, "groupName": { "type": "string" }, "note": { "type": "string" } } },
       "StockCatalogStatus": { "type": "object", "required": ["stockCount"], "properties": { "refreshedAt": { "type": "string", "format": "date-time", "nullable": true }, "stockCount": { "type": "integer" } } },
@@ -78,6 +81,7 @@
       "StockPrices": { "description": "OK", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/StockPriceResponse" } } } } },
       "DailyPrices": { "description": "OK", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/DailyPriceResponse" } } } } },
       "StockSearchResults": { "description": "OK", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/StockSearchResult" } } } } },
+      "MarketRankings": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MarketRankingsResponse" } } } },
       "Watchlist": { "description": "OK", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/WatchlistItem" } } } } },
       "WatchlistItem": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/WatchlistItem" } } } },
       "StockCatalogStatus": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/StockCatalogStatus" } } } },

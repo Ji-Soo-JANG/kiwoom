@@ -24,6 +24,7 @@ import StockResultList from './components/StockResultList';
 import Watchlist from './components/Watchlist';
 import Portfolio from './components/Portfolio';
 import AlertCenter from './components/AlertCenter';
+import MarketDiscovery from './components/MarketDiscovery';
 
 const StockDailyChart = lazy(() => import('./components/StockDailyChart'));
 
@@ -218,6 +219,7 @@ function App({ currentUser, onLogout }) {
         <NavLink to="/" end>
           종목 검색
         </NavLink>
+        <NavLink to="/discover">종목 발견</NavLink>
         <NavLink to="/watchlist">관심 종목</NavLink>
         <NavLink to="/portfolio">포트폴리오</NavLink>
         <NavLink to="/alerts">알림</NavLink>
@@ -254,6 +256,18 @@ function App({ currentUser, onLogout }) {
                 <StockDailyChart stockCode={stocks[0]?.code} dailyPrices={dailyPrices} />
               </Suspense>
             </>
+          }
+        />
+
+        <Route
+          path="/discover"
+          element={
+            <MarketDiscovery
+              onSelectStock={(code) => {
+                navigate('/');
+                handleSingleSearch(code);
+              }}
+            />
           }
         />
 

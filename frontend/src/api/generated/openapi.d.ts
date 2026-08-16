@@ -139,6 +139,33 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/kiwoom/market-rankings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                200: components["responses"]["MarketRankings"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/watchlist": {
         parameters: {
             query?: never;
@@ -704,6 +731,23 @@ export interface components {
             productType: "STOCK" | "PREFERRED" | "ETF" | "ETN" | "REIT" | "SPAC";
             productTypeLabel: string;
         };
+        MarketRankingItem: {
+            code: string;
+            name: string;
+            /** Format: int64 */
+            currentPrice: number;
+            /** Format: double */
+            changeRate: number;
+            /** Format: int64 */
+            volume: number;
+        };
+        MarketRankingsResponse: {
+            gainers: components["schemas"]["MarketRankingItem"][];
+            losers: components["schemas"]["MarketRankingItem"][];
+            mostTraded: components["schemas"]["MarketRankingItem"][];
+            /** Format: date-time */
+            updatedAt: string;
+        };
         WatchlistRequest: {
             code: string;
             groupName?: string;
@@ -847,6 +891,15 @@ export interface components {
             };
             content: {
                 "application/json": components["schemas"]["StockSearchResult"][];
+            };
+        };
+        /** @description OK */
+        MarketRankings: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["MarketRankingsResponse"];
             };
         };
         /** @description OK */

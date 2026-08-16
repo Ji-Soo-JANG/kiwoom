@@ -243,6 +243,16 @@ GET /api/kiwoom/stocks/search?q=ETF&market=ALL&productType=ETF
 종목 코드, 종목명, 띄어쓰기를 생략한 종목명, 한글 초성, 상품유형 이름으로 검색할 수
 있으며 각 후보에 시장과 상품유형을 함께 표시합니다.
 
+#### 3-2. 종목 발견 순위
+
+```http
+GET /api/kiwoom/market-rankings
+```
+
+키움 `ka10027`과 `ka10030`을 이용해 급등주·급락주·거래량 상위 종목을 최대 10개씩
+반환합니다. 서버 응답은 30초 캐시되며 `/discover` 화면에서 세 목록을 동시에 확인하고
+종목을 클릭해 현재가와 일봉 차트로 이동할 수 있습니다.
+
 #### 4. 헬스 체크
 
 Spring Boot Actuator의 `GET /actuator/health`를 사용합니다.
