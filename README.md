@@ -232,13 +232,16 @@ GET /api/kiwoom/stock-price/005930/daily?baseDate=20260816
 #### 3-1. 종목 검색과 자동완성
 
 ```http
-GET /api/kiwoom/stocks/search?q=삼성&market=KOSPI
-GET /api/kiwoom/stocks/search?q=ㅅㅅㅈㅈ&market=ALL
+GET /api/kiwoom/stocks/search?q=삼성&market=KOSPI&productType=STOCK
+GET /api/kiwoom/stocks/search?q=ㅅㅅㅈㅈ&market=ALL&productType=ALL
+GET /api/kiwoom/stocks/search?q=ETF&market=ALL&productType=ETF
 ```
 
-`market`은 `ALL`, `KOSPI`, `KOSDAQ`을 지원합니다. 키움 `ka10099`의 코스피·코스닥
-종목 목록을 서버에서 12시간 캐시하며 최대 20개의 후보를 반환합니다. 종목 코드,
-종목명, 띄어쓰기를 생략한 종목명, 한글 초성으로 검색할 수 있습니다.
+`market`은 `ALL`, `KOSPI`, `KOSDAQ`을 지원하고 `productType`은 `ALL`, `STOCK`,
+`PREFERRED`, `ETF`, `ETN`, `REIT`, `SPAC`을 지원합니다. 키움 `ka10099`의
+코스피·코스닥 종목 목록을 서버에서 12시간 캐시하며 최대 20개의 후보를 반환합니다.
+종목 코드, 종목명, 띄어쓰기를 생략한 종목명, 한글 초성, 상품유형 이름으로 검색할 수
+있으며 각 후보에 시장과 상품유형을 함께 표시합니다.
 
 #### 4. 헬스 체크
 

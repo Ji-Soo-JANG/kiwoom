@@ -36,7 +36,7 @@ describe('StockSearchForm', () => {
   it('검색 결과가 없으면 접근 가능한 오류로 표시한다', async () => {
     renderForm();
     fireEvent.change(screen.getByLabelText('종목 검색'), { target: { value: '없는종목' } });
-    await waitFor(() => expect(api.searchStocks).toHaveBeenCalledWith('없는종목', 'ALL'));
+    await waitFor(() => expect(api.searchStocks).toHaveBeenCalledWith('없는종목', 'ALL', 'ALL'));
     await waitFor(() => expect(screen.queryByText('종목을 찾는 중...')).not.toBeInTheDocument());
     fireEvent.click(screen.getByRole('button', { name: '단일 조회' }));
     expect(screen.getByRole('alert')).toHaveTextContent('일치하는 종목');
@@ -53,7 +53,9 @@ describe('StockSearchForm', () => {
   });
 
   it('종목명 자동완성 선택을 코드 검색과 최근 기록으로 연결한다', async () => {
-    api.searchStocks.mockResolvedValue([{ code: '005930', name: '삼성전자', market: 'KOSPI' }]);
+    api.searchStocks.mockResolvedValue([
+      { code: '005930', name: '삼성전자', market: 'KOSPI', productTypeLabel: '주식' }
+    ]);
     const onSingleSearch = vi.fn();
     renderForm({ onSingleSearch });
 
@@ -66,7 +68,9 @@ describe('StockSearchForm', () => {
   });
 
   it('종목명이나 초성 검색 후 Enter로 첫 결과를 바로 조회한다', async () => {
-    api.searchStocks.mockResolvedValue([{ code: '005930', name: '삼성전자', market: 'KOSPI' }]);
+    api.searchStocks.mockResolvedValue([
+      { code: '005930', name: '삼성전자', market: 'KOSPI', productTypeLabel: '주식' }
+    ]);
     const onSingleSearch = vi.fn();
     renderForm({ onSingleSearch });
 
@@ -76,5 +80,21 @@ describe('StockSearchForm', () => {
     fireEvent.submit(input.closest('form'));
 
     expect(onSingleSearch).toHaveBeenCalledWith('005930');
+  });
+
+  it('시장과 상품유형을 조합해 통합 검색한다', async () => {
+    api.searchStocks.mockResolvedValue([
+      { code: '069500', name: 'KODEX 200', market: 'KOSPI', productTypeLabel: 'ETF' }
+    ]);
+    renderForm();
+
+    fireEvent.change(screen.getByLabelText('시장'), { target: { value: 'KOSPI' } });
+    fireEvent.change(screen.getByLabelText('상품'), { target: { value: 'ETF' } });
+    fireEvent.change(screen.getByLabelText('종목 검색'), { target: { value: '200' } });
+
+    await waitFor(() => expect(api.searchStocks).toHaveBeenCalledWith('200', 'KOSPI', 'ETF'));
+    expect(await screen.findByRole('button', { name: /KODEX 200 069500/ })).toHaveTextContent(
+      'KOSPI · ETF'
+    );
   });
 });

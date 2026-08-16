@@ -700,6 +700,9 @@ export interface components {
             code: string;
             name: string;
             market: string;
+            /** @enum {string} */
+            productType: "STOCK" | "PREFERRED" | "ETF" | "ETN" | "REIT" | "SPAC";
+            productTypeLabel: string;
         };
         WatchlistRequest: {
             code: string;

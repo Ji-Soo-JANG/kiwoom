@@ -281,6 +281,34 @@ class KiwoomApiServiceTest {
     }
 
     @Test
+    @DisplayName("상품유형 이름과 필터로 종목 목록을 검색한다")
+    void searchesStockCatalogByProductType() {
+        enqueueJson(
+                200,
+                """
+                {"return_code":0,"token":"access-token","expires_dt":"20991231235959"}
+                """);
+        enqueueJson(
+                200,
+                """
+                {"return_code":0,"list":[
+                  {"code":"005930","name":"삼성전자"},
+                  {"code":"069500","name":"KODEX 200"}
+                ]}
+                """);
+        enqueueJson(200, "{\"return_code\":0,\"list\":[]}");
+
+        List<StockSearchResult> byKeyword = service.searchStocks("ETF", "ALL", "ALL").block();
+        List<StockSearchResult> byFilter = service.searchStocks("200", "ALL", "ETF").block();
+
+        assertNotNull(byKeyword);
+        assertEquals("069500", byKeyword.getFirst().code());
+        assertEquals("ETF", byKeyword.getFirst().productTypeLabel());
+        assertEquals(1, byFilter.size());
+        assertEquals(0, service.searchStocks("삼성", "ALL", "ETF").block().size());
+    }
+
+    @Test
     @DisplayName("키움 종목 없음 응답을 전용 오류 코드로 분류한다")
     void classifiesStockNotFoundResponse() {
         enqueueJson(

@@ -4,6 +4,7 @@ import com.example.kiwoom.client.KiwoomHttpClient;
 import com.example.kiwoom.config.KiwoomApiProperties;
 import com.example.kiwoom.dto.DailyPriceResponse;
 import com.example.kiwoom.dto.StockPriceResponse;
+import com.example.kiwoom.dto.StockProductType;
 import com.example.kiwoom.dto.StockSearchResult;
 import com.example.kiwoom.error.KiwoomAuthenticationException;
 import com.example.kiwoom.mapper.KiwoomResponseMapper;
@@ -226,13 +227,27 @@ public class KiwoomApiService {
                 dailyPriceCache.size());
     }
 
-    public Mono<List<StockSearchResult>> searchStocks(String query, String market) {
+    public Mono<List<StockSearchResult>> searchStocks(
+            String query, String market, String productType) {
         if (query == null || query.isBlank()) return Mono.just(List.of());
         String keyword = normalizeSearchText(query);
         String normalizedMarket =
                 market == null || market.isBlank() ? "ALL" : market.trim().toUpperCase();
         if (!List.of("ALL", "KOSPI", "KOSDAQ").contains(normalizedMarket)) {
             return Mono.error(new IllegalArgumentException("시장은 ALL, KOSPI, KOSDAQ 중 하나여야 합니다"));
+        }
+        String normalizedProductType =
+                productType == null || productType.isBlank()
+                        ? "ALL"
+                        : productType.trim().toUpperCase(java.util.Locale.ROOT);
+        if (!normalizedProductType.equals("ALL")) {
+            try {
+                StockProductType.valueOf(normalizedProductType);
+            } catch (IllegalArgumentException error) {
+                return Mono.error(
+                        new IllegalArgumentException(
+                                "상품유형은 ALL, STOCK, PREFERRED, ETF, ETN, REIT, SPAC 중 하나여야 합니다"));
+            }
         }
         return stockCatalog.map(
                 items ->
@@ -243,11 +258,19 @@ public class KiwoomApiService {
                                                         || item.market().equals(normalizedMarket))
                                 .filter(
                                         item ->
+                                                normalizedProductType.equals("ALL")
+                                                        || item.productType()
+                                                                .name()
+                                                                .equals(normalizedProductType))
+                                .filter(
+                                        item ->
                                                 item.code().contains(keyword)
                                                         || normalizeSearchText(item.name())
                                                                 .contains(keyword)
                                                         || koreanInitials(item.name())
-                                                                .contains(keyword))
+                                                                .contains(keyword)
+                                                        || item.productType()
+                                                                .matchesKeyword(keyword))
                                 .sorted(
                                         Comparator.comparing(
                                                         (StockSearchResult item) ->
@@ -270,6 +293,10 @@ public class KiwoomApiService {
                                                 .thenComparing(StockSearchResult::name))
                                 .limit(20)
                                 .toList());
+    }
+
+    public Mono<List<StockSearchResult>> searchStocks(String query, String market) {
+        return searchStocks(query, market, "ALL");
     }
 
     private String normalizeSearchText(String value) {

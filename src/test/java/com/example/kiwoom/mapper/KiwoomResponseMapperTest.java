@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.example.kiwoom.dto.StockProductType;
 import com.example.kiwoom.error.KiwoomApiException;
 import com.example.kiwoom.error.KiwoomErrorCode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -66,5 +67,31 @@ class KiwoomResponseMapperTest {
                 assertThrows(KiwoomApiException.class, () -> mapper.parseDailyPrices(json));
         assertEquals(KiwoomErrorCode.INVALID_RESPONSE, error.errorCode());
         assertTrue(error.getMessage().contains("open_pric"));
+    }
+
+    @Test
+    void classifiesProductTypesInStockCatalog() {
+        String json =
+                """
+                {"return_code":0,"list":[
+                  {"code":"005930","name":"삼성전자"},
+                  {"code":"069500","name":"KODEX 200"},
+                  {"code":"530001","name":"삼성 코스피200 ETN"},
+                  {"code":"088980","name":"맥쿼리인프라"},
+                  {"code":"365550","name":"ESR켄달스퀘어리츠"},
+                  {"code":"000815","name":"삼성화재우"},
+                  {"code":"475250","name":"하나31호스팩"}
+                ]}
+                """;
+
+        var results = mapper.parseStockList("KOSPI", json);
+
+        assertEquals(StockProductType.STOCK, results.get(0).productType());
+        assertEquals(StockProductType.ETF, results.get(1).productType());
+        assertEquals(StockProductType.ETN, results.get(2).productType());
+        assertEquals(StockProductType.STOCK, results.get(3).productType());
+        assertEquals(StockProductType.REIT, results.get(4).productType());
+        assertEquals(StockProductType.PREFERRED, results.get(5).productType());
+        assertEquals(StockProductType.SPAC, results.get(6).productType());
     }
 }

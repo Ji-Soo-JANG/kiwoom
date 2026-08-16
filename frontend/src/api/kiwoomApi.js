@@ -92,9 +92,9 @@ export const removePortfolioPosition = (code) =>
   requestJson(`/api/portfolio/${encodeURIComponent(code)}`, { method: 'DELETE' });
 
 export const getPortfolioValuation = () => requestJson('/api/portfolio/valuation');
-export const searchStocks = (query, market = 'ALL') =>
+export const searchStocks = (query, market = 'ALL', productType = 'ALL') =>
   requestJson(
-    `/api/kiwoom/stocks/search?q=${encodeURIComponent(query)}&market=${encodeURIComponent(market)}`
+    `/api/kiwoom/stocks/search?q=${encodeURIComponent(query)}&market=${encodeURIComponent(market)}&productType=${encodeURIComponent(productType)}`
   );
 
 export const getAlertRules = () => requestJson('/api/alerts/rules');

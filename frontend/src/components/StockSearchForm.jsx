@@ -6,6 +6,7 @@ function StockSearchForm({ loading, onSingleSearch, onMultipleSearch }) {
   const [validationError, setValidationError] = useState('');
   const [singleCode, setSingleCode] = useState('');
   const [market, setMarket] = useState('ALL');
+  const [productType, setProductType] = useState('ALL');
   const [recent, setRecent] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem('kiwoom-recent-stocks') || '[]');
@@ -15,8 +16,8 @@ function StockSearchForm({ loading, onSingleSearch, onMultipleSearch }) {
   });
   const deferredSearch = useDeferredValue(singleCode.trim());
   const suggestions = useQuery({
-    queryKey: ['stock-search', deferredSearch, market],
-    queryFn: () => searchStocks(deferredSearch, market),
+    queryKey: ['stock-search', deferredSearch, market, productType],
+    queryFn: () => searchStocks(deferredSearch, market, productType),
     enabled: deferredSearch.length > 0 && !/^\d{6}$/.test(deferredSearch),
     staleTime: 12 * 60 * 60 * 1000
   });
@@ -87,22 +88,42 @@ function StockSearchForm({ loading, onSingleSearch, onMultipleSearch }) {
             aria-invalid={Boolean(validationError)}
             value={singleCode}
             disabled={loading}
-            placeholder="예: 삼성전자, 삼성 전자, ㅅㅅㅈㅈ, 005930"
+            placeholder="예: 삼성전자, ㅅㅅㅈㅈ, 005930, ETF, 리츠"
             onChange={(event) => setSingleCode(event.target.value)}
           />
-          <small id="stock-code-help">종목명·초성·6자리 코드로 검색하고 Enter를 누르세요.</small>
-          <label htmlFor="stock-market" className="stock-market-label">
-            시장
-          </label>
-          <select
-            id="stock-market"
-            value={market}
-            onChange={(event) => setMarket(event.target.value)}
-          >
-            <option value="ALL">전체</option>
-            <option value="KOSPI">코스피</option>
-            <option value="KOSDAQ">코스닥</option>
-          </select>
+          <small id="stock-code-help">
+            종목명·초성·코드·상품유형으로 검색하고 Enter를 누르세요.
+          </small>
+          <div className="stock-search-filters">
+            <label htmlFor="stock-market">
+              시장
+              <select
+                id="stock-market"
+                value={market}
+                onChange={(event) => setMarket(event.target.value)}
+              >
+                <option value="ALL">전체 시장</option>
+                <option value="KOSPI">코스피</option>
+                <option value="KOSDAQ">코스닥</option>
+              </select>
+            </label>
+            <label htmlFor="stock-product-type">
+              상품
+              <select
+                id="stock-product-type"
+                value={productType}
+                onChange={(event) => setProductType(event.target.value)}
+              >
+                <option value="ALL">전체 상품</option>
+                <option value="STOCK">보통주</option>
+                <option value="PREFERRED">우선주</option>
+                <option value="ETF">ETF</option>
+                <option value="ETN">ETN</option>
+                <option value="REIT">리츠</option>
+                <option value="SPAC">스팩</option>
+              </select>
+            </label>
+          </div>
           {suggestions.data?.length > 0 && (
             <ul className="stock-suggestions" aria-label="종목 검색 결과">
               {suggestions.data.map((stock) => (
@@ -110,7 +131,7 @@ function StockSearchForm({ loading, onSingleSearch, onMultipleSearch }) {
                   <button type="button" onClick={() => selectStock(stock)}>
                     <strong>{stock.name}</strong>{' '}
                     <span>
-                      {stock.code} · {stock.market}
+                      {stock.code} · {stock.market} · {stock.productTypeLabel}
                     </span>
                   </button>
                 </li>

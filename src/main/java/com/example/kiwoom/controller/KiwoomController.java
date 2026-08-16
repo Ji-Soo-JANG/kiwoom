@@ -58,11 +58,12 @@ public class KiwoomController {
     }
 
     @GetMapping("/stocks/search")
-    @Operation(summary = "종목 코드·이름·초성 자동완성 검색")
+    @Operation(summary = "종목 코드·이름·초성·상품유형 통합 검색")
     public Mono<List<StockSearchResult>> searchStocks(
             @RequestParam String q,
-            @RequestParam(required = false, defaultValue = "ALL") String market) {
-        return kiwoomApiService.searchStocks(q, market);
+            @RequestParam(required = false, defaultValue = "ALL") String market,
+            @RequestParam(required = false, defaultValue = "ALL") String productType) {
+        return kiwoomApiService.searchStocks(q, market, productType);
     }
 
     @GetMapping("/admin/stock-catalog")

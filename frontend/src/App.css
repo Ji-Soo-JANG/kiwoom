@@ -275,12 +275,20 @@ input:focus-visible {
   color: #666;
   font-size: 14px;
 }
-.stock-market-label {
+.stock-search-filters {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
   margin-top: 10px;
 }
-#stock-market {
+.stock-search-filters label {
+  margin: 0;
+  font-size: 13px;
+}
+.stock-search-filters select {
   width: 100%;
   padding: 10px;
+  margin-top: 5px;
   border: 2px solid #e0e0e0;
   border-radius: 5px;
   background: white;
