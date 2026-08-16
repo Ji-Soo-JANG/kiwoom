@@ -293,6 +293,25 @@ Content-Type: application/json
 - Swagger UI: `http://localhost:8080/swagger-ui.html`
 - OpenAPI JSON: `http://localhost:8080/v3/api-docs`
 
+### 실제 키움 API 통합 테스트
+
+실제 외부 API 테스트는 기본 `test`와 CI에서 실행되지 않습니다. `.env.example`을 참고해
+모의투자는 `KIWOOM_PAPER_*`, 운영은 `KIWOOM_PROD_*` 환경변수에 URL과 자격증명을 각각
+설정하고 `KIWOOM_LIVE_ENV`로 하나를 선택합니다. 운영 자격증명 사용 시 실제 조회 권한과
+호출 한도에 유의하세요.
+
+```powershell
+$env:KIWOOM_LIVE_ENV='PAPER'
+$env:KIWOOM_PAPER_BASE_URL='모의투자 API URL'
+$env:KIWOOM_PAPER_APP_KEY='모의투자 앱 키'
+$env:KIWOOM_PAPER_SECRET_KEY='모의투자 시크릿 키'
+$env:KIWOOM_LIVE_STOCK_CODE='005930'
+.\mvnw.cmd verify -Pkiwoom-live
+```
+
+프로필을 명시했는데 선택 환경의 설정이 없으면 테스트는 실패하면서 누락된 환경변수를
+표시합니다. 실제 키와 secret은 `.env`, 소스 코드, 빌드 로그에 저장하지 않습니다.
+
 ### 운영 상태
 
 - Health: `GET /actuator/health`
