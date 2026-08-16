@@ -47,16 +47,19 @@ public class KiwoomApiService {
     private final Counter dailyApiCalls;
     private final Counter tokenRefreshes;
     private final AtomicReference<AccessToken> cachedAccessToken = new AtomicReference<>();
+    private final TechnicalIndicatorService indicatorService;
     private Mono<AccessToken> tokenRefreshMono;
 
     public KiwoomApiService(KiwoomHttpClient client, KiwoomResponseMapper mapper,
-                            KiwoomApiProperties properties, MeterRegistry meterRegistry) {
+                            KiwoomApiProperties properties, MeterRegistry meterRegistry,
+                            TechnicalIndicatorService indicatorService) {
         this.client = client;
         this.mapper = mapper;
         this.apiKey = properties.key();
         this.apiSecret = properties.secret();
         this.currentPriceCacheTtl = properties.currentPriceCacheTtl();
         this.dailyPriceCacheTtl = properties.dailyPriceCacheTtl();
+        this.indicatorService = indicatorService;
         this.currentCacheHits = counter(meterRegistry, "current", "hit");
         this.currentCacheMisses = counter(meterRegistry, "current", "miss");
         this.dailyCacheHits = counter(meterRegistry, "daily", "hit");
@@ -159,6 +162,7 @@ public class KiwoomApiService {
     private Mono<List<DailyPriceResponse>> requestDailyPrices(String code, String date, String token) {
         logger.info("daily_prices_requested code={} baseDate={}", code, date);
         return client.requestDailyPrices(code, date, token).map(mapper::parseDailyPrices)
+                .map(indicatorService::enrich)
                 .timeout(Duration.ofSeconds(15));
     }
 

@@ -24,7 +24,7 @@ describe('AlertCenter', () => {
         fireEvent.change(screen.getByLabelText('목표가'), {target: {value: '80000'}});
         fireEvent.click(screen.getByRole('button', {name: '알림 규칙 추가'}));
 
-        await screen.findByText(/005930 · 80,000원 이상/);
+        await screen.findByText(/005930 · 목표가 이상 80,000/);
         expect(api.createAlertRule).toHaveBeenCalledWith('005930', 'PRICE_ABOVE', 80000);
     });
 

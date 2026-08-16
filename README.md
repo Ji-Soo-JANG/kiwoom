@@ -261,8 +261,10 @@ Content-Type: application/json
 - `GET /api/alerts/events?unreadOnly=true`: 이벤트 목록
 - `POST /api/alerts/events/{id}/read`: 이벤트 읽음 처리
 
-`conditionType`은 `PRICE_ABOVE` 또는 `PRICE_BELOW`이며 모든 알림 데이터는 로그인
-사용자별로 분리됩니다. 규칙을 삭제해도 이미 발생한 이벤트 이력은 유지됩니다.
+`conditionType`은 가격 조건 `PRICE_ABOVE`, `PRICE_BELOW`, RSI 조건 `RSI_ABOVE`,
+`RSI_BELOW`, MACD 조건 `MACD_CROSS_UP`, `MACD_CROSS_DOWN`을 지원합니다. MACD 교차는
+`threshold`를 `null`로 전송합니다. 모든 알림 데이터는 로그인 사용자별로 분리되며
+규칙을 삭제해도 이미 발생한 이벤트 이력은 유지됩니다.
 
 ### 오류 응답
 

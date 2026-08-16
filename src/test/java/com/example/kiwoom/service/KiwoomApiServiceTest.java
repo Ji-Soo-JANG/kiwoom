@@ -196,7 +196,8 @@ class KiwoomApiServiceTest {
         KiwoomApiProperties properties = properties(Duration.ZERO, Duration.ofMinutes(1));
         service = new KiwoomApiService(
                 new KiwoomHttpClient(WebClient.create(), properties, meterRegistry),
-                new KiwoomResponseMapper(new ObjectMapper()), properties, meterRegistry);
+                new KiwoomResponseMapper(new ObjectMapper()), properties, meterRegistry,
+                new TechnicalIndicatorService());
         enqueueJson(200, """
                 {"return_code":0,"token":"access-token","expires_dt":"20991231235959"}
                 """);
@@ -354,7 +355,7 @@ class KiwoomApiServiceTest {
         return new KiwoomApiService(
                 new KiwoomHttpClient(WebClient.create(), properties, meterRegistry),
                 new KiwoomResponseMapper(objectMapper),
-                properties, meterRegistry
+                properties, meterRegistry, new TechnicalIndicatorService()
         );
     }
 }

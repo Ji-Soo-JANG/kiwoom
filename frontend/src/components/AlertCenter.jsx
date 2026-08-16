@@ -5,7 +5,12 @@ import {
 } from '../api/kiwoomApi';
 
 const formatPrice = (value) => Number(value).toLocaleString('ko-KR');
-const conditionLabel = (type) => type === 'PRICE_BELOW' ? '이하' : '이상';
+const conditionLabels = {
+    PRICE_ABOVE: '목표가 이상', PRICE_BELOW: '목표가 이하',
+    RSI_ABOVE: 'RSI 이상', RSI_BELOW: 'RSI 이하',
+    MACD_CROSS_UP: 'MACD 상향 교차', MACD_CROSS_DOWN: 'MACD 하향 교차'
+};
+const requiresThreshold = (type) => !type.startsWith('MACD_');
 
 function AlertCenter({onError}) {
     const [rules, setRules] = useState([]);
@@ -41,7 +46,8 @@ function AlertCenter({onError}) {
         event.preventDefault();
         try {
             await run(async () => {
-                await createAlertRule(code, conditionType, Number(threshold));
+                await createAlertRule(code, conditionType,
+                    requiresThreshold(conditionType) ? Number(threshold) : null);
                 await load();
                 setCode('');
                 setThreshold('');
@@ -89,10 +95,18 @@ function AlertCenter({onError}) {
                     onChange={(event) => setConditionType(event.target.value)}>
                 <option value="PRICE_ABOVE">목표가 이상</option>
                 <option value="PRICE_BELOW">목표가 이하</option>
+                <option value="RSI_ABOVE">RSI 이상</option>
+                <option value="RSI_BELOW">RSI 이하</option>
+                <option value="MACD_CROSS_UP">MACD 상향 교차</option>
+                <option value="MACD_CROSS_DOWN">MACD 하향 교차</option>
             </select>
             <label htmlFor="alert-threshold">목표가</label>
             <input id="alert-threshold" type="number" value={threshold}
-                   onChange={(event) => setThreshold(event.target.value)} min="1" step="any" required/>
+                   onChange={(event) => setThreshold(event.target.value)}
+                   min={conditionType.startsWith('RSI_') ? '0' : '1'}
+                   max={conditionType.startsWith('RSI_') ? '100' : undefined}
+                   step="any" required={requiresThreshold(conditionType)}
+                   disabled={!requiresThreshold(conditionType)}/>
             <button type="submit" disabled={loading}>알림 규칙 추가</button>
         </form>
 
@@ -105,7 +119,8 @@ function AlertCenter({onError}) {
         <h3 className="alert-section-title">설정된 규칙</h3>
         {rules.length === 0 ? <p>설정된 목표가 알림이 없습니다.</p> : <ul className="alert-list">
             {rules.map((rule) => <li className="alert-rule-row" key={rule.id}>
-                <span>{rule.code} · {formatPrice(rule.threshold)}원 {conditionLabel(rule.conditionType)}</span>
+                <span>{rule.code} · {conditionLabels[rule.conditionType]}
+                    {rule.threshold == null ? '' : ` ${formatPrice(rule.threshold)}`}</span>
                 <button type="button" onClick={() => toggleRule(rule)} disabled={loading}>
                     {rule.enabled ? '끄기' : '켜기'}
                 </button>
@@ -118,8 +133,8 @@ function AlertCenter({onError}) {
         {events.length === 0 ? <p>발생한 알림이 없습니다.</p> : <ul className="alert-list" aria-live="polite">
             {events.map((item) => <li className={item.readAt ? '' : 'alert-event-unread'} key={item.id}>
                 <div className="alert-event-row">
-                    <span>{item.code} · 현재 {formatPrice(item.observedValue)}원
-                        {' / '}목표 {formatPrice(item.threshold)}원 {conditionLabel(item.conditionType)}</span>
+                    <span>{item.code} · {conditionLabels[item.conditionType]} · 관측값 {formatPrice(item.observedValue)}
+                        {item.threshold == null ? '' : ` / 기준 ${formatPrice(item.threshold)}`}</span>
                     {!item.readAt && <button type="button" onClick={() => markRead(item.id)} disabled={loading}>
                         읽음
                     </button>}

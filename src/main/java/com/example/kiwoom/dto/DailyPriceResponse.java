@@ -25,6 +25,10 @@ public class DailyPriceResponse {
     @JsonProperty("volume")
     private long volume;
 
+    private Double rsi;
+    private Double macd;
+    private Double signal;
+
     public DailyPriceResponse() {
     }
 
@@ -66,6 +70,16 @@ public class DailyPriceResponse {
 
     public long getVolume() {
         return volume;
+    }
+
+    public Double getRsi() { return rsi; }
+    public Double getMacd() { return macd; }
+    public Double getSignal() { return signal; }
+
+    public void setIndicators(Double rsi, Double macd, Double signal) {
+        this.rsi = rsi;
+        this.macd = macd;
+        this.signal = signal;
     }
 
     public void setDate(String date) {

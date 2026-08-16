@@ -40,11 +40,14 @@ public class AlertRepository {
     }
 
     public Mono<AlertRule> addRule(String username, AlertRuleRequest request) {
-        return database.sql("""
+        DatabaseClient.GenericExecuteSpec spec = database.sql("""
                 INSERT INTO alert_rule(username, code, condition_type, threshold)
                 VALUES (:username, :code, :type, :threshold)
                 """).bind("username", username).bind("code", request.code())
-                .bind("type", request.conditionType().name()).bind("threshold", request.threshold())
+                .bind("type", request.conditionType().name());
+        spec = request.threshold() == null
+                ? spec.bindNull("threshold", BigDecimal.class) : spec.bind("threshold", request.threshold());
+        return spec
                 .filter(statement -> statement.returnGeneratedValues("id"))
                 .map(row -> new AlertRule(row.get("id", Long.class), request.code(),
                         request.conditionType(), request.threshold(), true, false)).one()
@@ -53,12 +56,13 @@ public class AlertRepository {
     }
 
     public Mono<AlertRule> updateRule(String username, long id, BigDecimal threshold, boolean enabled) {
-        return database.sql("""
+        DatabaseClient.GenericExecuteSpec spec = database.sql("""
                 UPDATE alert_rule SET threshold = :threshold, enabled = :enabled,
                   last_state = FALSE, updated_at = CURRENT_TIMESTAMP
                 WHERE username = :username AND id = :id
-                """).bind("threshold", threshold).bind("enabled", enabled)
-                .bind("username", username).bind("id", id)
+                """).bind("enabled", enabled).bind("username", username).bind("id", id);
+        spec = threshold == null ? spec.bindNull("threshold", BigDecimal.class) : spec.bind("threshold", threshold);
+        return spec
                 .fetch().rowsUpdated().flatMap(updated -> updated > 0
                         ? findRule(username, id) : Mono.empty())
                 .onErrorMap(DuplicateKeyException.class,
@@ -87,13 +91,16 @@ public class AlertRepository {
 
     public Mono<AlertEvent> addEvent(String username, AlertRule rule, BigDecimal observedValue) {
         OffsetDateTime triggeredAt = OffsetDateTime.now();
-        return database.sql("""
+        DatabaseClient.GenericExecuteSpec spec = database.sql("""
                 INSERT INTO alert_event(rule_id, username, code, condition_type,
                   observed_value, threshold, triggered_at)
                 VALUES (:ruleId, :username, :code, :type, :observed, :threshold, :triggeredAt)
                 """).bind("ruleId", rule.id()).bind("username", username).bind("code", rule.code())
                 .bind("type", rule.conditionType().name()).bind("observed", observedValue)
-                .bind("threshold", rule.threshold()).bind("triggeredAt", triggeredAt)
+                .bind("triggeredAt", triggeredAt);
+        spec = rule.threshold() == null
+                ? spec.bindNull("threshold", BigDecimal.class) : spec.bind("threshold", rule.threshold());
+        return spec
                 .filter(statement -> statement.returnGeneratedValues("id"))
                 .map(row -> new AlertEvent(row.get("id", Long.class), rule.id(), rule.code(),
                         rule.conditionType(), observedValue, rule.threshold(), triggeredAt, null)).one();

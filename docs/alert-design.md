@@ -6,8 +6,8 @@
 한다. 사용자가 화면을 열거나 새로 고침할 때 조건을 평가하며, 백그라운드 스케줄러와
 외부 메시지 인프라는 도입하지 않는다.
 
-1차 구현 조건은 목표가 이상/이하 도달이다. RSI(14), MACD 교차 조건은 일봉 지표 계산을
-백엔드로 옮긴 뒤 같은 모델에 추가한다.
+목표가 이상/이하와 RSI(14) 이상/이하, MACD·Signal 상향/하향 교차 조건을 지원한다.
+지표는 백엔드가 일봉 데이터의 오래된 순서부터 계산해 API 응답과 알림 평가에 함께 사용한다.
 
 ## 데이터 모델
 
@@ -18,8 +18,8 @@
 | `id` | 알림 규칙 식별자 |
 | `username` | 데이터 격리에 사용하는 인증 사용자 |
 | `code` | 6자리 종목 코드 |
-| `condition_type` | `PRICE_ABOVE`, `PRICE_BELOW`, 추후 `RSI_ABOVE`, `RSI_BELOW`, `MACD_CROSS_UP`, `MACD_CROSS_DOWN` |
-| `threshold` | 가격 또는 지표 기준값. MACD 교차는 null 허용 |
+| `condition_type` | `PRICE_ABOVE`, `PRICE_BELOW`, `RSI_ABOVE`, `RSI_BELOW`, `MACD_CROSS_UP`, `MACD_CROSS_DOWN` |
+| `threshold` | 가격 또는 RSI 기준값. MACD 교차는 null |
 | `enabled` | 규칙 활성화 여부 |
 | `last_state` | 직전 평가의 충족 여부. 경계 교차 판정에 사용 |
 | `created_at`, `updated_at` | 생성·변경 시각 |

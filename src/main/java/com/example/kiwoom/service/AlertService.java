@@ -9,6 +9,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @Service
 public class AlertService {
@@ -35,7 +36,7 @@ public class AlertService {
                             ? current.threshold() : request.threshold();
                     boolean enabled = request == null || request.enabled() == null
                             ? current.enabled() : request.enabled();
-                    if (threshold.signum() <= 0) return Mono.error(new IllegalArgumentException("목표가는 0보다 커야 합니다"));
+                    validateThreshold(current.conditionType(), threshold);
                     return repository.updateRule(username, id, threshold, enabled);
                 });
     }
@@ -48,16 +49,39 @@ public class AlertService {
 
     @Transactional(transactionManager = "connectionFactoryTransactionManager")
     public Flux<AlertEvent> evaluate(String username) {
-        return repository.findEnabledRules(username).concatMap(rule ->
-                kiwoomApiService.getStockCurrentPrice(rule.code())
-                        .map(response -> new BigDecimal(response.getCurrentPrice()))
-                        .flatMap(value -> evaluateRule(username, rule, value)));
+        return repository.findEnabledRules(username).concatMap(rule -> evaluateValue(rule)
+                .flatMap(value -> evaluateRule(username, rule, value)));
+    }
+
+    private Mono<BigDecimal> evaluateValue(AlertRule rule) {
+        if (rule.conditionType() == AlertConditionType.PRICE_ABOVE
+                || rule.conditionType() == AlertConditionType.PRICE_BELOW) {
+            return kiwoomApiService.getStockCurrentPrice(rule.code())
+                    .map(response -> new BigDecimal(response.getCurrentPrice()));
+        }
+        return kiwoomApiService.getDailyPrices(rule.code(), null)
+                .flatMap(prices -> indicatorValue(rule.conditionType(), prices));
+    }
+
+    private Mono<BigDecimal> indicatorValue(AlertConditionType type, List<DailyPriceResponse> prices) {
+        if (prices.isEmpty()) return Mono.empty();
+        DailyPriceResponse latest = prices.get(prices.size() - 1);
+        Double value = switch (type) {
+            case RSI_ABOVE, RSI_BELOW -> latest.getRsi();
+            case MACD_CROSS_UP, MACD_CROSS_DOWN -> latest.getMacd() == null || latest.getSignal() == null
+                    ? null : latest.getMacd() - latest.getSignal();
+            default -> null;
+        };
+        return value == null ? Mono.empty() : Mono.just(BigDecimal.valueOf(value));
     }
 
     private Mono<AlertEvent> evaluateRule(String username, AlertRule rule, BigDecimal value) {
-        boolean matched = rule.conditionType() == AlertConditionType.PRICE_ABOVE
-                ? value.compareTo(rule.threshold()) >= 0
-                : value.compareTo(rule.threshold()) <= 0;
+        boolean matched = switch (rule.conditionType()) {
+            case PRICE_ABOVE, RSI_ABOVE -> value.compareTo(rule.threshold()) >= 0;
+            case PRICE_BELOW, RSI_BELOW -> value.compareTo(rule.threshold()) <= 0;
+            case MACD_CROSS_UP -> value.signum() > 0;
+            case MACD_CROSS_DOWN -> value.signum() < 0;
+        };
         if (!matched) return repository.resetState(username, rule.id()).then(Mono.empty());
         return repository.transitionToTriggered(username, rule.id())
                 .flatMap(changed -> changed ? repository.addEvent(username, rule, value) : Mono.empty());
@@ -77,9 +101,21 @@ public class AlertService {
         if (request == null || request.code() == null || !request.code().trim().matches("\\d{6}"))
             throw new IllegalArgumentException("종목 코드는 6자리 숫자여야 합니다");
         if (request.conditionType() == null) throw new IllegalArgumentException("알림 조건은 필수입니다");
-        if (request.threshold() == null || request.threshold().signum() <= 0)
-            throw new IllegalArgumentException("목표가는 0보다 커야 합니다");
+        validateThreshold(request.conditionType(), request.threshold());
         return new AlertRuleRequest(request.code().trim(), request.conditionType(), request.threshold());
+    }
+
+    private void validateThreshold(AlertConditionType type, BigDecimal threshold) {
+        if (!type.requiresThreshold()) {
+            if (threshold != null) throw new IllegalArgumentException("MACD 교차 조건에는 기준값을 입력하지 않습니다");
+            return;
+        }
+        if (threshold == null) throw new IllegalArgumentException("기준값은 필수입니다");
+        if ((type == AlertConditionType.PRICE_ABOVE || type == AlertConditionType.PRICE_BELOW)
+                && threshold.signum() <= 0) throw new IllegalArgumentException("목표가는 0보다 커야 합니다");
+        if ((type == AlertConditionType.RSI_ABOVE || type == AlertConditionType.RSI_BELOW)
+                && (threshold.compareTo(BigDecimal.ZERO) < 0 || threshold.compareTo(BigDecimal.valueOf(100)) > 0))
+            throw new IllegalArgumentException("RSI 기준값은 0부터 100 사이여야 합니다");
     }
 
     private <T> Mono<T> notFound(String message) {

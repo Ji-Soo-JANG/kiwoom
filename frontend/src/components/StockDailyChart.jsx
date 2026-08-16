@@ -12,7 +12,6 @@ import {
     formatDate,
     formatShortDate
 } from '../utils/stockFormat';
-import { addTechnicalIndicators } from '../utils/technicalIndicators';
 
 function StockDailyChart({
                              stockCode,
@@ -22,7 +21,7 @@ function StockDailyChart({
         return null;
     }
 
-    const chartData = addTechnicalIndicators(dailyPrices);
+    const chartData = dailyPrices;
     const latest = chartData[chartData.length - 1];
 
     return (

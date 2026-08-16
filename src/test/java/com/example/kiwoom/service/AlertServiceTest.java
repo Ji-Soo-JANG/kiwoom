@@ -46,4 +46,20 @@ class AlertServiceTest {
         assertTrue(service.evaluate("alice").collectList().block().isEmpty());
         verify(repository, never()).addEvent(anyString(), any(), any());
     }
+
+    @Test
+    void evaluatesRsiRuleFromBackendDailyIndicators() {
+        AlertRule rule = new AlertRule(2L, "005930", AlertConditionType.RSI_BELOW,
+                new BigDecimal("30"), true, false);
+        DailyPriceResponse latest = new DailyPriceResponse("20260816", 100, 100, 100, 100, 1);
+        latest.setIndicators(25d, 1d, 2d);
+        AlertEvent event = new AlertEvent(11L, 2L, "005930", AlertConditionType.RSI_BELOW,
+                new BigDecimal("25.0"), new BigDecimal("30"), OffsetDateTime.now(), null);
+        when(repository.findEnabledRules("alice")).thenReturn(Flux.just(rule));
+        when(kiwoomApiService.getDailyPrices("005930", null)).thenReturn(Mono.just(List.of(latest)));
+        when(repository.transitionToTriggered("alice", 2L)).thenReturn(Mono.just(true));
+        when(repository.addEvent("alice", rule, new BigDecimal("25.0"))).thenReturn(Mono.just(event));
+
+        assertEquals(List.of(event), service.evaluate("alice").collectList().block());
+    }
 }

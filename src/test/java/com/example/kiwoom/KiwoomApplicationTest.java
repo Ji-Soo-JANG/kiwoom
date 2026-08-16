@@ -131,6 +131,21 @@ class KiwoomApplicationTest {
 
     @Test
     @WithMockUser(username = "admin", roles = "ADMIN")
+    void managesMacdAlertRuleWithoutThreshold() {
+        AlertRule created = webTestClient.post().uri("/api/alerts/rules")
+                .bodyValue("{\"code\":\"000660\",\"conditionType\":\"MACD_CROSS_UP\",\"threshold\":null}")
+                .header("Content-Type", "application/json")
+                .exchange().expectStatus().isCreated()
+                .expectBody(AlertRule.class).returnResult().getResponseBody();
+
+        assertThat(created).isNotNull();
+        assertThat(created.threshold()).isNull();
+        webTestClient.delete().uri("/api/alerts/rules/{id}", created.id())
+                .exchange().expectStatus().isNoContent();
+    }
+
+    @Test
+    @WithMockUser(username = "admin", roles = "ADMIN")
     void managesPortfolioPositions() {
         webTestClient.put().uri("/api/portfolio/005930")
                 .bodyValue("{\"quantity\":10,\"averagePrice\":70000}")
