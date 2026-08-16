@@ -1,5 +1,6 @@
-import { lazy, Suspense, useEffect, useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import {Navigate, NavLink, Route, Routes, useNavigate} from 'react-router-dom';
+import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
 
 import {
   getCurrentPrice,
@@ -31,6 +32,7 @@ import './App.css';
 
 function App() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [stocks, setStocks] = useState([]);
   const [dailyPrices, setDailyPrices] =
       useState([]);
@@ -40,45 +42,62 @@ function App() {
 
   const [error, setError] =
       useState('');
-  const [watchlist, setWatchlist] = useState([]);
-  const [portfolio, setPortfolio] = useState([]);
   const [valuations, setValuations] = useState([]);
-  const [portfolioLoading, setPortfolioLoading] = useState(false);
   const [searched, setSearched] = useState(false);
 
-  useEffect(() => {
-    getWatchlist().then(setWatchlist)
-        .catch(() => setError('관심종목을 불러오지 못했습니다.'));
-    getPortfolio().then(setPortfolio)
-        .catch(() => setError('포트폴리오를 불러오지 못했습니다.'));
-  }, []);
+  const watchlistQuery = useQuery({queryKey: ['watchlist'], queryFn: getWatchlist});
+  const portfolioQuery = useQuery({queryKey: ['portfolio'], queryFn: getPortfolio});
+  const watchlist = watchlistQuery.data ?? [];
+  const portfolio = portfolioQuery.data ?? [];
+
+  const savePositionMutation = useMutation({
+    mutationFn: ({code, quantity, averagePrice}) => savePortfolioPosition(code, quantity, averagePrice),
+    onSuccess: () => {
+      queryClient.invalidateQueries({queryKey: ['portfolio']});
+      setValuations([]);
+    }
+  });
+  const removePositionMutation = useMutation({
+    mutationFn: removePortfolioPosition,
+    onSuccess: (_, code) => {
+      queryClient.invalidateQueries({queryKey: ['portfolio']});
+      setValuations((items) => items.filter((item) => item.code !== code));
+    }
+  });
+  const valuationMutation = useMutation({
+    mutationFn: getPortfolioValuation,
+    onSuccess: setValuations
+  });
+  const addWatchlistMutation = useMutation({
+    mutationFn: addToWatchlist,
+    onSuccess: () => queryClient.invalidateQueries({queryKey: ['watchlist']})
+  });
+  const removeWatchlistMutation = useMutation({
+    mutationFn: removeFromWatchlist,
+    onSuccess: () => queryClient.invalidateQueries({queryKey: ['watchlist']})
+  });
+
+  const portfolioLoading = portfolioQuery.isLoading || savePositionMutation.isPending
+      || removePositionMutation.isPending || valuationMutation.isPending;
 
   const savePosition = async (code, quantity, averagePrice) => {
-    setPortfolioLoading(true);
     setError('');
     try {
-      await savePortfolioPosition(code, quantity, averagePrice);
-      setPortfolio(await getPortfolio());
-      setValuations([]);
+      await savePositionMutation.mutateAsync({code, quantity, averagePrice});
     } catch (err) { handleError(err); throw err; }
-    finally { setPortfolioLoading(false); }
   };
 
   const deletePosition = async (code) => {
     setError('');
     try {
-      await removePortfolioPosition(code);
-      setPortfolio((items) => items.filter((item) => item.code !== code));
-      setValuations((items) => items.filter((item) => item.code !== code));
+      await removePositionMutation.mutateAsync(code);
     } catch (err) { handleError(err); }
   };
 
   const valuatePortfolio = async () => {
-    setPortfolioLoading(true);
     setError('');
-    try { setValuations(await getPortfolioValuation()); }
+    try { await valuationMutation.mutateAsync(); }
     catch (err) { handleError(err); }
-    finally { setPortfolioLoading(false); }
   };
 
   const initializeSearch = () => {
@@ -99,15 +118,13 @@ function App() {
   const addCurrentToWatchlist = async () => {
     if (!stocks[0]) return;
     try {
-      await addToWatchlist(stocks[0].code);
-      setWatchlist(await getWatchlist());
+      await addWatchlistMutation.mutateAsync(stocks[0].code);
     } catch (err) { handleError(err); }
   };
 
   const deleteWatchlist = async (code) => {
     try {
-      await removeFromWatchlist(code);
-      setWatchlist((items) => items.filter((item) => item !== code));
+      await removeWatchlistMutation.mutateAsync(code);
     } catch (err) { handleError(err); }
   };
 
@@ -206,9 +223,9 @@ function App() {
           <Route path="*" element={<Navigate to="/" replace/>}/>
         </Routes>
 
-        {error && (
+        {(error || watchlistQuery.error || portfolioQuery.error) && (
             <div className="error" role="alert">
-              {error}
+              {error || `데이터를 불러오지 못했습니다: ${(watchlistQuery.error || portfolioQuery.error).message}`}
             </div>
         )}
       </div>

@@ -1,4 +1,5 @@
-import {useEffect, useState} from 'react';
+import {useState} from 'react';
+import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
 import {
     createAlertRule, deleteAlertRule, evaluateAlerts, getAlertEvents, getAlertRules,
     markAlertRead, updateAlertRule
@@ -13,68 +14,60 @@ const conditionLabels = {
 const requiresThreshold = (type) => !type.startsWith('MACD_');
 
 function AlertCenter({onError}) {
-    const [rules, setRules] = useState([]);
-    const [events, setEvents] = useState([]);
     const [code, setCode] = useState('');
     const [conditionType, setConditionType] = useState('PRICE_ABOVE');
     const [threshold, setThreshold] = useState('');
-    const [loading, setLoading] = useState(false);
-
-    const load = async () => {
-        const [nextRules, nextEvents] = await Promise.all([getAlertRules(), getAlertEvents()]);
-        setRules(nextRules);
-        setEvents(nextEvents);
-    };
-
-    useEffect(() => {
-        Promise.all([getAlertRules(), getAlertEvents()])
-            .then(([nextRules, nextEvents]) => {
-                setRules(nextRules);
-                setEvents(nextEvents);
-            })
-            .catch(onError);
-    }, [onError]);
-
-    const run = async (operation) => {
-        setLoading(true);
-        try { await operation(); }
-        catch (error) { onError(error); throw error; }
-        finally { setLoading(false); }
-    };
+    const queryClient = useQueryClient();
+    const rulesQuery = useQuery({queryKey: ['alerts', 'rules'], queryFn: getAlertRules});
+    const eventsQuery = useQuery({queryKey: ['alerts', 'events'], queryFn: () => getAlertEvents()});
+    const rules = rulesQuery.data ?? [];
+    const events = eventsQuery.data ?? [];
+    const refresh = () => Promise.all([
+        queryClient.invalidateQueries({queryKey: ['alerts', 'rules']}),
+        queryClient.invalidateQueries({queryKey: ['alerts', 'events']})
+    ]);
+    const mutationOptions = {onError};
+    const createMutation = useMutation({
+        mutationFn: ({nextCode, nextType, nextThreshold}) =>
+            createAlertRule(nextCode, nextType, nextThreshold),
+        onSuccess: refresh, ...mutationOptions
+    });
+    const updateMutation = useMutation({
+        mutationFn: (rule) => updateAlertRule(rule.id, rule.threshold, !rule.enabled),
+        onSuccess: refresh, ...mutationOptions
+    });
+    const deleteMutation = useMutation({
+        mutationFn: deleteAlertRule, onSuccess: refresh, ...mutationOptions
+    });
+    const evaluateMutation = useMutation({
+        mutationFn: evaluateAlerts, onSuccess: refresh, ...mutationOptions
+    });
+    const readMutation = useMutation({
+        mutationFn: markAlertRead,
+        onSuccess: () => queryClient.invalidateQueries({queryKey: ['alerts', 'events']}),
+        ...mutationOptions
+    });
+    const loading = rulesQuery.isLoading || eventsQuery.isLoading || createMutation.isPending
+        || updateMutation.isPending || deleteMutation.isPending || evaluateMutation.isPending
+        || readMutation.isPending;
 
     const submit = async (event) => {
         event.preventDefault();
         try {
-            await run(async () => {
-                await createAlertRule(code, conditionType,
-                    requiresThreshold(conditionType) ? Number(threshold) : null);
-                await load();
-                setCode('');
-                setThreshold('');
+            await createMutation.mutateAsync({
+                nextCode: code,
+                nextType: conditionType,
+                nextThreshold: requiresThreshold(conditionType) ? Number(threshold) : null
             });
+            setCode('');
+            setThreshold('');
         } catch { /* 오류는 상위 알림 영역에 표시한다. */ }
     };
 
-    const toggleRule = (rule) => run(async () => {
-        await updateAlertRule(rule.id, rule.threshold, !rule.enabled);
-        await load();
-    }).catch(() => {});
-
-    const removeRule = (id) => run(async () => {
-        await deleteAlertRule(id);
-        await load();
-    }).catch(() => {});
-
-    const evaluate = () => run(async () => {
-        await evaluateAlerts();
-        await load();
-    }).catch(() => {});
-
-    const markRead = (id) => run(async () => {
-        await markAlertRead(id);
-        setEvents((items) => items.map((item) => item.id === id
-            ? {...item, readAt: new Date().toISOString()} : item));
-    }).catch(() => {});
+    const toggleRule = (rule) => updateMutation.mutate(rule);
+    const removeRule = (id) => deleteMutation.mutate(id);
+    const evaluate = () => evaluateMutation.mutate();
+    const markRead = (id) => readMutation.mutate(id);
 
     const unreadCount = events.filter((event) => !event.readAt).length;
 
@@ -85,6 +78,9 @@ function AlertCenter({onError}) {
                 {unreadCount}
             </span>}
         </div>
+        {(rulesQuery.error || eventsQuery.error) && <p className="error" role="alert">
+            알림 데이터를 불러오지 못했습니다: {(rulesQuery.error || eventsQuery.error).message}
+        </p>}
 
         <form className="alert-form" onSubmit={submit}>
             <label htmlFor="alert-code">종목 코드</label>

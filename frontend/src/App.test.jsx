@@ -3,6 +3,7 @@ import {MemoryRouter} from 'react-router-dom';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import App from './App';
 import * as api from './api/kiwoomApi';
+import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 
 vi.mock('./api/kiwoomApi');
 
@@ -16,7 +17,10 @@ describe('App routes', () => {
     });
 
     it('내비게이션으로 포트폴리오와 알림 화면을 분리해 표시한다', async () => {
-        render(<MemoryRouter initialEntries={['/']}><App/></MemoryRouter>);
+        const client = new QueryClient({defaultOptions: {queries: {retry: false}}});
+        render(<QueryClientProvider client={client}>
+            <MemoryRouter initialEntries={['/']}><App/></MemoryRouter>
+        </QueryClientProvider>);
         expect(screen.getByLabelText('종목 코드 (단일 조회)')).toBeInTheDocument();
 
         fireEvent.click(screen.getByRole('link', {name: '포트폴리오'}));

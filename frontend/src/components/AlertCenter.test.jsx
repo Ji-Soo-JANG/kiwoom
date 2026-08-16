@@ -2,8 +2,16 @@ import {fireEvent, render, screen, waitFor} from '@testing-library/react';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import AlertCenter from './AlertCenter';
 import * as api from '../api/kiwoomApi';
+import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 
 vi.mock('../api/kiwoomApi');
+
+const renderAlert = (onError = vi.fn()) => {
+    const client = new QueryClient({defaultOptions: {queries: {retry: false}}});
+    return render(<QueryClientProvider client={client}>
+        <AlertCenter onError={onError}/>
+    </QueryClientProvider>);
+};
 
 describe('AlertCenter', () => {
     beforeEach(() => {
@@ -17,7 +25,7 @@ describe('AlertCenter', () => {
         api.getAlertRules.mockResolvedValueOnce([]).mockResolvedValueOnce([{
             id: 1, code: '005930', conditionType: 'PRICE_ABOVE', threshold: 80000, enabled: true
         }]);
-        render(<AlertCenter onError={vi.fn()}/>);
+        renderAlert();
         await screen.findByText('설정된 목표가 알림이 없습니다.');
 
         fireEvent.change(screen.getByLabelText('종목 코드'), {target: {value: '005930'}});
@@ -29,17 +37,19 @@ describe('AlertCenter', () => {
     });
 
     it('미읽음 배지를 표시하고 이벤트를 읽음 처리한다', async () => {
-        api.getAlertEvents.mockResolvedValue([{
+        const unreadEvent = {
             id: 4, code: '000660', conditionType: 'PRICE_BELOW', observedValue: 119000,
             threshold: 120000, triggeredAt: '2026-08-16T00:00:00Z', readAt: null
-        }]);
+        };
+        api.getAlertEvents.mockResolvedValueOnce([unreadEvent])
+            .mockResolvedValueOnce([{...unreadEvent, readAt: '2026-08-16T01:00:00Z'}]);
         api.markAlertRead.mockResolvedValue(null);
-        render(<AlertCenter onError={vi.fn()}/>);
+        renderAlert();
 
         expect(await screen.findByLabelText('읽지 않은 알림 1개')).toBeInTheDocument();
         fireEvent.click(screen.getByRole('button', {name: '읽음'}));
 
         await waitFor(() => expect(screen.queryByLabelText('읽지 않은 알림 1개')).not.toBeInTheDocument());
-        expect(api.markAlertRead).toHaveBeenCalledWith(4);
+        expect(api.markAlertRead.mock.calls[0][0]).toBe(4);
     });
 });

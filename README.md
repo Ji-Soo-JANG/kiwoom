@@ -344,6 +344,8 @@ secret, 접근 토큰 값은 로그에 기록하지 않습니다.
 
 ### 프론트엔드
 - **React 19** - UI 라이브러리
+- **React Router** - 검색·관심 종목·포트폴리오·알림 화면 라우팅
+- **TanStack Query** - 서버 데이터 캐시·mutation·제한적 재시도 관리
 - **Vite 8** - 번들러 및 개발 서버
 - **Vanilla CSS** - 스타일링
 
