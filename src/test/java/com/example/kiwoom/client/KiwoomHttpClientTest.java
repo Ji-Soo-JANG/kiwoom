@@ -2,6 +2,7 @@ package com.example.kiwoom.client;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.example.kiwoom.config.KiwoomApiProperties;
 import com.example.kiwoom.config.WebClientConfig;
@@ -68,6 +69,23 @@ class KiwoomHttpClientTest {
 
         assertEquals(KiwoomErrorCode.UPSTREAM_UNAVAILABLE, error.errorCode());
         assertEquals(3, server.getRequestCount());
+    }
+
+    @Test
+    void sendsSupportedMarketCodesToRankingApis() throws InterruptedException {
+        server.enqueue(new MockResponse().setResponseCode(200).setBody("{\"return_code\":0}"));
+        server.enqueue(new MockResponse().setResponseCode(200).setBody("{\"return_code\":0}"));
+        KiwoomHttpClient client = client(Duration.ofSeconds(1));
+
+        client.requestChangeRateRanking("001", "1", "token").block();
+        client.requestVolumeRanking("101", "token").block();
+
+        var changeRequest = server.takeRequest();
+        var volumeRequest = server.takeRequest();
+        assertEquals("ka10027", changeRequest.getHeader("api-id"));
+        assertTrue(changeRequest.getBody().readUtf8().contains("\"mrkt_tp\":\"001\""));
+        assertEquals("ka10030", volumeRequest.getHeader("api-id"));
+        assertTrue(volumeRequest.getBody().readUtf8().contains("\"mrkt_tp\":\"101\""));
     }
 
     private KiwoomHttpClient client(Duration responseTimeout) {

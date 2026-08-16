@@ -3,6 +3,7 @@ package com.example.kiwoom.service;
 import com.example.kiwoom.client.KiwoomHttpClient;
 import com.example.kiwoom.config.KiwoomApiProperties;
 import com.example.kiwoom.dto.DailyPriceResponse;
+import com.example.kiwoom.dto.MarketRankingItem;
 import com.example.kiwoom.dto.MarketRankingsResponse;
 import com.example.kiwoom.dto.StockPriceResponse;
 import com.example.kiwoom.dto.StockProductType;
@@ -354,12 +355,37 @@ public class KiwoomApiService {
     }
 
     private Mono<MarketRankingsResponse> requestMarketRankings(String token) {
+        return requestMarketRankings("001", token)
+                .zipWith(requestMarketRankings("101", token))
+                .map(
+                        rankings ->
+                                new MarketRankingsResponse(
+                                        mergeRankings(
+                                                rankings.getT1().gainers(),
+                                                rankings.getT2().gainers(),
+                                                Comparator.comparingDouble(
+                                                                MarketRankingItem::changeRate)
+                                                        .reversed()),
+                                        mergeRankings(
+                                                rankings.getT1().losers(),
+                                                rankings.getT2().losers(),
+                                                Comparator.comparingDouble(
+                                                        MarketRankingItem::changeRate)),
+                                        mergeRankings(
+                                                rankings.getT1().mostTraded(),
+                                                rankings.getT2().mostTraded(),
+                                                Comparator.comparingLong(MarketRankingItem::volume)
+                                                        .reversed()),
+                                        Instant.now()));
+    }
+
+    private Mono<MarketRankingsResponse> requestMarketRankings(String marketType, String token) {
         return Mono.zip(
-                        client.requestChangeRateRanking("1", token)
+                        client.requestChangeRateRanking(marketType, "1", token)
                                 .map(body -> mapper.parseRanking("pred_pre_flu_rt_upper", body)),
-                        client.requestChangeRateRanking("2", token)
+                        client.requestChangeRateRanking(marketType, "2", token)
                                 .map(body -> mapper.parseRanking("pred_pre_flu_rt_upper", body)),
-                        client.requestVolumeRanking(token)
+                        client.requestVolumeRanking(marketType, token)
                                 .map(body -> mapper.parseRanking("tdy_trde_qty_upper", body)))
                 .map(
                         rankings ->
@@ -368,6 +394,16 @@ public class KiwoomApiService {
                                         rankings.getT2(),
                                         rankings.getT3(),
                                         Instant.now()));
+    }
+
+    private List<MarketRankingItem> mergeRankings(
+            List<MarketRankingItem> first,
+            List<MarketRankingItem> second,
+            Comparator<MarketRankingItem> comparator) {
+        return java.util.stream.Stream.concat(first.stream(), second.stream())
+                .sorted(comparator)
+                .limit(10)
+                .toList();
     }
 
     private Mono<List<StockSearchResult>> createStockCatalog() {
