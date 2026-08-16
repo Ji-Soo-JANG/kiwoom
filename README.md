@@ -97,6 +97,7 @@ DB 컨테이너만 중지할 때는 `docker compose stop postgres`를 사용합�
 volume까지 삭제하는 `docker compose down -v`는 초기화가 필요한 경우에만 사용합니다.
 
 의존성 업데이트 주기와 보안 반영 기준은 [`docs/dependency-policy.md`](docs/dependency-policy.md)를 따릅니다.
+목표가·기술지표 앱 알림의 데이터 모델과 API 계획은 [`docs/alert-design.md`](docs/alert-design.md)를 따릅니다.
 
 ```powershell
 # Windows
