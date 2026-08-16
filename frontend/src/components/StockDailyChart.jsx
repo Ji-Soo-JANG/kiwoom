@@ -13,17 +13,19 @@ const periods = [
 ];
 const number = (value) => Number(value).toLocaleString('ko-KR', {maximumFractionDigits: 2});
 
-function Candle({x, width, yAxis, payload}) {
+function Candle({x, y, width, height, payload}) {
     const open = Number(payload.openPrice);
     const close = Number(payload.closePrice);
     const high = Number(payload.highPrice);
     const low = Number(payload.lowPrice);
     const color = close >= open ? '#d92d20' : '#1570ef';
     const center = x + width / 2;
-    const bodyTop = yAxis.scale(Math.max(open, close));
-    const bodyBottom = yAxis.scale(Math.min(open, close));
+    const range = high - low;
+    const priceY = (price) => range === 0 ? y + height / 2 : y + (high - price) / range * height;
+    const bodyTop = priceY(Math.max(open, close));
+    const bodyBottom = priceY(Math.min(open, close));
     return <g aria-label={`${payload.date} 시가 ${number(open)} 고가 ${number(high)} 저가 ${number(low)} 종가 ${number(close)}`}>
-        <line x1={center} x2={center} y1={yAxis.scale(high)} y2={yAxis.scale(low)} stroke={color}/>
+        <line x1={center} x2={center} y1={y} y2={y + height} stroke={color}/>
         <rect x={x + width * 0.2} y={bodyTop} width={Math.max(width * 0.6, 1)}
               height={Math.max(bodyBottom - bodyTop, 1)} fill={color}/>
     </g>;
@@ -42,7 +44,9 @@ const PriceTooltip = ({active, payload, label}) => {
 
 function StockDailyChart({stockCode, dailyPrices}) {
     const [period, setPeriod] = useState(60);
-    const enriched = useMemo(() => addTechnicalIndicators(dailyPrices), [dailyPrices]);
+    const enriched = useMemo(() => addTechnicalIndicators(dailyPrices).map((item) => ({
+        ...item, priceRange: [Number(item.lowPrice), Number(item.highPrice)]
+    })), [dailyPrices]);
     const chartData = period === 0 ? enriched : enriched.slice(-period);
 
     if (dailyPrices.length === 0) return null;
@@ -75,7 +79,7 @@ function StockDailyChart({stockCode, dailyPrices}) {
                     <CartesianGrid strokeDasharray="3 3"/><XAxis {...commonXAxis}/>
                     <YAxis width={78} domain={priceDomain} tickFormatter={number}/>
                     <Tooltip content={<PriceTooltip/>}/>
-                    <Bar dataKey="highPrice" name="캔들" shape={<Candle/>} isAnimationActive={false}/>
+                    <Bar dataKey="priceRange" name="캔들" shape={<Candle/>} isAnimationActive={false}/>
                     <Line dataKey="ma5" name="MA5" stroke="#7f56d9" dot={false} strokeWidth={1.5}/>
                     <Line dataKey="ma20" name="MA20" stroke="#f79009" dot={false} strokeWidth={1.5}/>
                     <Line dataKey="ma60" name="MA60" stroke="#12b76a" dot={false} strokeWidth={1.5}/>
