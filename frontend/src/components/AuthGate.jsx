@@ -1,10 +1,7 @@
 import { useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getCurrentUser, logout } from '../api/kiwoomApi';
-
-const RETURN_PATH_KEY = 'kiwoom.returnPath';
-
-const loginUrl = () => (import.meta.env.DEV ? 'http://localhost:8080/login' : '/login');
+import { redirectToLogin, restoreReturnPath, saveReturnPath } from '../utils/authNavigation';
 
 export default function AuthGate({ children }) {
   const queryClient = useQueryClient();
@@ -16,27 +13,20 @@ export default function AuthGate({ children }) {
 
   useEffect(() => {
     if (authQuery.error?.status !== 401) return;
-    sessionStorage.setItem(RETURN_PATH_KEY, window.location.pathname + window.location.search);
-    window.location.assign(loginUrl());
+    saveReturnPath();
+    redirectToLogin();
   }, [authQuery.error]);
 
   useEffect(() => {
     if (!authQuery.data) return;
-    const returnPath = sessionStorage.getItem(RETURN_PATH_KEY);
-    if (returnPath && returnPath !== window.location.pathname + window.location.search) {
-      sessionStorage.removeItem(RETURN_PATH_KEY);
-      window.history.replaceState(null, '', returnPath);
-      window.dispatchEvent(new PopStateEvent('popstate'));
-    } else {
-      sessionStorage.removeItem(RETURN_PATH_KEY);
-    }
+    restoreReturnPath();
   }, [authQuery.data]);
 
   const handleLogout = async () => {
     await logout();
     queryClient.clear();
-    sessionStorage.setItem(RETURN_PATH_KEY, '/');
-    window.location.assign(loginUrl());
+    saveReturnPath('/');
+    redirectToLogin();
   };
 
   if (authQuery.isPending) {
