@@ -40,8 +40,20 @@ kiwoom/
 
 ### 필수 요구사항
 - Java 21 (LTS)
-- Node.js 18+ & npm
-- Maven
+- Node.js 22 (LTS) 및 npm 10
+- Maven은 별도 설치 없이 Maven Wrapper(`mvnw`, `mvnw.cmd`) 사용
+
+2026-08-16에 Microsoft OpenJDK 21.0.12, Node.js 22.23.2, npm 10.9.8로
+클린 테스트·빌드·애플리케이션 기동과 `/actuator/health` 응답을 확인했습니다.
+
+Windows PowerShell에서 기본 Java가 21이 아니라면 현재 터미널에만 Java 21을 지정합니다.
+
+```powershell
+$env:JAVA_HOME='C:\path\to\jdk-21'
+$env:Path="$env:JAVA_HOME\bin;$env:Path"
+java -version
+.\mvnw.cmd --version
+```
 
 ### 1️⃣ 백엔드 준비
 
@@ -66,20 +78,23 @@ CORS_ALLOWED_ORIGINS=http://localhost:5173,http://localhost:8080
 
 의존성 업데이트 주기와 보안 반영 기준은 [`docs/dependency-policy.md`](docs/dependency-policy.md)를 따릅니다.
 
-```bash
-# IDE에서 프로젝트 재로드
-File → Invalidate Caches → Invalidate and Restart
+```powershell
+# Windows
+.\mvnw.cmd clean test
+.\mvnw.cmd package -DskipTests
+```
 
-# 또는 Maven 빌드
-cd kiwoom
-./mvnw clean package -DskipTests
+```bash
+# macOS/Linux
+./mvnw clean test
+./mvnw package -DskipTests
 ```
 
 ### 2️⃣ 프론트엔드 개발 (선택)
 
-```bash
+```powershell
 cd frontend
-npm install
+npm ci
 npm run dev
 ```
 
@@ -87,16 +102,21 @@ npm run dev
 
 ### 3️⃣ 프로덕션 빌드
 
-```bash
+```powershell
 # 이미 자동으로 수행됨
 # frontend/src → ../src/main/resources/static/로 빌드됨
 
-./mvnw clean package -DskipTests
+cd frontend
+npm run lint
+npm test
+npm run build
+cd ..
+.\mvnw.cmd package -DskipTests
 ```
 
 ### 4️⃣ 애플리케이션 실행
 
-```bash
+```powershell
 # IDE에서 KiwoomApplication 실행
 # 또는 명령어로:
 java -jar target/kiwoom-0.0.1-SNAPSHOT.jar

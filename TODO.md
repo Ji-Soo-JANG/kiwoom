@@ -64,7 +64,7 @@
 ## P2 — 문서 및 자동화
 
 - [x] README의 프로젝트 트리를 새 패키지 구조(`config`, `controller`, `dto`, `service`, `error`)로 갱신한다.
-- [ ] Java 21, Node.js, 환경변수 설정 및 로컬 실행 절차를 실제 환경에서 재검증한다.
+- [x] Java 21·Node.js 22 환경에서 클린 설치, 테스트, 빌드, JAR 기동 및 health 응답을 재검증했다.
 - [x] 백엔드 테스트와 프론트엔드 빌드를 실행하는 GitHub Actions CI를 추가했다.
 - [x] 운영 상태 확인용 Actuator health/info endpoint와 노출 범위를 문서화했다.
 
