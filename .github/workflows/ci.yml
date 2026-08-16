@@ -47,6 +47,8 @@ jobs:
         run: npm run lint
       - name: Check generated API types
         run: npm run types:check
+      - name: Check API type usage
+        run: npm run types:usage
       - name: Test frontend with coverage gate
         run: npm run test:coverage
       - name: Upload Vitest coverage report
@@ -61,3 +63,5 @@ jobs:
         run: npm run test:e2e
       - name: Build frontend and check committed assets
         run: npm run build:check
+      - name: Check bundle size budget
+        run: npm run build:size

@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getCurrentUser, logout } from '../api/kiwoomApi';
 import { redirectToLogin, restoreReturnPath, saveReturnPath } from '../utils/authNavigation';
+import { ErrorState, LoadingState } from './AsyncState';
 
 export default function AuthGate({ children }) {
   const queryClient = useQueryClient();
@@ -30,20 +31,17 @@ export default function AuthGate({ children }) {
   };
 
   if (authQuery.isPending) {
-    return <div role="status">로그인 상태를 확인하는 중...</div>;
+    return <LoadingState>로그인 상태를 확인하는 중...</LoadingState>;
   }
 
   if (authQuery.error) {
     if (authQuery.error.status === 401) {
-      return <div role="status">로그인 화면으로 이동하는 중...</div>;
+      return <LoadingState>로그인 화면으로 이동하는 중...</LoadingState>;
     }
     return (
-      <div role="alert">
-        로그인 상태를 확인하지 못했습니다.{' '}
-        <button type="button" onClick={() => authQuery.refetch()}>
-          다시 시도
-        </button>
-      </div>
+      <ErrorState onRetry={() => authQuery.refetch()}>
+        로그인 상태를 확인하지 못했습니다.
+      </ErrorState>
     );
   }
 

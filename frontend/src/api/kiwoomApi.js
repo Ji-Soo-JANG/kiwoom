@@ -8,6 +8,10 @@ const errorMessages = {
   KIWOOM_INVALID_RESPONSE: '키움 응답을 처리하지 못했습니다. 잠시 후 다시 시도해 주세요.'
 };
 
+/** @typedef {import('./generated/openapi').components['schemas']['AuthUser']} AuthUser */
+/** @typedef {import('./generated/openapi').components['schemas']['StockPriceResponse']} StockPriceResponse */
+/** @typedef {import('./generated/openapi').components['schemas']['DailyPriceResponse']} DailyPriceResponse */
+
 export class ApiError extends Error {
   constructor(status, code, message) {
     super(errorMessages[code] || message || `API 요청 실패 (${status})`);
@@ -35,15 +39,18 @@ const requestJson = async (url, options) => {
   return response.json();
 };
 
+/** @returns {Promise<AuthUser>} */
 export const getCurrentUser = () => requestJson('/api/auth/me');
 export const logout = () => requestJson('/api/auth/logout', { method: 'POST' });
 
+/** @param {string} code @returns {Promise<StockPriceResponse>} */
 export const getCurrentPrice = (code) => {
   const encodedCode = encodeURIComponent(code);
 
   return requestJson(`/api/kiwoom/stock-price/${encodedCode}`);
 };
 
+/** @param {string} code @returns {Promise<DailyPriceResponse[]>} */
 export const getDailyPrices = (code) => {
   const encodedCode = encodeURIComponent(code);
 

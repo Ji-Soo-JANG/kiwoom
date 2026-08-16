@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import AxeBuilder from '@axe-core/playwright';
 
 const json = (route, body, status = 200) =>
   route.fulfill({
@@ -134,4 +135,28 @@ test('모바일 화면에서 주요 기능이 가로로 넘치지 않는다', as
   );
   expect(hasHorizontalOverflow).toBe(false);
   await expect(page.getByRole('navigation', { name: '주요 화면' })).toBeVisible();
+});
+
+test('주요 화면에 심각한 접근성 위반이 없다', async ({ page }) => {
+  await mockApi(page);
+  await page.goto('/');
+  const results = await new AxeBuilder({ page }).analyze();
+  expect(
+    results.violations.filter((item) => ['critical', 'serious'].includes(item.impact))
+  ).toEqual([]);
+});
+
+test('인증 사용자가 새로고침 후에도 유지되고 로그아웃할 수 있다', async ({ page }) => {
+  await mockApi(page, {
+    'POST /api/auth/logout': (route) => route.fulfill({ status: 204 })
+  });
+  await page.goto('/portfolio');
+  await expect(page.getByText('e2e-user')).toBeVisible();
+  await page.reload();
+  await expect(page.getByText('e2e-user')).toBeVisible();
+  await page.route('http://localhost:8080/login', (route) =>
+    route.fulfill({ status: 200, contentType: 'text/html', body: '<h1>Kiwoom 로그인</h1>' })
+  );
+  await page.getByRole('button', { name: '로그아웃' }).click();
+  await expect(page).toHaveURL('http://localhost:8080/login');
 });
