@@ -16,5 +16,15 @@ describe('StockSearchForm', () => {
     fireEvent.change(screen.getByLabelText('종목 코드 (단일 조회)'), { target: { value: '123' } });
     fireEvent.click(screen.getByRole('button', { name: '단일 조회' }));
     expect(screen.getByRole('alert')).toHaveTextContent('6자리 숫자');
+    expect(screen.getByLabelText('종목 코드 (단일 조회)')).toHaveAttribute('aria-invalid', 'true');
+  });
+
+  it('폼 제출로 키보드 검색을 지원한다', () => {
+    const onSingleSearch = vi.fn();
+    render(<StockSearchForm loading={false} onSingleSearch={onSingleSearch} onMultipleSearch={vi.fn()} />);
+    const input = screen.getByLabelText('종목 코드 (단일 조회)');
+    fireEvent.change(input, { target: { value: '005930' } });
+    fireEvent.submit(input.closest('form'));
+    expect(onSingleSearch).toHaveBeenCalledWith('005930');
   });
 });

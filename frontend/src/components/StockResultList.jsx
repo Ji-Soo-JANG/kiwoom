@@ -1,12 +1,14 @@
 import {formatPrice, formatSignedNumber, getChangeClass} from '../utils/stockFormat';
 
-function StockResultList({stocks}) {
+function StockResultList({stocks, searched = false, loading = false}) {
     if (stocks.length === 0) {
-        return null;
+        return searched && !loading
+            ? <p className="empty-state" role="status">조회된 종목이 없습니다.</p>
+            : null;
     }
 
     return (
-        <div className="results">
+        <section className="results" aria-label="주가 조회 결과" aria-live="polite">
             {stocks.map((stock, index) => (
                 <div
                     key={stock.code || index}
@@ -69,7 +71,7 @@ function StockResultList({stocks}) {
                     </div>
                 </div>
             ))}
-        </div>
+        </section>
     );
 }
 

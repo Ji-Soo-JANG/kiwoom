@@ -26,8 +26,8 @@ function StockDailyChart({
     const latest = chartData[chartData.length - 1];
 
     return (
-        <div className="chart-section">
-            <h2 className="chart-title">
+        <section className="chart-section" aria-labelledby="daily-chart-title">
+            <h2 id="daily-chart-title" className="chart-title">
                 {stockCode} 일봉 차트
             </h2>
 
@@ -81,7 +81,8 @@ function StockDailyChart({
                     </LineChart>
                 </ResponsiveContainer>
             </div>
-        </div>
+            <p className="sr-only">최근 종가 {Number(latest.closePrice).toLocaleString()}원.</p>
+        </section>
     );
 }
 

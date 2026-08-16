@@ -41,6 +41,7 @@ function App() {
   const [portfolio, setPortfolio] = useState([]);
   const [valuations, setValuations] = useState([]);
   const [portfolioLoading, setPortfolioLoading] = useState(false);
+  const [searched, setSearched] = useState(false);
 
   useEffect(() => {
     getWatchlist().then(setWatchlist)
@@ -82,6 +83,7 @@ function App() {
     setError('');
     setStocks([]);
     setDailyPrices([]);
+    setSearched(true);
   };
 
   const handleError = (err) => {
@@ -156,8 +158,8 @@ function App() {
         />
 
         {loading && (
-            <div className="loading">
-              <div className="spinner" />
+            <div className="loading" role="status" aria-live="polite">
+              <div className="spinner" aria-hidden="true" />
 
               <div className="loading-text">
                 조회 중입니다...
@@ -165,7 +167,7 @@ function App() {
             </div>
         )}
 
-        <StockResultList stocks={stocks} />
+        <StockResultList stocks={stocks} searched={searched} loading={loading} />
 
         {stocks.length === 1 && (
             <button type="button" onClick={addCurrentToWatchlist}>관심종목 추가</button>
@@ -184,7 +186,7 @@ function App() {
         </Suspense>
 
         {error && (
-            <div className="error">
+            <div className="error" role="alert">
               {error}
             </div>
         )}
