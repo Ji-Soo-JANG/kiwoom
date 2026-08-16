@@ -1,14 +1,32 @@
+const errorMessages = {
+    KIWOOM_AUTHENTICATION_FAILED: '키움 인증을 갱신하지 못했습니다. API 키 설정을 확인해 주세요.',
+    KIWOOM_RATE_LIMITED: '키움 호출 한도를 초과했습니다. 잠시 후 다시 시도해 주세요.',
+    KIWOOM_STOCK_NOT_FOUND: '키움에서 해당 종목을 찾지 못했습니다. 종목 코드를 확인해 주세요.',
+    KIWOOM_MARKET_CLOSED: '현재 장 운영시간이 아닙니다. 장 시작 후 다시 시도해 주세요.',
+    KIWOOM_UPSTREAM_UNAVAILABLE: '키움 서비스가 일시적으로 응답하지 않습니다. 잠시 후 다시 시도해 주세요.',
+    KIWOOM_INVALID_RESPONSE: '키움 응답을 처리하지 못했습니다. 잠시 후 다시 시도해 주세요.'
+};
+
+export class ApiError extends Error {
+    constructor(status, code, message) {
+        super(errorMessages[code] || message || `API 요청 실패 (${status})`);
+        this.name = 'ApiError';
+        this.status = status;
+        this.code = code;
+    }
+}
+
 const requestJson = async (url, options) => {
     const response = await fetch(url, options);
 
     if (!response.ok) {
         const body = await response.text();
-
-        throw new Error(
-            body || `API 요청 실패 (${response.status})`
-        );
+        let errorBody;
+        try { errorBody = JSON.parse(body); } catch { errorBody = {}; }
+        throw new ApiError(response.status, errorBody.code, errorBody.message || body);
     }
 
+    if (response.status === 204) return null;
     return response.json();
 };
 
@@ -42,10 +60,8 @@ export const getWatchlist = () => requestJson('/api/watchlist');
 export const addToWatchlist = (code) => requestJson('/api/watchlist', {
     method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({code})
 });
-export const removeFromWatchlist = async (code) => {
-    const response = await fetch(`/api/watchlist/${encodeURIComponent(code)}`, {method: 'DELETE'});
-    if (!response.ok) throw new Error(`관심종목 삭제 실패 (${response.status})`);
-};
+export const removeFromWatchlist = (code) => requestJson(
+    `/api/watchlist/${encodeURIComponent(code)}`, {method: 'DELETE'});
 
 export const getPortfolio = () => requestJson('/api/portfolio');
 
@@ -58,9 +74,7 @@ export const savePortfolioPosition = (code, quantity, averagePrice) => requestJs
     }
 );
 
-export const removePortfolioPosition = async (code) => {
-    const response = await fetch(`/api/portfolio/${encodeURIComponent(code)}`, {method: 'DELETE'});
-    if (!response.ok) throw new Error(`포트폴리오 삭제 실패 (${response.status})`);
-};
+export const removePortfolioPosition = (code) => requestJson(
+    `/api/portfolio/${encodeURIComponent(code)}`, {method: 'DELETE'});
 
 export const getPortfolioValuation = () => requestJson('/api/portfolio/valuation');

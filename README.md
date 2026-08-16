@@ -241,6 +241,15 @@ GET /api/portfolio/transactions
 
 잘못된 입력은 HTTP 400, 키움 연동 오류는 HTTP 502로 반환됩니다.
 
+키움 연동 오류는 원인에 따라 다음 코드로 구분됩니다.
+
+- `KIWOOM_AUTHENTICATION_FAILED`: 키움 인증 또는 토큰 갱신 실패
+- `KIWOOM_RATE_LIMITED`: 키움 호출 한도 초과
+- `KIWOOM_STOCK_NOT_FOUND`: 존재하지 않는 종목
+- `KIWOOM_MARKET_CLOSED`: 장 운영시간 외 요청
+- `KIWOOM_UPSTREAM_UNAVAILABLE`: 키움 서비스 일시 장애
+- `KIWOOM_INVALID_RESPONSE`: 키움 응답 형식 오류
+
 ```json
 {
   "code": "INVALID_REQUEST",

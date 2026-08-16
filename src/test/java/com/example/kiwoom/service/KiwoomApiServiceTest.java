@@ -3,6 +3,8 @@ package com.example.kiwoom.service;
 import com.example.kiwoom.config.KiwoomApiProperties;
 import com.example.kiwoom.client.KiwoomHttpClient;
 import com.example.kiwoom.dto.StockPriceResponse;
+import com.example.kiwoom.error.KiwoomApiException;
+import com.example.kiwoom.error.KiwoomErrorCode;
 import com.example.kiwoom.mapper.KiwoomResponseMapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.mockwebserver.MockResponse;
@@ -174,6 +176,39 @@ class KiwoomApiServiceTest {
         assertEquals(2, server.getRequestCount());
         assertEquals(1, service.getDailyPriceCacheStats().hits());
         assertEquals(1, service.getDailyPriceCacheStats().apiCalls());
+    }
+
+    @Test
+    @DisplayName("키움 종목 없음 응답을 전용 오류 코드로 분류한다")
+    void classifiesStockNotFoundResponse() {
+        enqueueJson(200, """
+                {"return_code":0,"token":"access-token","expires_dt":"20991231235959"}
+                """);
+        enqueueJson(200, """
+                {"return_code":100,"return_msg":"종목 없음"}
+                """);
+
+        KiwoomApiException error = assertThrows(KiwoomApiException.class,
+                () -> service.getStockCurrentPrice("005930").block());
+
+        assertEquals(KiwoomErrorCode.STOCK_NOT_FOUND, error.errorCode());
+        assertEquals(100, error.upstreamCode());
+    }
+
+    @Test
+    @DisplayName("키움 장 운영시간 응답을 전용 오류 코드로 분류한다")
+    void classifiesMarketClosedResponse() {
+        enqueueJson(200, """
+                {"return_code":0,"token":"access-token","expires_dt":"20991231235959"}
+                """);
+        enqueueJson(200, """
+                {"return_code":200,"return_msg":"장 운영시간이 아닙니다"}
+                """);
+
+        KiwoomApiException error = assertThrows(KiwoomApiException.class,
+                () -> service.getStockCurrentPrice("005930").block());
+
+        assertEquals(KiwoomErrorCode.MARKET_CLOSED, error.errorCode());
     }
 
     @Test

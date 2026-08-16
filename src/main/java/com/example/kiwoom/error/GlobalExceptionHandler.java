@@ -1,6 +1,7 @@
 package com.example.kiwoom.error;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -27,6 +28,15 @@ public class GlobalExceptionHandler {
             ServerWebExchange exchange
     ) {
         return response("KIWOOM_API_ERROR", error, exchange);
+    }
+
+    @ExceptionHandler(KiwoomApiException.class)
+    public ResponseEntity<ApiErrorResponse> handleKiwoomError(
+            KiwoomApiException error,
+            ServerWebExchange exchange
+    ) {
+        return ResponseEntity.status(error.errorCode().status())
+                .body(response(error.errorCode().apiCode(), error, exchange));
     }
 
     private ApiErrorResponse response(

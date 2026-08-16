@@ -2,6 +2,7 @@ package com.example.kiwoom.client;
 
 import com.example.kiwoom.config.KiwoomApiProperties;
 import com.example.kiwoom.error.KiwoomAuthenticationException;
+import com.example.kiwoom.error.KiwoomApiException;
 import com.example.kiwoom.error.RetryableKiwoomException;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
@@ -55,8 +56,10 @@ public class KiwoomHttpClient {
                         response -> Mono.just(new KiwoomAuthenticationException("키움 인증이 만료되었습니다")))
                 .onStatus(status -> status.value() == 429 || status.is5xxServerError(),
                         response -> Mono.just(new RetryableKiwoomException(response.statusCode())))
-                .onStatus(status -> status.isError(), response -> Mono.error(
-                        new RuntimeException(failureMessage + " (" + response.statusCode() + ")")))
+                .onStatus(status -> status.isError(), response -> response.bodyToMono(String.class)
+                        .defaultIfEmpty(failureMessage)
+                        .map(bodyText -> KiwoomApiException.fromResponse(response.statusCode().value(),
+                                failureMessage + " (" + response.statusCode() + "): " + bodyText)))
                 .bodyToMono(String.class)
                 .retryWhen(transientRetry);
     }
