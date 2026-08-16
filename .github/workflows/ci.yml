@@ -16,8 +16,14 @@ jobs:
           distribution: temurin
           java-version: "21"
           cache: maven
-      - name: Run backend tests
-        run: ./mvnw --batch-mode clean test
+      - name: Test backend with coverage gate
+        run: ./mvnw --batch-mode clean verify
+      - name: Upload JaCoCo report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-report
+          path: target/site/jacoco
 
   frontend:
     runs-on: ubuntu-latest
@@ -37,7 +43,17 @@ jobs:
         run: npm audit --audit-level=high
       - name: Lint frontend
         run: npm run lint
-      - name: Test frontend
-        run: npm test
+      - name: Test frontend with coverage gate
+        run: npm run test:coverage
+      - name: Upload Vitest coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vitest-coverage
+          path: frontend/coverage
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Run browser E2E tests
+        run: npm run test:e2e
       - name: Build frontend
         run: npm run build

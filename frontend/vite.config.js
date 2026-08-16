@@ -7,7 +7,19 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     setupFiles: './src/test/setup.js',
-    include: ['src/**/*.{test,spec}.{js,jsx}']
+    include: ['src/**/*.{test,spec}.{js,jsx}'],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'html', 'lcov'],
+      include: ['src/**/*.{js,jsx}'],
+      exclude: ['src/main.jsx', 'src/test/**'],
+      thresholds: {
+        statements: 70,
+        branches: 65,
+        functions: 55,
+        lines: 74
+      }
+    }
   },
 
   server: {

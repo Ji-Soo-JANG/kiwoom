@@ -373,12 +373,24 @@ secret, 접근 토큰 값은 로그에 기록하지 않습니다.
 ## 🧪 테스트
 
 ```bash
-# 모든 테스트 실행
-./mvnw test
+# 백엔드 테스트, JaCoCo 리포트 및 커버리지 기준 검증
+./mvnw clean verify
 
 # Windows
-.\mvnw.cmd test
+.\mvnw.cmd clean verify
+
+# 프론트엔드 단위 테스트와 커버리지 기준 검증
+cd frontend
+npm run test:coverage
+
+# Chromium 브라우저 E2E
+npx playwright install chromium
+npm run test:e2e
 ```
+
+백엔드는 라인·명령 80%, 브랜치 60%, 메서드 75%를 요구하며 리포트는
+`target/site/jacoco/index.html`에 생성됩니다. 프론트엔드는 라인 74%, 구문 70%,
+브랜치 65%, 함수 55%를 요구하며 리포트는 `frontend/coverage/index.html`에 생성됩니다.
 
 ## 📝 개발 노트
 
