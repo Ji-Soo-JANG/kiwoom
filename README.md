@@ -268,7 +268,11 @@ GET /api/portfolio/transactions
 
 - Health: `GET /actuator/health`
 - Info: `GET /actuator/info`
-- 외부 노출은 `health`, `info`로 제한하며 상세 health 정보는 기본적으로 숨깁니다.
+- Prometheus 로컬 지표: `GET /actuator/prometheus` (관리자 로그인 필요)
+- Actuator 노출은 `health`, `info`, `prometheus`로 제한하며 `info`와 `prometheus`는 관리자만 접근합니다.
+
+Prometheus 형식으로 키움 API 응답 시간·성공/실패 요청 수·재시도 사유·토큰 갱신·
+현재가/일봉 캐시 적중 및 엔트리 수를 확인할 수 있습니다.
 
 ## 🛠️ 기술 스택
 

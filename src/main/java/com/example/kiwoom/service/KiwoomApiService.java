@@ -6,6 +6,9 @@ import com.example.kiwoom.dto.DailyPriceResponse;
 import com.example.kiwoom.dto.StockPriceResponse;
 import com.example.kiwoom.error.KiwoomAuthenticationException;
 import com.example.kiwoom.mapper.KiwoomResponseMapper;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -21,7 +24,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Logger;
 
 @Service
@@ -38,19 +40,31 @@ public class KiwoomApiService {
     private final Duration dailyPriceCacheTtl;
     private final Map<String, Mono<StockPriceResponse>> currentPriceCache = new ConcurrentHashMap<>();
     private final Map<DailyCacheKey, Mono<List<DailyPriceResponse>>> dailyPriceCache = new ConcurrentHashMap<>();
-    private final AtomicLong dailyCacheHits = new AtomicLong();
-    private final AtomicLong dailyApiCalls = new AtomicLong();
+    private final Counter currentCacheHits;
+    private final Counter currentCacheMisses;
+    private final Counter dailyCacheHits;
+    private final Counter dailyApiCalls;
+    private final Counter tokenRefreshes;
     private final AtomicReference<AccessToken> cachedAccessToken = new AtomicReference<>();
     private Mono<AccessToken> tokenRefreshMono;
 
     public KiwoomApiService(KiwoomHttpClient client, KiwoomResponseMapper mapper,
-                            KiwoomApiProperties properties) {
+                            KiwoomApiProperties properties, MeterRegistry meterRegistry) {
         this.client = client;
         this.mapper = mapper;
         this.apiKey = properties.key();
         this.apiSecret = properties.secret();
         this.currentPriceCacheTtl = properties.currentPriceCacheTtl();
         this.dailyPriceCacheTtl = properties.dailyPriceCacheTtl();
+        this.currentCacheHits = counter(meterRegistry, "current", "hit");
+        this.currentCacheMisses = counter(meterRegistry, "current", "miss");
+        this.dailyCacheHits = counter(meterRegistry, "daily", "hit");
+        this.dailyApiCalls = Counter.builder("kiwoom.api.daily.calls").register(meterRegistry);
+        this.tokenRefreshes = Counter.builder("kiwoom.api.token.refreshes").register(meterRegistry);
+        Gauge.builder("kiwoom.cache.entries", currentPriceCache, Map::size)
+                .tag("type", "current").register(meterRegistry);
+        Gauge.builder("kiwoom.cache.entries", dailyPriceCache, Map::size)
+                .tag("type", "daily").register(meterRegistry);
     }
 
     public Mono<StockPriceResponse> getStockCurrentPrice(String code) {
@@ -61,6 +75,12 @@ public class KiwoomApiService {
         if (currentPriceCacheTtl.isZero() || currentPriceCacheTtl.isNegative()) {
             return fetchStockCurrentPrice(normalizedCode);
         }
+        Mono<StockPriceResponse> cached = currentPriceCache.get(normalizedCode);
+        if (cached != null) {
+            currentCacheHits.increment();
+            return cached;
+        }
+        currentCacheMisses.increment();
         return currentPriceCache.computeIfAbsent(normalizedCode, key ->
                 fetchStockCurrentPrice(key).doOnError(error -> currentPriceCache.remove(key))
                         .cache(currentPriceCacheTtl));
@@ -114,7 +134,7 @@ public class KiwoomApiService {
         }
         Mono<List<DailyPriceResponse>> cached = dailyPriceCache.get(key);
         if (cached != null) {
-            dailyCacheHits.incrementAndGet();
+            dailyCacheHits.increment();
             return cached;
         }
         return dailyPriceCache.computeIfAbsent(key, cacheKey -> fetchDailyPrices(cacheKey)
@@ -124,7 +144,7 @@ public class KiwoomApiService {
 
     private Mono<List<DailyPriceResponse>> fetchDailyPrices(DailyCacheKey key) {
         return Mono.defer(() -> {
-            dailyApiCalls.incrementAndGet();
+            dailyApiCalls.increment();
             return getAccessToken().flatMap(token -> requestDailyPrices(key.code(), key.baseDate(), token.value()))
                     .onErrorResume(KiwoomAuthenticationException.class,
                             error -> retryDailyPrices(key.code(), key.baseDate()));
@@ -132,7 +152,7 @@ public class KiwoomApiService {
     }
 
     public DailyPriceCacheStats getDailyPriceCacheStats() {
-        return new DailyPriceCacheStats(dailyCacheHits.get(), dailyApiCalls.get(), dailyPriceCache.size());
+        return new DailyPriceCacheStats((long) dailyCacheHits.count(), (long) dailyApiCalls.count(), dailyPriceCache.size());
     }
 
     private Mono<List<DailyPriceResponse>> requestDailyPrices(String code, String date, String token) {
@@ -161,6 +181,7 @@ public class KiwoomApiService {
         AccessToken token = cachedAccessToken.get();
         if (token != null && token.isUsable()) return Mono.just(token);
         if (tokenRefreshMono == null) {
+            tokenRefreshes.increment();
             tokenRefreshMono = issueAccessToken().doOnNext(cachedAccessToken::set)
                     .doFinally(signal -> clearTokenRefresh()).cache();
         }
@@ -193,4 +214,9 @@ public class KiwoomApiService {
 
     private record DailyCacheKey(String code, String baseDate) {}
     public record DailyPriceCacheStats(long hits, long apiCalls, int entries) {}
+
+    private Counter counter(MeterRegistry registry, String cache, String result) {
+        return Counter.builder("kiwoom.cache.accesses").tag("cache", cache).tag("result", result)
+                .register(registry);
+    }
 }

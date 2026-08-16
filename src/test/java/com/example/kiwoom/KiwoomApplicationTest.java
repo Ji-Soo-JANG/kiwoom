@@ -71,6 +71,15 @@ class KiwoomApplicationTest {
 
     @Test
     @WithMockUser(username = "admin", roles = "ADMIN")
+    void exposesPrometheusMetricsToAdmin() {
+        webTestClient.get().uri("/actuator/prometheus")
+                .exchange().expectStatus().isOk()
+                .expectBody(String.class)
+                .value(body -> assertThat(body).contains("jvm_memory_used_bytes"));
+    }
+
+    @Test
+    @WithMockUser(username = "admin", roles = "ADMIN")
     void managesWatchlist() {
         webTestClient.post().uri("/api/watchlist")
                 .bodyValue("{\"code\":\"005930\"}")

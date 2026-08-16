@@ -14,6 +14,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.web.reactive.function.client.WebClient;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -29,11 +30,13 @@ class KiwoomApiServiceTest {
 
     private MockWebServer server;
     private KiwoomApiService service;
+    private SimpleMeterRegistry meterRegistry;
 
     @BeforeEach
     void setUp() throws IOException {
         server = new MockWebServer();
         server.start();
+        meterRegistry = new SimpleMeterRegistry();
         service = createServiceWithCache(Duration.ZERO);
     }
 
@@ -153,6 +156,8 @@ class KiwoomApiServiceTest {
         assertEquals("75000", service.getStockCurrentPrice("005930").block().getCurrentPrice());
         assertEquals("75000", service.getStockCurrentPrice("005930").block().getCurrentPrice());
         assertEquals(2, server.getRequestCount());
+        assertEquals(1, meterRegistry.get("kiwoom.cache.accesses")
+                .tags("cache", "current", "result", "hit").counter().count());
     }
 
     @Test
@@ -160,8 +165,8 @@ class KiwoomApiServiceTest {
     void cachesDailyPricesByCodeAndDateWithinTtl() {
         KiwoomApiProperties properties = properties(Duration.ZERO, Duration.ofMinutes(1));
         service = new KiwoomApiService(
-                new KiwoomHttpClient(WebClient.create(), properties),
-                new KiwoomResponseMapper(new ObjectMapper()), properties);
+                new KiwoomHttpClient(WebClient.create(), properties, meterRegistry),
+                new KiwoomResponseMapper(new ObjectMapper()), properties, meterRegistry);
         enqueueJson(200, """
                 {"return_code":0,"token":"access-token","expires_dt":"20991231235959"}
                 """);
@@ -291,6 +296,8 @@ class KiwoomApiServiceTest {
         assertEquals("/oauth2/token", server.takeRequest().getPath());
         assertEquals("/api/dostk/stkinfo", server.takeRequest().getPath());
         assertEquals("/api/dostk/stkinfo", server.takeRequest().getPath());
+        assertEquals(1, meterRegistry.get("kiwoom.api.retries")
+                .tag("reason", "rate_limited").counter().count());
     }
 
     @Test
@@ -315,9 +322,9 @@ class KiwoomApiServiceTest {
         KiwoomApiProperties properties = properties(cacheTtl);
         ObjectMapper objectMapper = new ObjectMapper();
         return new KiwoomApiService(
-                new KiwoomHttpClient(WebClient.create(), properties),
+                new KiwoomHttpClient(WebClient.create(), properties, meterRegistry),
                 new KiwoomResponseMapper(objectMapper),
-                properties
+                properties, meterRegistry
         );
     }
 }
