@@ -100,7 +100,7 @@ class KiwoomResponseMapperTest {
         String json =
                 """
                 {"return_code":0,"pred_pre_flu_rt_upper":[
-                  {"stk_cd":"005930","stk_nm":"삼성전자","cur_prc":"+75,000","flu_rt":"+3.25","now_trde_qty":"1234567"}
+                  {"stk_cd":"A005930_AL","stk_nm":"삼성전자","cur_prc":"+75,000","flu_rt":"+3.25","now_trde_qty":"1234567"}
                 ]}
                 """;
 

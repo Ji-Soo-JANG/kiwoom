@@ -18,10 +18,12 @@ import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.regex.Pattern;
 import org.springframework.stereotype.Component;
 
 @Component
 public class KiwoomResponseMapper {
+    private static final Pattern SIX_DIGIT_STOCK_CODE = Pattern.compile("(?<!\\d)(\\d{6})(?!\\d)");
     private static final ZoneId SEOUL_ZONE = ZoneId.of("Asia/Seoul");
     private static final DateTimeFormatter TOKEN_EXPIRY_FORMAT =
             DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
@@ -117,7 +119,7 @@ public class KiwoomResponseMapper {
             if (!array.isArray()) throw invalidResponse("순위 배열을 찾을 수 없습니다: " + arrayName);
             List<MarketRankingItem> result = new ArrayList<>();
             for (JsonNode item : array) {
-                String code = item.path("stk_cd").asText();
+                String code = normalizeRankingCode(item.path("stk_cd").asText());
                 String name = item.path("stk_nm").asText();
                 if (!code.matches("\\d{6}") || name.isBlank()) continue;
                 result.add(
@@ -145,6 +147,11 @@ public class KiwoomResponseMapper {
             if (!value.isBlank()) return value;
         }
         return "0";
+    }
+
+    private String normalizeRankingCode(String value) {
+        var matcher = SIX_DIGIT_STOCK_CODE.matcher(value.trim());
+        return matcher.find() ? matcher.group(1) : value.trim();
     }
 
     private long absoluteLong(String value) {
