@@ -35,7 +35,7 @@ public class SecurityConfig {
                 .authorizeExchange(exchange -> exchange
                         .pathMatchers("/", "/index.html", "/assets/**", "/actuator/health").permitAll()
                         .pathMatchers("/actuator/**", "/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").hasRole("ADMIN")
-                        .pathMatchers("/api/watchlist/**", "/api/portfolio/**").authenticated()
+                        .pathMatchers("/api/watchlist/**", "/api/portfolio/**", "/api/alerts/**").authenticated()
                         .pathMatchers("/api/kiwoom/**").authenticated()
                         .anyExchange().permitAll())
                 .exceptionHandling(errors -> errors.authenticationEntryPoint(

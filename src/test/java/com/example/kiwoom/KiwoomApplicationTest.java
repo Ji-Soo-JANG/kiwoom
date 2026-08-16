@@ -6,6 +6,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import org.springframework.security.test.context.support.WithMockUser;
 import com.example.kiwoom.repository.WatchlistRepository;
+import com.example.kiwoom.dto.AlertRule;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -101,6 +102,30 @@ class KiwoomApplicationTest {
                 .expectBody().json("[\"005930\"]");
 
         webTestClient.delete().uri("/api/watchlist/005930")
+                .exchange().expectStatus().isNoContent();
+    }
+
+    @Test
+    @WithMockUser(username = "admin", roles = "ADMIN")
+    void managesPriceAlertRules() {
+        AlertRule created = webTestClient.post().uri("/api/alerts/rules")
+                .bodyValue("{\"code\":\"005930\",\"conditionType\":\"PRICE_ABOVE\",\"threshold\":80000}")
+                .header("Content-Type", "application/json")
+                .exchange().expectStatus().isCreated()
+                .expectBody(AlertRule.class).returnResult().getResponseBody();
+
+        assertThat(created).isNotNull();
+        webTestClient.get().uri("/api/alerts/rules").exchange().expectStatus().isOk()
+                .expectBody().jsonPath("$[0].code").isEqualTo("005930");
+
+        webTestClient.patch().uri("/api/alerts/rules/{id}", created.id())
+                .bodyValue("{\"threshold\":81000,\"enabled\":false}")
+                .header("Content-Type", "application/json")
+                .exchange().expectStatus().isOk().expectBody()
+                .jsonPath("$.threshold").isEqualTo(81000)
+                .jsonPath("$.enabled").isEqualTo(false);
+
+        webTestClient.delete().uri("/api/alerts/rules/{id}", created.id())
                 .exchange().expectStatus().isNoContent();
     }
 

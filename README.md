@@ -85,7 +85,7 @@ DATABASE_JDBC_URL=jdbc:postgresql://localhost:5432/kiwoom
 ```
 
 PostgreSQL은 Docker Compose로 실행할 수 있습니다. 최초 실행 시 Flyway가 관심 종목,
-포트폴리오, 거래 내역 테이블을 자동 생성하며 데이터는 Docker volume에 유지됩니다.
+포트폴리오, 거래 내역, 목표가 알림 테이블을 자동 생성하며 데이터는 Docker volume에 유지됩니다.
 
 ```powershell
 Copy-Item .env.example .env
@@ -238,6 +238,32 @@ GET /api/portfolio/transactions
 
 보유 수량을 초과한 매도와 0 이하의 수량·가격은 HTTP 400으로 거부됩니다.
 
+#### 6. 목표가 앱 알림
+
+사용자별 목표가 규칙을 만들고 현재가를 평가합니다. 같은 조건이 계속 충족되는 동안에는
+이벤트를 한 번만 만들며, 조건을 벗어났다가 다시 진입하면 새 이벤트를 생성합니다.
+
+```http
+POST /api/alerts/rules
+Content-Type: application/json
+
+{
+  "code": "005930",
+  "conditionType": "PRICE_ABOVE",
+  "threshold": 80000
+}
+```
+
+- `GET /api/alerts/rules`: 규칙 목록
+- `PATCH /api/alerts/rules/{id}`: 목표가 또는 활성 상태 변경
+- `DELETE /api/alerts/rules/{id}`: 규칙 삭제
+- `POST /api/alerts/evaluate`: 활성 규칙을 현재가로 평가
+- `GET /api/alerts/events?unreadOnly=true`: 이벤트 목록
+- `POST /api/alerts/events/{id}/read`: 이벤트 읽음 처리
+
+`conditionType`은 `PRICE_ABOVE` 또는 `PRICE_BELOW`이며 모든 알림 데이터는 로그인
+사용자별로 분리됩니다. 규칙을 삭제해도 이미 발생한 이벤트 이력은 유지됩니다.
+
 ### 오류 응답
 
 잘못된 입력은 HTTP 400, 키움 연동 오류는 HTTP 502로 반환됩니다.
@@ -307,6 +333,7 @@ secret, 접근 토큰 값은 로그에 기록하지 않습니다.
 ✅ **에러 핸들링** - 일관된 JSON 오류 응답 제공  
 ✅ **거래 원장** - 매수·매도 기록, 이동평균 매입가 및 실현 손익 계산
 ✅ **사용자 보안** - 세션 인증과 사용자별 관심 종목·포트폴리오 데이터 격리
+✅ **목표가 알림** - 사용자별 목표가 규칙, 경계 교차 평가, 읽음 이벤트 관리
 
 ## 🧪 테스트
 

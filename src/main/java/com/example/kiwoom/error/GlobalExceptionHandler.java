@@ -40,6 +40,15 @@ public class GlobalExceptionHandler {
                 .body(response(error.errorCode().apiCode(), error, exchange));
     }
 
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<ApiErrorResponse> handleNotFound(
+            ResourceNotFoundException error,
+            ServerWebExchange exchange
+    ) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(response("RESOURCE_NOT_FOUND", error, exchange));
+    }
+
     private ApiErrorResponse response(
             String code,
             RuntimeException error,
