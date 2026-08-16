@@ -1,12 +1,11 @@
 package com.example.kiwoom.service;
 
-import com.example.kiwoom.dto.DailyPriceResponse;
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
+import com.example.kiwoom.dto.DailyPriceResponse;
 import java.util.ArrayList;
 import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Test;
 
 class TechnicalIndicatorServiceTest {
     private final TechnicalIndicatorService service = new TechnicalIndicatorService();
@@ -16,7 +15,9 @@ class TechnicalIndicatorServiceTest {
         List<DailyPriceResponse> prices = new ArrayList<>();
         for (int index = 0; index < 40; index++) {
             long close = 100 + index + (index % 3 == 0 ? -2 : 1);
-            prices.add(new DailyPriceResponse(String.format("202601%02d", index + 1), close, close, close, close, 1));
+            prices.add(
+                    new DailyPriceResponse(
+                            String.format("202601%02d", index + 1), close, close, close, close, 1));
         }
 
         List<DailyPriceResponse> result = service.enrich(prices);

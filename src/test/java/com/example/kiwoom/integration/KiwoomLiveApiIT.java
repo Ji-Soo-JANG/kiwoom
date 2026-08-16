@@ -1,5 +1,7 @@
 package com.example.kiwoom.integration;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import com.example.kiwoom.client.KiwoomHttpClient;
 import com.example.kiwoom.config.KiwoomApiProperties;
 import com.example.kiwoom.dto.DailyPriceResponse;
@@ -9,14 +11,11 @@ import com.example.kiwoom.service.KiwoomApiService;
 import com.example.kiwoom.service.TechnicalIndicatorService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import org.junit.jupiter.api.Test;
-import org.springframework.web.reactive.function.client.WebClient;
-
 import java.time.Duration;
 import java.util.List;
 import java.util.Locale;
-
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Test;
+import org.springframework.web.reactive.function.client.WebClient;
 
 class KiwoomLiveApiIT {
     @Test
@@ -29,16 +28,30 @@ class KiwoomLiveApiIT {
         String code = System.getenv().getOrDefault("KIWOOM_LIVE_STOCK_CODE", "005930");
 
         SimpleMeterRegistry registry = new SimpleMeterRegistry();
-        KiwoomApiProperties properties = new KiwoomApiProperties(
-                baseUrl, appKey, secretKey, Duration.ofSeconds(3), Duration.ofSeconds(10),
-                5, 1, Duration.ofMillis(300), Duration.ZERO, Duration.ZERO);
-        KiwoomApiService service = new KiwoomApiService(
-                new KiwoomHttpClient(WebClient.create(), properties, registry),
-                new KiwoomResponseMapper(new ObjectMapper()), properties, registry,
-                new TechnicalIndicatorService());
+        KiwoomApiProperties properties =
+                new KiwoomApiProperties(
+                        baseUrl,
+                        appKey,
+                        secretKey,
+                        Duration.ofSeconds(3),
+                        Duration.ofSeconds(10),
+                        5,
+                        1,
+                        Duration.ofMillis(300),
+                        Duration.ZERO,
+                        Duration.ZERO);
+        KiwoomApiService service =
+                new KiwoomApiService(
+                        new KiwoomHttpClient(WebClient.create(), properties, registry),
+                        new KiwoomResponseMapper(new ObjectMapper()),
+                        properties,
+                        registry,
+                        new TechnicalIndicatorService());
 
-        StockPriceResponse current = service.getStockCurrentPrice(code).block(Duration.ofSeconds(20));
-        List<DailyPriceResponse> daily = service.getDailyPrices(code, null).block(Duration.ofSeconds(30));
+        StockPriceResponse current =
+                service.getStockCurrentPrice(code).block(Duration.ofSeconds(20));
+        List<DailyPriceResponse> daily =
+                service.getDailyPrices(code, null).block(Duration.ofSeconds(30));
 
         assertNotNull(current);
         assertEquals(code, current.getCode());
@@ -49,8 +62,11 @@ class KiwoomLiveApiIT {
     }
 
     private String environment() {
-        String value = System.getenv().getOrDefault("KIWOOM_LIVE_ENV", "PAPER")
-                .trim().toUpperCase(Locale.ROOT);
+        String value =
+                System.getenv()
+                        .getOrDefault("KIWOOM_LIVE_ENV", "PAPER")
+                        .trim()
+                        .toUpperCase(Locale.ROOT);
         if (!value.equals("PAPER") && !value.equals("PROD")) {
             throw new IllegalStateException("KIWOOM_LIVE_ENV는 PAPER 또는 PROD여야 합니다");
         }

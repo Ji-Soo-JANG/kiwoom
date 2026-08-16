@@ -156,7 +156,12 @@
   - 검색, 관심 종목, 포트폴리오 등록·평가의 핵심 흐름을 검증한다.
   - 모바일 화면과 네트워크 오류 시나리오를 포함한다.
 - [x] JaCoCo와 Vitest coverage를 CI에 연결하고 최소 커버리지 기준을 정한다.
-- [ ] OpenAPI 기반 API 계약 검증과 프론트 타입 생성을 도입한다.
-- [ ] 사용하지 않는 Thymeleaf 의존성과 템플릿을 제거할지 결정한다.
-- [ ] Java 포맷터와 Prettier를 적용해 CI에서 코드 형식을 검사한다.
-- [ ] Vite 정적 빌드 산출물을 Git에서 직접 관리할지 배포 파이프라인에서 생성할지 결정한다.
+- [x] OpenAPI 기반 API 계약 검증과 프론트 타입 생성을 도입한다.
+  - `docs/openapi.json`과 Springdoc 런타임 경로를 계약 테스트로 대조한다.
+  - `openapi-typescript` 생성 결과가 최신인지 CI에서 검사한다.
+- [x] 사용하지 않는 Thymeleaf 의존성과 템플릿을 제거했다.
+  - React 정적 진입점만 사용하므로 서버 템플릿 엔진을 유지하지 않는다.
+- [x] Java 포맷터와 Prettier를 적용해 CI에서 코드 형식을 검사한다.
+  - Maven `validate`에서 Spotless를, 프론트 CI에서 Prettier를 검사한다.
+- [x] Vite 정적 빌드 산출물을 Git에서 직접 관리하기로 결정했다.
+  - 로컬 JAR 단독 실행을 위해 산출물을 포함하고 CI 재빌드로 최신 여부를 확인한다.

@@ -2,9 +2,7 @@ package com.example.kiwoom.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-/**
- * 키움 API의 일봉 데이터를 담는 DTO입니다.
- */
+/** 키움 API의 일봉 데이터를 담는 DTO입니다. */
 public class DailyPriceResponse {
 
     @JsonProperty("date")
@@ -29,8 +27,7 @@ public class DailyPriceResponse {
     private Double macd;
     private Double signal;
 
-    public DailyPriceResponse() {
-    }
+    public DailyPriceResponse() {}
 
     public DailyPriceResponse(
             String date,
@@ -38,8 +35,7 @@ public class DailyPriceResponse {
             long highPrice,
             long lowPrice,
             long closePrice,
-            long volume
-    ) {
+            long volume) {
         this.date = date;
         this.openPrice = openPrice;
         this.highPrice = highPrice;
@@ -72,9 +68,17 @@ public class DailyPriceResponse {
         return volume;
     }
 
-    public Double getRsi() { return rsi; }
-    public Double getMacd() { return macd; }
-    public Double getSignal() { return signal; }
+    public Double getRsi() {
+        return rsi;
+    }
+
+    public Double getMacd() {
+        return macd;
+    }
+
+    public Double getSignal() {
+        return signal;
+    }
 
     public void setIndicators(Double rsi, Double macd, Double signal) {
         this.rsi = rsi;
@@ -108,13 +112,20 @@ public class DailyPriceResponse {
 
     @Override
     public String toString() {
-        return "DailyPriceResponse{" +
-                "date='" + date + '\'' +
-                ", openPrice=" + openPrice +
-                ", highPrice=" + highPrice +
-                ", lowPrice=" + lowPrice +
-                ", closePrice=" + closePrice +
-                ", volume=" + volume +
-                '}';
+        return "DailyPriceResponse{"
+                + "date='"
+                + date
+                + '\''
+                + ", openPrice="
+                + openPrice
+                + ", highPrice="
+                + highPrice
+                + ", lowPrice="
+                + lowPrice
+                + ", closePrice="
+                + closePrice
+                + ", volume="
+                + volume
+                + '}';
     }
 }

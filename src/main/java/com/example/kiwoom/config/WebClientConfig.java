@@ -13,19 +13,19 @@ public class WebClientConfig {
 
     @Bean
     public WebClient webClient(KiwoomApiProperties properties) {
-        ConnectionProvider connectionProvider = ConnectionProvider.builder("kiwoom")
-                .maxConnections(properties.maxConnections())
-                .build();
-        HttpClient httpClient = HttpClient.create(connectionProvider)
-                .option(
-                        ChannelOption.CONNECT_TIMEOUT_MILLIS,
-                        Math.toIntExact(properties.connectTimeout().toMillis())
-                )
-                .responseTimeout(properties.responseTimeout());
+        ConnectionProvider connectionProvider =
+                ConnectionProvider.builder("kiwoom")
+                        .maxConnections(properties.maxConnections())
+                        .build();
+        HttpClient httpClient =
+                HttpClient.create(connectionProvider)
+                        .option(
+                                ChannelOption.CONNECT_TIMEOUT_MILLIS,
+                                Math.toIntExact(properties.connectTimeout().toMillis()))
+                        .responseTimeout(properties.responseTimeout());
 
         return WebClient.builder()
                 .clientConnector(new ReactorClientHttpConnector(httpClient))
                 .build();
     }
 }
-

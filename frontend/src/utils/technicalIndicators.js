@@ -37,13 +37,13 @@ export const calculateRsi = (values, period = 14) => {
 
   let averageGain = gains / period;
   let averageLoss = losses / period;
-  result[period] = averageLoss === 0 ? 100 : 100 - (100 / (1 + averageGain / averageLoss));
+  result[period] = averageLoss === 0 ? 100 : 100 - 100 / (1 + averageGain / averageLoss);
 
   for (let index = period + 1; index < values.length; index += 1) {
     const change = values[index] - values[index - 1];
-    averageGain = ((averageGain * (period - 1)) + Math.max(change, 0)) / period;
-    averageLoss = ((averageLoss * (period - 1)) + Math.max(-change, 0)) / period;
-    result[index] = averageLoss === 0 ? 100 : 100 - (100 / (1 + averageGain / averageLoss));
+    averageGain = (averageGain * (period - 1) + Math.max(change, 0)) / period;
+    averageLoss = (averageLoss * (period - 1) + Math.max(-change, 0)) / period;
+    result[index] = averageLoss === 0 ? 100 : 100 - 100 / (1 + averageGain / averageLoss);
   }
   return result;
 };
@@ -57,7 +57,7 @@ export const calculateMacd = (values) => {
   const available = macd.filter((value) => value != null);
   const signalValues = ema(available, 9);
   let signalIndex = 0;
-  const signal = macd.map((value) => value == null ? null : signalValues[signalIndex++]);
+  const signal = macd.map((value) => (value == null ? null : signalValues[signalIndex++]));
   return { macd, signal };
 };
 

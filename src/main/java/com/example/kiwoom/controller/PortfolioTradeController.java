@@ -4,11 +4,11 @@ import com.example.kiwoom.dto.PortfolioTrade;
 import com.example.kiwoom.dto.PortfolioTradeRequest;
 import com.example.kiwoom.service.PortfolioTradeService;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.security.Principal;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import java.security.Principal;
 
 @RestController
 @RequestMapping("/api/portfolio/transactions")
@@ -16,14 +16,19 @@ import java.security.Principal;
 public class PortfolioTradeController {
     private final PortfolioTradeService service;
 
-    public PortfolioTradeController(PortfolioTradeService service) { this.service = service; }
+    public PortfolioTradeController(PortfolioTradeService service) {
+        this.service = service;
+    }
 
     @GetMapping
-    public Flux<PortfolioTrade> findAll(Principal principal) { return service.findAll(principal.getName()); }
+    public Flux<PortfolioTrade> findAll(Principal principal) {
+        return service.findAll(principal.getName());
+    }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public Mono<PortfolioTrade> record(Principal principal, @RequestBody PortfolioTradeRequest request) {
+    public Mono<PortfolioTrade> record(
+            Principal principal, @RequestBody PortfolioTradeRequest request) {
         return service.record(principal.getName(), request);
     }
 }

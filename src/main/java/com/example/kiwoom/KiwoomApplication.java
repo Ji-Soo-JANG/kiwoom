@@ -9,9 +9,6 @@ import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 public class KiwoomApplication {
 
     public static void main(String[] args) {
-        SpringApplication.run(
-                KiwoomApplication.class,
-                args
-        );
+        SpringApplication.run(KiwoomApplication.class, args);
     }
 }

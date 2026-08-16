@@ -12,6 +12,4 @@ public record PortfolioTrade(
         BigDecimal fee,
         BigDecimal tax,
         BigDecimal realizedProfitLoss,
-        OffsetDateTime tradedAt
-) {
-}
+        OffsetDateTime tradedAt) {}

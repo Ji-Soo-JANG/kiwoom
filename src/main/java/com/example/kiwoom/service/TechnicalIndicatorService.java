@@ -1,11 +1,10 @@
 package com.example.kiwoom.service;
 
 import com.example.kiwoom.dto.DailyPriceResponse;
-import org.springframework.stereotype.Service;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import org.springframework.stereotype.Service;
 
 @Service
 public class TechnicalIndicatorService {
@@ -22,7 +21,8 @@ public class TechnicalIndicatorService {
                 available.add(macd[index]);
             }
         }
-        Double[] signalValues = ema(available.stream().mapToDouble(Double::doubleValue).toArray(), 9);
+        Double[] signalValues =
+                ema(available.stream().mapToDouble(Double::doubleValue).toArray(), 9);
         Double[] signal = new Double[closes.length];
         int signalIndex = 0;
         for (int index = 0; index < closes.length; index++) {

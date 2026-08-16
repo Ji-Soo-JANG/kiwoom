@@ -18,6 +18,11 @@ public enum KiwoomErrorCode {
         this.status = status;
     }
 
-    public String apiCode() { return apiCode; }
-    public HttpStatus status() { return status; }
+    public String apiCode() {
+        return apiCode;
+    }
+
+    public HttpStatus status() {
+        return status;
+    }
 }

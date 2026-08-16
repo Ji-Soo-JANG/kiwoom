@@ -1,5 +1,11 @@
-import {describe, expect, it} from 'vitest';
-import {formatDate, formatPrice, formatShortDate, formatSignedNumber, getChangeClass} from './stockFormat';
+import { describe, expect, it } from 'vitest';
+import {
+  formatDate,
+  formatPrice,
+  formatShortDate,
+  formatSignedNumber,
+  getChangeClass
+} from './stockFormat';
 
 describe('stockFormat', () => {
   it('가격과 부호 있는 숫자를 표시한다', () => {

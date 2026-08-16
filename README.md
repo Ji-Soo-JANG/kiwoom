@@ -19,8 +19,7 @@ kiwoom/
 │   │   │   ├── repository/                      # R2DBC 영속 저장소
 │   │   │   └── service/                         # 토큰·캐시 및 조회 흐름
 │   │   └── resources/
-│   │       ├── static/                         # React 빌드 결과물
-│   │       └── templates/index.html            # 기존 Thymeleaf HTML
+│   │       └── static/                         # Git에서 관리하는 React 빌드 결과물
 │   └── test/
 │       └── java/com/example/kiwoom/             # 서비스 단위·기동 테스트
 ├── frontend/                                   # React 프론트엔드
@@ -98,6 +97,7 @@ volume까지 삭제하는 `docker compose down -v`는 초기화가 필요한 경
 
 의존성 업데이트 주기와 보안 반영 기준은 [`docs/dependency-policy.md`](docs/dependency-policy.md)를 따릅니다.
 목표가·기술지표 앱 알림의 데이터 모델과 API 계획은 [`docs/alert-design.md`](docs/alert-design.md)를 따릅니다.
+로컬 빌드 산출물과 템플릿 엔진 결정은 [`docs/build-decisions.md`](docs/build-decisions.md)를 따릅니다.
 
 ```powershell
 # Windows
@@ -129,6 +129,8 @@ npm run dev
 
 cd frontend
 npm run lint
+npm run format:check
+npm run types:check
 npm test
 npm run build
 cd ..
@@ -304,6 +306,11 @@ Content-Type: application/json
 
 - Swagger UI: `http://localhost:8080/swagger-ui.html`
 - OpenAPI JSON: `http://localhost:8080/v3/api-docs`
+- 저장소 API 계약: `docs/openapi.json`
+
+프론트 API 타입은 저장소 계약으로부터 생성합니다. API를 변경했다면 계약을 함께 수정한 뒤
+`npm run types:generate`를 실행합니다. CI는 런타임 Springdoc 문서에 모든 계약 경로가 있는지와
+생성 타입이 최신인지 확인합니다.
 
 ### 실제 키움 API 통합 테스트
 
@@ -347,7 +354,6 @@ secret, 접근 토큰 값은 로그에 기록하지 않습니다.
 - **Spring Security** - 세션 로그인 및 API 접근 제어
 - **Reactor** - 비동기 처리 (Mono, Flux)
 - **Jackson** - JSON 처리
-- **Thymeleaf** - HTML 템플릿 엔진
 - **PostgreSQL 15 / R2DBC** - 관심 종목과 포트폴리오 영속 저장
 - **Flyway** - 데이터베이스 스키마 마이그레이션
 

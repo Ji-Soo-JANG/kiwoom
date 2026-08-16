@@ -8,6 +8,4 @@ public record PortfolioTradeRequest(
         BigDecimal quantity,
         BigDecimal price,
         BigDecimal fee,
-        BigDecimal tax
-) {
-}
+        BigDecimal tax) {}

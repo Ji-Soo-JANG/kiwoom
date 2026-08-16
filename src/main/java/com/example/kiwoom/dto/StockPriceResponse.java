@@ -2,9 +2,7 @@ package com.example.kiwoom.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-/**
- * 키움 API로부터 받은 주가 정보를 담는 데이터 전송 객체 (DTO).
- */
+/** 키움 API로부터 받은 주가 정보를 담는 데이터 전송 객체 (DTO). */
 public class StockPriceResponse {
     @JsonProperty("code")
     private String code;
@@ -20,7 +18,8 @@ public class StockPriceResponse {
 
     public StockPriceResponse() {}
 
-    public StockPriceResponse(String code, String currentPrice, String changeAmount, String changeRate) {
+    public StockPriceResponse(
+            String code, String currentPrice, String changeAmount, String changeRate) {
         this.code = code;
         this.currentPrice = currentPrice;
         this.changeAmount = changeAmount;
@@ -61,11 +60,19 @@ public class StockPriceResponse {
 
     @Override
     public String toString() {
-        return "StockPriceResponse{" +
-                "code='" + code + '\'' +
-                ", currentPrice='" + currentPrice + '\'' +
-                ", changeAmount='" + changeAmount + '\'' +
-                ", changeRate='" + changeRate + '\'' +
-                '}';
+        return "StockPriceResponse{"
+                + "code='"
+                + code
+                + '\''
+                + ", currentPrice='"
+                + currentPrice
+                + '\''
+                + ", changeAmount='"
+                + changeAmount
+                + '\''
+                + ", changeRate='"
+                + changeRate
+                + '\''
+                + '}';
     }
 }

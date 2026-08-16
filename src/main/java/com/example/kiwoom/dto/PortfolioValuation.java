@@ -10,6 +10,4 @@ public record PortfolioValuation(
         BigDecimal purchaseAmount,
         BigDecimal evaluationAmount,
         BigDecimal profitLoss,
-        BigDecimal returnRate
-) {
-}
+        BigDecimal returnRate) {}

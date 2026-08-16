@@ -3,14 +3,13 @@ package com.example.kiwoom.service;
 import com.example.kiwoom.dto.PortfolioPosition;
 import com.example.kiwoom.dto.PortfolioValuation;
 import com.example.kiwoom.repository.PortfolioRepository;
-import org.springframework.stereotype.Service;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Comparator;
 import java.util.List;
+import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 @Service
 public class PortfolioService {
@@ -40,8 +39,17 @@ public class PortfolioService {
 
     public Mono<List<PortfolioValuation>> valuate(String username) {
         return findAll(username)
-                .flatMap(position -> kiwoomApiService.getStockCurrentPrice(position.code())
-                        .map(price -> calculate(position, new BigDecimal(price.getCurrentPrice()))), 3)
+                .flatMap(
+                        position ->
+                                kiwoomApiService
+                                        .getStockCurrentPrice(position.code())
+                                        .map(
+                                                price ->
+                                                        calculate(
+                                                                position,
+                                                                new BigDecimal(
+                                                                        price.getCurrentPrice()))),
+                        3)
                 .collectSortedList(Comparator.comparing(PortfolioValuation::code));
     }
 
@@ -49,10 +57,17 @@ public class PortfolioService {
         BigDecimal purchase = position.averagePrice().multiply(position.quantity());
         BigDecimal evaluation = currentPrice.multiply(position.quantity());
         BigDecimal profit = evaluation.subtract(purchase);
-        BigDecimal rate = profit.multiply(BigDecimal.valueOf(100))
-                .divide(purchase, 2, RoundingMode.HALF_UP);
-        return new PortfolioValuation(position.code(), position.quantity(), position.averagePrice(),
-                currentPrice, purchase, evaluation, profit, rate);
+        BigDecimal rate =
+                profit.multiply(BigDecimal.valueOf(100)).divide(purchase, 2, RoundingMode.HALF_UP);
+        return new PortfolioValuation(
+                position.code(),
+                position.quantity(),
+                position.averagePrice(),
+                currentPrice,
+                purchase,
+                evaluation,
+                profit,
+                rate);
     }
 
     private void validate(PortfolioPosition position) {

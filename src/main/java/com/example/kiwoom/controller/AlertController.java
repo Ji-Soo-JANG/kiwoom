@@ -3,12 +3,11 @@ package com.example.kiwoom.controller;
 import com.example.kiwoom.dto.*;
 import com.example.kiwoom.service.AlertService;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.security.Principal;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-
-import java.security.Principal;
 
 @RestController
 @RequestMapping("/api/alerts")
@@ -16,10 +15,14 @@ import java.security.Principal;
 public class AlertController {
     private final AlertService service;
 
-    public AlertController(AlertService service) { this.service = service; }
+    public AlertController(AlertService service) {
+        this.service = service;
+    }
 
     @GetMapping("/rules")
-    public Flux<AlertRule> findRules(Principal principal) { return service.findRules(principal.getName()); }
+    public Flux<AlertRule> findRules(Principal principal) {
+        return service.findRules(principal.getName());
+    }
 
     @PostMapping("/rules")
     @ResponseStatus(HttpStatus.CREATED)
@@ -28,8 +31,10 @@ public class AlertController {
     }
 
     @PatchMapping("/rules/{id}")
-    public Mono<AlertRule> updateRule(Principal principal, @PathVariable long id,
-                                      @RequestBody AlertRuleUpdateRequest request) {
+    public Mono<AlertRule> updateRule(
+            Principal principal,
+            @PathVariable long id,
+            @RequestBody AlertRuleUpdateRequest request) {
         return service.updateRule(principal.getName(), id, request);
     }
 
@@ -40,11 +45,13 @@ public class AlertController {
     }
 
     @PostMapping("/evaluate")
-    public Flux<AlertEvent> evaluate(Principal principal) { return service.evaluate(principal.getName()); }
+    public Flux<AlertEvent> evaluate(Principal principal) {
+        return service.evaluate(principal.getName());
+    }
 
     @GetMapping("/events")
-    public Flux<AlertEvent> findEvents(Principal principal,
-                                       @RequestParam(defaultValue = "false") boolean unreadOnly) {
+    public Flux<AlertEvent> findEvents(
+            Principal principal, @RequestParam(defaultValue = "false") boolean unreadOnly) {
         return service.findEvents(principal.getName(), unreadOnly);
     }
 

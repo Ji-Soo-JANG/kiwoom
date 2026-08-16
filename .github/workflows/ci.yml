@@ -41,8 +41,12 @@ jobs:
         run: npm ci
       - name: Audit frontend dependencies
         run: npm audit --audit-level=high
+      - name: Check frontend formatting
+        run: npm run format:check
       - name: Lint frontend
         run: npm run lint
+      - name: Check generated API types
+        run: npm run types:check
       - name: Test frontend with coverage gate
         run: npm run test:coverage
       - name: Upload Vitest coverage report
@@ -55,5 +59,5 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Run browser E2E tests
         run: npm run test:e2e
-      - name: Build frontend
-        run: npm run build
+      - name: Build frontend and check committed assets
+        run: npm run build:check

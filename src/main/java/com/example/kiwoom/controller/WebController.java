@@ -11,10 +11,13 @@ import org.springframework.web.bind.annotation.ResponseBody;
 @Controller
 public class WebController {
 
-    @GetMapping(value = {"/", "/watchlist", "/portfolio", "/alerts"}, produces = MediaType.TEXT_HTML_VALUE)
+    @GetMapping(
+            value = {"/", "/watchlist", "/portfolio", "/alerts"},
+            produces = MediaType.TEXT_HTML_VALUE)
     @ResponseBody
     public ResponseEntity<Resource> index() {
-        return ResponseEntity.ok().contentType(MediaType.TEXT_HTML)
+        return ResponseEntity.ok()
+                .contentType(MediaType.TEXT_HTML)
                 .body(new ClassPathResource("static/index.html"));
     }
 }

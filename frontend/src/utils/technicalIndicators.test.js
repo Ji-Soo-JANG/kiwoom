@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { addTechnicalIndicators, calculateMacd, calculateRsi, calculateSma } from './technicalIndicators';
+import {
+  addTechnicalIndicators,
+  calculateMacd,
+  calculateRsi,
+  calculateSma
+} from './technicalIndicators';
 
 describe('technicalIndicators', () => {
   const rising = Array.from({ length: 40 }, (_, index) => index + 1);
@@ -21,7 +26,9 @@ describe('technicalIndicators', () => {
   });
 
   it('일봉 데이터에 지표를 결합한다', () => {
-    const result = addTechnicalIndicators(rising.map((closePrice, index) => ({ date: String(index), closePrice })));
+    const result = addTechnicalIndicators(
+      rising.map((closePrice, index) => ({ date: String(index), closePrice }))
+    );
     expect(result).toHaveLength(40);
     expect(result[39].rsi).toBe(100);
     expect(result[39].macd).not.toBeNull();

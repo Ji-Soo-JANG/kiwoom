@@ -8,22 +8,22 @@ import com.example.kiwoom.error.KiwoomErrorCode;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.stereotype.Component;
-
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import org.springframework.stereotype.Component;
 
 @Component
 public class KiwoomResponseMapper {
     private static final ZoneId SEOUL_ZONE = ZoneId.of("Asia/Seoul");
-    private static final DateTimeFormatter TOKEN_EXPIRY_FORMAT = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
+    private static final DateTimeFormatter TOKEN_EXPIRY_FORMAT =
+            DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
     private final ObjectMapper objectMapper;
 
     public KiwoomResponseMapper(ObjectMapper objectMapper) {
@@ -38,8 +38,11 @@ public class KiwoomResponseMapper {
             String expiry = root.path("expires_dt").asText();
             if (token.isBlank()) throw invalidResponse("토큰 발급 응답에 token이 없습니다");
             if (expiry.isBlank()) throw invalidResponse("토큰 발급 응답에 expires_dt가 없습니다");
-            return new ParsedAccessToken(token,
-                    LocalDateTime.parse(expiry, TOKEN_EXPIRY_FORMAT).atZone(SEOUL_ZONE).toInstant());
+            return new ParsedAccessToken(
+                    token,
+                    LocalDateTime.parse(expiry, TOKEN_EXPIRY_FORMAT)
+                            .atZone(SEOUL_ZONE)
+                            .toInstant());
         } catch (JsonProcessingException | DateTimeParseException error) {
             throw invalidResponse("토큰 응답 JSON 파싱 실패: " + error.getMessage());
         }
@@ -51,7 +54,9 @@ public class KiwoomResponseMapper {
             verifySuccess(root, "키움 주가 조회 오류");
             String code = root.path("stk_cd").asText();
             if (code.isBlank()) code = requestedCode;
-            return new StockPriceResponse(code, normalizePrice(requiredText(root, "cur_prc")),
+            return new StockPriceResponse(
+                    code,
+                    normalizePrice(requiredText(root, "cur_prc")),
                     normalizeNumber(root.path("pred_pre").asText("0"), "pred_pre"),
                     normalizeNumber(root.path("flu_rt").asText("0.00"), "flu_rt"));
         } catch (JsonProcessingException error) {
@@ -67,9 +72,14 @@ public class KiwoomResponseMapper {
             if (!array.isArray()) throw invalidResponse("일봉 배열을 찾을 수 없습니다");
             List<DailyPriceResponse> result = new ArrayList<>();
             for (JsonNode item : array) {
-                result.add(new DailyPriceResponse(requiredText(item, "dt"), parseLong(item, "open_pric"),
-                        parseLong(item, "high_pric"), parseLong(item, "low_pric"),
-                        parseLong(item, "cur_prc"), parseLong(item, "trde_qty")));
+                result.add(
+                        new DailyPriceResponse(
+                                requiredText(item, "dt"),
+                                parseLong(item, "open_pric"),
+                                parseLong(item, "high_pric"),
+                                parseLong(item, "low_pric"),
+                                parseLong(item, "cur_prc"),
+                                parseLong(item, "trde_qty")));
             }
             result.sort(Comparator.comparing(DailyPriceResponse::getDate));
             return result;
@@ -130,13 +140,19 @@ public class KiwoomResponseMapper {
 
     private long parseLong(JsonNode node, String field) {
         String normalized = requiredText(node, field).trim().replace(",", "").replace("+", "");
-        try { return Math.abs(Long.parseLong(normalized)); }
-        catch (NumberFormatException error) { throw invalidResponse("숫자 응답 형식이 올바르지 않습니다: " + field); }
+        try {
+            return Math.abs(Long.parseLong(normalized));
+        } catch (NumberFormatException error) {
+            throw invalidResponse("숫자 응답 형식이 올바르지 않습니다: " + field);
+        }
     }
 
     private void validateNumber(String value, String field) {
-        try { new BigDecimal(value); }
-        catch (NumberFormatException error) { throw invalidResponse("숫자 응답 형식이 올바르지 않습니다: " + field); }
+        try {
+            new BigDecimal(value);
+        } catch (NumberFormatException error) {
+            throw invalidResponse("숫자 응답 형식이 올바르지 않습니다: " + field);
+        }
     }
 
     public record ParsedAccessToken(String value, Instant expiresAt) {}

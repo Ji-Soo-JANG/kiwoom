@@ -1,5 +1,6 @@
 package com.example.kiwoom.config;
 
+import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -7,17 +8,12 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.reactive.CorsWebFilter;
 import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
 
-import java.util.List;
-
 @Configuration
 public class CorsConfig {
 
     private final List<String> allowedOrigins;
 
-    public CorsConfig(
-            @Value("${app.cors.allowed-origins}")
-            List<String> allowedOrigins
-    ) {
+    public CorsConfig(@Value("${app.cors.allowed-origins}") List<String> allowedOrigins) {
         this.allowedOrigins = allowedOrigins;
     }
 
@@ -36,4 +32,3 @@ public class CorsConfig {
         return new CorsWebFilter(source);
     }
 }
-

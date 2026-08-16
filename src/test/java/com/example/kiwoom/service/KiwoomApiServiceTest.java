@@ -1,34 +1,33 @@
 package com.example.kiwoom.service;
 
-import com.example.kiwoom.config.KiwoomApiProperties;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import com.example.kiwoom.client.KiwoomHttpClient;
+import com.example.kiwoom.config.KiwoomApiProperties;
 import com.example.kiwoom.dto.StockPriceResponse;
 import com.example.kiwoom.dto.StockSearchResult;
 import com.example.kiwoom.error.KiwoomApiException;
 import com.example.kiwoom.error.KiwoomErrorCode;
 import com.example.kiwoom.mapper.KiwoomResponseMapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.io.IOException;
+import java.time.Duration;
+import java.util.List;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.web.reactive.function.client.WebClient;
-import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import ch.qos.logback.classic.Logger;
-import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.core.read.ListAppender;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.time.Duration;
-import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.springframework.web.reactive.function.client.WebClient;
 
 @DisplayName("KiwoomApiService 단위 테스트")
 class KiwoomApiServiceTest {
@@ -51,15 +50,16 @@ class KiwoomApiServiceTest {
 
     private KiwoomApiProperties properties(Duration cacheTtl, Duration dailyCacheTtl) {
         return new KiwoomApiProperties(
-                        server.url("/").toString(),
-                        "test-key",
-                        "test-secret",
-                        Duration.ofSeconds(1),
-                        Duration.ofSeconds(2),
-                        5,
-                        2,
-                        Duration.ofMillis(1), cacheTtl, dailyCacheTtl
-        );
+                server.url("/").toString(),
+                "test-key",
+                "test-secret",
+                Duration.ofSeconds(1),
+                Duration.ofSeconds(2),
+                5,
+                2,
+                Duration.ofMillis(1),
+                cacheTtl,
+                dailyCacheTtl);
     }
 
     @AfterEach
@@ -76,52 +76,62 @@ class KiwoomApiServiceTest {
     @Test
     @DisplayName("null 또는 빈 종목 코드를 거부한다")
     void rejectsBlankCode() {
-        assertThrows(IllegalArgumentException.class,
-                () -> service.getStockCurrentPrice(null).block());
-        assertThrows(IllegalArgumentException.class,
-                () -> service.getStockCurrentPrice("   ").block());
+        assertThrows(
+                IllegalArgumentException.class, () -> service.getStockCurrentPrice(null).block());
+        assertThrows(
+                IllegalArgumentException.class, () -> service.getStockCurrentPrice("   ").block());
     }
 
     @Test
     @DisplayName("6자리 숫자가 아닌 종목 코드를 거부한다")
     void rejectsInvalidCode() {
-        assertThrows(IllegalArgumentException.class,
+        assertThrows(
+                IllegalArgumentException.class,
                 () -> service.getStockCurrentPrice("A05930").block());
-        assertThrows(IllegalArgumentException.class,
-                () -> service.getStockCurrentPrice("5930").block());
+        assertThrows(
+                IllegalArgumentException.class, () -> service.getStockCurrentPrice("5930").block());
     }
 
     @Test
     @DisplayName("유효하지 않은 기준일자를 거부한다")
     void rejectsInvalidBaseDate() {
-        assertThrows(IllegalArgumentException.class,
+        assertThrows(
+                IllegalArgumentException.class,
                 () -> service.getDailyPrices("005930", "20260230").block());
     }
 
     @Test
     @DisplayName("다중 조회 종목 수를 20개로 제한한다")
     void limitsMultipleCodes() {
-        List<String> codes = java.util.stream.IntStream.range(0, 21)
-                .mapToObj(value -> String.format("%06d", value))
-                .toList();
+        List<String> codes =
+                java.util.stream.IntStream.range(0, 21)
+                        .mapToObj(value -> String.format("%06d", value))
+                        .toList();
 
-        assertThrows(IllegalArgumentException.class,
+        assertThrows(
+                IllegalArgumentException.class,
                 () -> service.getMultipleStockPrices(codes).block());
     }
 
     @Test
     @DisplayName("다중 조회 중 한 종목이 실패하면 전체 요청을 실패 처리한다")
     void failsEntireMultipleRequestWhenOneStockFails() {
-        enqueueJson(200, """
+        enqueueJson(
+                200,
+                """
                 {"return_code":0,"token":"access-token","expires_dt":"20991231235959"}
                 """);
-        enqueueJson(200, """
+        enqueueJson(
+                200,
+                """
                 {"return_code":0,"stk_cd":"005930","cur_prc":"75000"}
                 """);
         enqueueJson(400, "invalid stock");
 
-        RuntimeException error = assertThrows(RuntimeException.class,
-                () -> service.getMultipleStockPrices(List.of("005930", "000660")).block());
+        RuntimeException error =
+                assertThrows(
+                        RuntimeException.class,
+                        () -> service.getMultipleStockPrices(List.of("005930", "000660")).block());
 
         assertTrue(error.getMessage().contains("주가 조회 API 호출 실패"));
     }
@@ -129,10 +139,14 @@ class KiwoomApiServiceTest {
     @Test
     @DisplayName("토큰을 발급받아 현재가 응답을 변환한다")
     void getsCurrentPrice() throws InterruptedException {
-        enqueueJson(200, """
+        enqueueJson(
+                200,
+                """
                 {"return_code":0,"token":"access-token","expires_dt":"20991231235959"}
                 """);
-        enqueueJson(200, """
+        enqueueJson(
+                200,
+                """
                 {"return_code":0,"stk_cd":"005930","cur_prc":"-75,000","pred_pre":"+500","flu_rt":"+0.67"}
                 """);
 
@@ -155,17 +169,23 @@ class KiwoomApiServiceTest {
         appender.start();
         logger.addAppender(appender);
         try {
-            enqueueJson(200, """
+            enqueueJson(
+                    200,
+                    """
                     {"return_code":0,"token":"sensitive-access-token","expires_dt":"20991231235959"}
                     """);
-            enqueueJson(200, """
+            enqueueJson(
+                    200,
+                    """
                     {"return_code":0,"stk_cd":"005930","cur_prc":"75000"}
                     """);
 
             service.getStockCurrentPrice("005930").block();
 
-            String logs = appender.list.stream().map(ILoggingEvent::getFormattedMessage)
-                    .reduce("", (left, right) -> left + right);
+            String logs =
+                    appender.list.stream()
+                            .map(ILoggingEvent::getFormattedMessage)
+                            .reduce("", (left, right) -> left + right);
             assertTrue(!logs.contains("test-secret"));
             assertTrue(!logs.contains("sensitive-access-token"));
         } finally {
@@ -177,32 +197,48 @@ class KiwoomApiServiceTest {
     @DisplayName("TTL 안의 같은 종목 현재가는 키움 API를 한 번만 호출한다")
     void cachesCurrentPriceWithinTtl() {
         service = createServiceWithCache(Duration.ofMinutes(1));
-        enqueueJson(200, """
+        enqueueJson(
+                200,
+                """
                 {"return_code":0,"token":"access-token","expires_dt":"20991231235959"}
                 """);
-        enqueueJson(200, """
+        enqueueJson(
+                200,
+                """
                 {"return_code":0,"stk_cd":"005930","cur_prc":"75000"}
                 """);
 
         assertEquals("75000", service.getStockCurrentPrice("005930").block().getCurrentPrice());
         assertEquals("75000", service.getStockCurrentPrice("005930").block().getCurrentPrice());
         assertEquals(2, server.getRequestCount());
-        assertEquals(1, meterRegistry.get("kiwoom.cache.accesses")
-                .tags("cache", "current", "result", "hit").counter().count());
+        assertEquals(
+                1,
+                meterRegistry
+                        .get("kiwoom.cache.accesses")
+                        .tags("cache", "current", "result", "hit")
+                        .counter()
+                        .count());
     }
 
     @Test
     @DisplayName("TTL 안의 같은 종목·기준일 일봉은 키움 API를 한 번만 호출한다")
     void cachesDailyPricesByCodeAndDateWithinTtl() {
         KiwoomApiProperties properties = properties(Duration.ZERO, Duration.ofMinutes(1));
-        service = new KiwoomApiService(
-                new KiwoomHttpClient(WebClient.create(), properties, meterRegistry),
-                new KiwoomResponseMapper(new ObjectMapper()), properties, meterRegistry,
-                new TechnicalIndicatorService());
-        enqueueJson(200, """
+        service =
+                new KiwoomApiService(
+                        new KiwoomHttpClient(WebClient.create(), properties, meterRegistry),
+                        new KiwoomResponseMapper(new ObjectMapper()),
+                        properties,
+                        meterRegistry,
+                        new TechnicalIndicatorService());
+        enqueueJson(
+                200,
+                """
                 {"return_code":0,"token":"access-token","expires_dt":"20991231235959"}
                 """);
-        enqueueJson(200, """
+        enqueueJson(
+                200,
+                """
                 {"return_code":0,"stk_dt_pole_chart_qry":[
                   {"dt":"20260815","open_pric":"70000","high_pric":"71000","low_pric":"69000","cur_prc":"70500","trde_qty":"1000"}
                 ]}
@@ -218,13 +254,19 @@ class KiwoomApiServiceTest {
     @Test
     @DisplayName("종목명과 시장으로 종목 목록을 검색한다")
     void searchesStockCatalogByNameAndMarket() {
-        enqueueJson(200, """
+        enqueueJson(
+                200,
+                """
                 {"return_code":0,"token":"access-token","expires_dt":"20991231235959"}
                 """);
-        enqueueJson(200, """
+        enqueueJson(
+                200,
+                """
                 {"return_code":0,"list":[{"code":"005930","name":"삼성전자"}]}
                 """);
-        enqueueJson(200, """
+        enqueueJson(
+                200,
+                """
                 {"return_code":0,"list":[{"code":"035720","name":"카카오"}]}
                 """);
 
@@ -239,15 +281,21 @@ class KiwoomApiServiceTest {
     @Test
     @DisplayName("키움 종목 없음 응답을 전용 오류 코드로 분류한다")
     void classifiesStockNotFoundResponse() {
-        enqueueJson(200, """
+        enqueueJson(
+                200,
+                """
                 {"return_code":0,"token":"access-token","expires_dt":"20991231235959"}
                 """);
-        enqueueJson(200, """
+        enqueueJson(
+                200,
+                """
                 {"return_code":100,"return_msg":"종목 없음"}
                 """);
 
-        KiwoomApiException error = assertThrows(KiwoomApiException.class,
-                () -> service.getStockCurrentPrice("005930").block());
+        KiwoomApiException error =
+                assertThrows(
+                        KiwoomApiException.class,
+                        () -> service.getStockCurrentPrice("005930").block());
 
         assertEquals(KiwoomErrorCode.STOCK_NOT_FOUND, error.errorCode());
         assertEquals(100, error.upstreamCode());
@@ -256,15 +304,21 @@ class KiwoomApiServiceTest {
     @Test
     @DisplayName("키움 장 운영시간 응답을 전용 오류 코드로 분류한다")
     void classifiesMarketClosedResponse() {
-        enqueueJson(200, """
+        enqueueJson(
+                200,
+                """
                 {"return_code":0,"token":"access-token","expires_dt":"20991231235959"}
                 """);
-        enqueueJson(200, """
+        enqueueJson(
+                200,
+                """
                 {"return_code":200,"return_msg":"장 운영시간이 아닙니다"}
                 """);
 
-        KiwoomApiException error = assertThrows(KiwoomApiException.class,
-                () -> service.getStockCurrentPrice("005930").block());
+        KiwoomApiException error =
+                assertThrows(
+                        KiwoomApiException.class,
+                        () -> service.getStockCurrentPrice("005930").block());
 
         assertEquals(KiwoomErrorCode.MARKET_CLOSED, error.errorCode());
     }
@@ -272,14 +326,20 @@ class KiwoomApiServiceTest {
     @Test
     @DisplayName("401 응답이면 토큰을 갱신하고 한 번 재시도한다")
     void refreshesTokenAfterUnauthorized() throws InterruptedException {
-        enqueueJson(200, """
+        enqueueJson(
+                200,
+                """
                 {"return_code":0,"token":"expired-token","expires_dt":"20991231235959"}
                 """);
         enqueueJson(401, "unauthorized");
-        enqueueJson(200, """
+        enqueueJson(
+                200,
+                """
                 {"return_code":0,"token":"new-token","expires_dt":"20991231235959"}
                 """);
-        enqueueJson(200, """
+        enqueueJson(
+                200,
+                """
                 {"return_code":0,"stk_cd":"005930","cur_prc":"75000"}
                 """);
 
@@ -296,16 +356,24 @@ class KiwoomApiServiceTest {
     @Test
     @DisplayName("만료된 토큰은 다음 요청 전에 재발급한다")
     void refreshesExpiredToken() throws InterruptedException {
-        enqueueJson(200, """
+        enqueueJson(
+                200,
+                """
                 {"return_code":0,"token":"old-token","expires_dt":"20200101000000"}
                 """);
-        enqueueJson(200, """
+        enqueueJson(
+                200,
+                """
                 {"return_code":0,"stk_cd":"005930","cur_prc":"70000"}
                 """);
-        enqueueJson(200, """
+        enqueueJson(
+                200,
+                """
                 {"return_code":0,"token":"new-token","expires_dt":"20991231235959"}
                 """);
-        enqueueJson(200, """
+        enqueueJson(
+                200,
+                """
                 {"return_code":0,"stk_cd":"005930","cur_prc":"71000"}
                 """);
 
@@ -325,8 +393,10 @@ class KiwoomApiServiceTest {
         enqueueJson(500, "server error");
         enqueueJson(500, "server error");
 
-        RuntimeException error = assertThrows(RuntimeException.class,
-                () -> service.getStockCurrentPrice("005930").block());
+        RuntimeException error =
+                assertThrows(
+                        RuntimeException.class,
+                        () -> service.getStockCurrentPrice("005930").block());
 
         assertTrue(error.getMessage().contains("일시적인 키움 API 오류"));
     }
@@ -334,11 +404,15 @@ class KiwoomApiServiceTest {
     @Test
     @DisplayName("429 응답이면 지수 백오프로 재시도한다")
     void retriesRateLimitResponse() throws InterruptedException {
-        enqueueJson(200, """
+        enqueueJson(
+                200,
+                """
                 {"return_code":0,"token":"access-token","expires_dt":"20991231235959"}
                 """);
         enqueueJson(429, "rate limited");
-        enqueueJson(200, """
+        enqueueJson(
+                200,
+                """
                 {"return_code":0,"stk_cd":"005930","cur_prc":"72000"}
                 """);
 
@@ -349,8 +423,13 @@ class KiwoomApiServiceTest {
         assertEquals("/oauth2/token", server.takeRequest().getPath());
         assertEquals("/api/dostk/stkinfo", server.takeRequest().getPath());
         assertEquals("/api/dostk/stkinfo", server.takeRequest().getPath());
-        assertEquals(1, meterRegistry.get("kiwoom.api.retries")
-                .tag("reason", "rate_limited").counter().count());
+        assertEquals(
+                1,
+                meterRegistry
+                        .get("kiwoom.api.retries")
+                        .tag("reason", "rate_limited")
+                        .counter()
+                        .count());
     }
 
     @Test
@@ -358,17 +437,20 @@ class KiwoomApiServiceTest {
     void rejectsMalformedJson() {
         enqueueJson(200, "not-json");
 
-        RuntimeException error = assertThrows(RuntimeException.class,
-                () -> service.getStockCurrentPrice("005930").block());
+        RuntimeException error =
+                assertThrows(
+                        RuntimeException.class,
+                        () -> service.getStockCurrentPrice("005930").block());
 
         assertTrue(error.getMessage().contains("토큰 응답 JSON 파싱 실패"));
     }
 
     private void enqueueJson(int status, String body) {
-        server.enqueue(new MockResponse()
-                .setResponseCode(status)
-                .setHeader("Content-Type", "application/json")
-                .setBody(body));
+        server.enqueue(
+                new MockResponse()
+                        .setResponseCode(status)
+                        .setHeader("Content-Type", "application/json")
+                        .setBody(body));
     }
 
     private KiwoomApiService createServiceWithCache(Duration cacheTtl) {
@@ -377,7 +459,8 @@ class KiwoomApiServiceTest {
         return new KiwoomApiService(
                 new KiwoomHttpClient(WebClient.create(), properties, meterRegistry),
                 new KiwoomResponseMapper(objectMapper),
-                properties, meterRegistry, new TechnicalIndicatorService()
-        );
+                properties,
+                meterRegistry,
+                new TechnicalIndicatorService());
     }
 }
