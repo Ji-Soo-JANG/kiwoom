@@ -6,6 +6,7 @@ public record ApiErrorResponse(
         String code,
         String message,
         Instant timestamp,
-        String path
+        String path,
+        String traceId
 ) {
 }

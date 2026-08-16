@@ -15,6 +15,10 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.web.reactive.function.client.WebClient;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -140,6 +144,32 @@ class KiwoomApiServiceTest {
         assertEquals("+0.67", response.getChangeRate());
         assertEquals("/oauth2/token", server.takeRequest().getPath());
         assertEquals("/api/dostk/stkinfo", server.takeRequest().getPath());
+    }
+
+    @Test
+    @DisplayName("API secret과 접근 토큰을 로그에 남기지 않는다")
+    void doesNotLogCredentialsOrAccessToken() {
+        Logger logger = (Logger) LoggerFactory.getLogger(KiwoomApiService.class);
+        ListAppender<ILoggingEvent> appender = new ListAppender<>();
+        appender.start();
+        logger.addAppender(appender);
+        try {
+            enqueueJson(200, """
+                    {"return_code":0,"token":"sensitive-access-token","expires_dt":"20991231235959"}
+                    """);
+            enqueueJson(200, """
+                    {"return_code":0,"stk_cd":"005930","cur_prc":"75000"}
+                    """);
+
+            service.getStockCurrentPrice("005930").block();
+
+            String logs = appender.list.stream().map(ILoggingEvent::getFormattedMessage)
+                    .reduce("", (left, right) -> left + right);
+            assertTrue(!logs.contains("test-secret"));
+            assertTrue(!logs.contains("sensitive-access-token"));
+        } finally {
+            logger.detachAppender(appender);
+        }
     }
 
     @Test

@@ -1,5 +1,6 @@
 package com.example.kiwoom.error;
 
+import com.example.kiwoom.config.RequestTraceFilter;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -48,7 +49,8 @@ public class GlobalExceptionHandler {
                 code,
                 error.getMessage(),
                 Instant.now(),
-                exchange.getRequest().getPath().value()
+                exchange.getRequest().getPath().value(),
+                exchange.getAttribute(RequestTraceFilter.TRACE_ID_ATTRIBUTE)
         );
     }
 }

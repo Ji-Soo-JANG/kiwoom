@@ -10,6 +10,8 @@ import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -24,13 +26,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.logging.Logger;
 
 @Service
 public class KiwoomApiService {
     private static final int MAX_STOCK_CODES = 20;
     private static final Duration TOKEN_REFRESH_MARGIN = Duration.ofMinutes(1);
-    private static final Logger logger = Logger.getLogger(KiwoomApiService.class.getName());
+    private static final Logger logger = LoggerFactory.getLogger(KiwoomApiService.class);
 
     private final KiwoomHttpClient client;
     private final KiwoomResponseMapper mapper;
@@ -87,17 +88,17 @@ public class KiwoomApiService {
     }
 
     private Mono<StockPriceResponse> fetchStockCurrentPrice(String code) {
-        logger.info("주가 조회 요청: " + code);
+        logger.info("stock_price_requested code={}", code);
         return getAccessToken().flatMap(token -> requestStockCurrentPrice(code, token.value()))
                 .onErrorResume(KiwoomAuthenticationException.class, error -> retryStockCurrentPrice(code))
                 .timeout(Duration.ofSeconds(10))
-                .doOnError(error -> logger.warning("주가 조회 실패 [" + code + "]: " + error.getMessage()));
+                .doOnError(error -> logger.warn("stock_price_failed code={} errorType={}",
+                        code, error.getClass().getSimpleName()));
     }
 
     private Mono<StockPriceResponse> requestStockCurrentPrice(String code, String token) {
         return client.requestCurrentPrice(code, token).map(body -> mapper.parseCurrentPrice(code, body))
-                .doOnNext(response -> logger.info("주가 조회 성공: " + response.getCode()
-                        + " / " + response.getCurrentPrice()));
+                .doOnNext(response -> logger.info("stock_price_succeeded code={}", response.getCode()));
     }
 
     /** 한 종목이라도 실패하면 전체 요청을 실패시킵니다. */
@@ -156,18 +157,19 @@ public class KiwoomApiService {
     }
 
     private Mono<List<DailyPriceResponse>> requestDailyPrices(String code, String date, String token) {
-        logger.info("일봉 조회 요청: " + code + " / " + date);
+        logger.info("daily_prices_requested code={} baseDate={}", code, date);
         return client.requestDailyPrices(code, date, token).map(mapper::parseDailyPrices)
                 .timeout(Duration.ofSeconds(15));
     }
 
     private Mono<AccessToken> issueAccessToken() {
-        logger.info("키움 접근 토큰 발급 요청");
+        logger.info("kiwoom_token_issue_requested");
         return client.issueAccessToken(apiKey, apiSecret).map(mapper::parseAccessToken)
                 .map(parsed -> new AccessToken(parsed.value(), parsed.expiresAt()))
                 .timeout(Duration.ofSeconds(10))
-                .doOnSuccess(token -> logger.info("키움 접근 토큰 발급 성공"))
-                .doOnError(error -> logger.warning("키움 접근 토큰 발급 실패: " + error.getMessage()));
+                .doOnSuccess(token -> logger.info("kiwoom_token_issue_succeeded"))
+                .doOnError(error -> logger.warn("kiwoom_token_issue_failed errorType={}",
+                        error.getClass().getSimpleName()));
     }
 
     private Mono<AccessToken> getAccessToken() {

@@ -48,6 +48,16 @@ class KiwoomApplicationTest {
     }
 
     @Test
+    @WithMockUser(username = "admin", roles = "ADMIN")
+    void returnsTraceIdInHeaderAndErrorBody() {
+        webTestClient.get().uri("/api/kiwoom/stock-price/invalid")
+                .header("X-Trace-Id", "test-trace-1234")
+                .exchange().expectStatus().isBadRequest()
+                .expectHeader().valueEquals("X-Trace-Id", "test-trace-1234")
+                .expectBody().jsonPath("$.traceId").isEqualTo("test-trace-1234");
+    }
+
+    @Test
     void isolatesWatchlistsByAuthenticatedUser() {
         watchlistRepository.add("alice", "035420").block();
 
