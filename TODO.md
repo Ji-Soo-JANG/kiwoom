@@ -150,7 +150,7 @@
 
 ### P2 — 테스트와 코드 품질
 
-- [ ] `KiwoomHttpClient`와 `KiwoomResponseMapper` 전용 단위 테스트를 추가한다.
+- [x] `KiwoomHttpClient`와 `KiwoomResponseMapper` 전용 단위 테스트를 추가한다.
   - 필드 누락, 숫자 형식 오류, timeout, 재시도 소진을 검증한다.
 - [ ] Playwright 기반 브라우저 E2E 테스트를 추가한다.
   - 검색, 관심 종목, 포트폴리오 등록·평가의 핵심 흐름을 검증한다.

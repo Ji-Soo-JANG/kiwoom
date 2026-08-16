@@ -8,6 +8,7 @@ import com.example.kiwoom.error.RetryableKiwoomException;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientRequestException;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
@@ -78,6 +79,8 @@ public class KiwoomHttpClient {
                         .map(bodyText -> KiwoomApiException.fromResponse(response.statusCode().value(),
                                 failureMessage + " (" + response.statusCode() + "): " + bodyText)))
                 .bodyToMono(String.class)
+                .onErrorMap(WebClientRequestException.class,
+                        error -> new RetryableKiwoomException("키움 API 네트워크 연결 또는 응답 시간 초과", error))
                 .doOnSuccess(value -> record(sample, path, "success"))
                 .doOnError(error -> record(sample, path, "failure"));
         }).retryWhen(transientRetry);
