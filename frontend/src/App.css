@@ -262,7 +262,7 @@ button:focus-visible, input:focus-visible {
 }
 
 .chart-title {
-  margin: 0 0 20px;
+  margin: 0;
   color: #333;
   font-size: 18px;
   text-align: center;
@@ -272,6 +272,21 @@ button:focus-visible, input:focus-visible {
   width: 100%;
   height: 350px;
 }
+
+.chart-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+.chart-heading label { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.chart-heading select { padding: 7px 9px; border: 1px solid #d0d5dd; border-radius: 5px; background: white; }
+.chart-indicators { margin-bottom: 18px; color: #667085; text-align: center; font-size: 13px; }
+.chart-panel-title { margin: 14px 0 6px; font-size: 13px; color: #475467; }
+.chart-legend { display: flex; gap: 12px; margin-bottom: 4px; font-size: 11px; font-weight: 700; }
+.chart-legend .ma5 { color: #7f56d9; }
+.chart-legend .ma20 { color: #f79009; }
+.chart-legend .ma60 { color: #12b76a; }
+.chart-price-panel { height: 320px; }
+.chart-volume-panel { height: 110px; }
+.chart-indicator-panel { height: 150px; }
+.chart-tooltip { display: flex; flex-direction: column; gap: 3px; padding: 9px; background: rgba(255, 255, 255, .96); border: 1px solid #d0d5dd; border-radius: 5px; font-size: 12px; }
+.chart-zoom-help { margin-top: 8px; color: #667085; font-size: 12px; text-align: center; }
 
 .watchlist, .portfolio, .alert-center {
   margin-top: 30px;
@@ -324,6 +339,7 @@ button:focus-visible, input:focus-visible {
 @media (max-width: 520px) {
   body { padding: 8px; align-items: flex-start; }
   .container { padding: 20px 14px; }
+  .chart-heading { align-items: stretch; flex-direction: column; }
   .portfolio-form { grid-template-columns: 1fr; }
   .portfolio-form button { grid-column: auto; }
   .portfolio-summary dl { grid-template-columns: 1fr; }

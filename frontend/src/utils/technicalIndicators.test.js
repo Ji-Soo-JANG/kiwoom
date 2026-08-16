@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { addTechnicalIndicators, calculateMacd, calculateRsi } from './technicalIndicators';
+import { addTechnicalIndicators, calculateMacd, calculateRsi, calculateSma } from './technicalIndicators';
 
 describe('technicalIndicators', () => {
   const rising = Array.from({ length: 40 }, (_, index) => index + 1);
@@ -16,10 +16,16 @@ describe('technicalIndicators', () => {
     expect(result.signal[33]).not.toBeNull();
   });
 
+  it('단순 이동평균을 계산한다', () => {
+    expect(calculateSma([1, 2, 3, 4, 5, 6], 5)).toEqual([null, null, null, null, 3, 4]);
+  });
+
   it('일봉 데이터에 지표를 결합한다', () => {
     const result = addTechnicalIndicators(rising.map((closePrice, index) => ({ date: String(index), closePrice })));
     expect(result).toHaveLength(40);
     expect(result[39].rsi).toBe(100);
     expect(result[39].macd).not.toBeNull();
+    expect(result[39].ma5).toBe(38);
+    expect(result[19].ma20).toBe(10.5);
   });
 });

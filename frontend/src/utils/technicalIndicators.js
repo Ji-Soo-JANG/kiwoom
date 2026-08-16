@@ -12,6 +12,17 @@ const ema = (values, period) => {
   return result;
 };
 
+export const calculateSma = (values, period) => {
+  const result = Array(values.length).fill(null);
+  let sum = 0;
+  for (let index = 0; index < values.length; index += 1) {
+    sum += Number(values[index]);
+    if (index >= period) sum -= Number(values[index - period]);
+    if (index >= period - 1) result[index] = sum / period;
+  }
+  return result;
+};
+
 export const calculateRsi = (values, period = 14) => {
   const result = Array(values.length).fill(null);
   if (values.length <= period) return result;
@@ -54,10 +65,16 @@ export const addTechnicalIndicators = (dailyPrices) => {
   const closes = dailyPrices.map((item) => Number(item.closePrice));
   const rsi = calculateRsi(closes);
   const { macd, signal } = calculateMacd(closes);
+  const ma5 = calculateSma(closes, 5);
+  const ma20 = calculateSma(closes, 20);
+  const ma60 = calculateSma(closes, 60);
   return dailyPrices.map((item, index) => ({
     ...item,
     rsi: rsi[index],
     macd: macd[index],
-    signal: signal[index]
+    signal: signal[index],
+    ma5: ma5[index],
+    ma20: ma20[index],
+    ma60: ma60[index]
   }));
 };
