@@ -194,4 +194,11 @@ class KiwoomApplicationTest {
         webTestClient.delete().uri("/api/portfolio/000660")
                 .exchange().expectStatus().isNoContent();
     }
+
+    @Test
+    void servesReactEntryPointForClientRoutes() {
+        webTestClient.get().uri("/portfolio").exchange().expectStatus().isOk()
+                .expectHeader().contentTypeCompatibleWith("text/html")
+                .expectBody(String.class).value(body -> assertThat(body).contains("id=\"root\""));
+    }
 }

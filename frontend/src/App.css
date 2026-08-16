@@ -105,6 +105,27 @@ button:disabled {
   cursor: not-allowed;
 }
 
+.main-nav {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  margin-bottom: 26px;
+}
+
+.main-nav a {
+  padding: 10px 6px;
+  border-radius: 5px;
+  color: #475467;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+  text-decoration: none;
+}
+
+.main-nav a:hover { background: #f2f4f7; }
+.main-nav a.active { background: #667eea; color: white; }
+.main-nav a:focus-visible { outline: 3px solid #111827; outline-offset: 2px; }
+
 button:focus-visible, input:focus-visible {
   outline: 3px solid #111827;
   outline-offset: 2px;
@@ -291,6 +312,7 @@ button:focus-visible, input:focus-visible {
   .portfolio-form button { grid-column: auto; }
   .alert-form { grid-template-columns: 1fr; }
   .alert-form button { grid-column: auto; }
+  .main-nav { grid-template-columns: 1fr 1fr; }
 }
 
 @media (prefers-reduced-motion: reduce) {

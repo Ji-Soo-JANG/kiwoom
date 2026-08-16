@@ -1,4 +1,5 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
+import {Navigate, NavLink, Route, Routes, useNavigate} from 'react-router-dom';
 
 import {
   getCurrentPrice,
@@ -29,6 +30,7 @@ const StockDailyChart = lazy(() =>
 import './App.css';
 
 function App() {
+  const navigate = useNavigate();
   const [stocks, setStocks] = useState([]);
   const [dailyPrices, setDailyPrices] =
       useState([]);
@@ -109,6 +111,11 @@ function App() {
     } catch (err) { handleError(err); }
   };
 
+  const searchFromWatchlist = (code) => {
+    navigate('/');
+    handleSingleSearch(code);
+  };
+
   const handleSingleSearch = async (code) => {
     initializeSearch();
 
@@ -152,41 +159,52 @@ function App() {
           실시간 주식 종목 정보를 조회하세요
         </p>
 
-        <StockSearchForm
-            loading={loading}
-            onSingleSearch={handleSingleSearch}
-            onMultipleSearch={handleMultipleSearch}
-        />
+        <nav className="main-nav" aria-label="주요 화면">
+          <NavLink to="/" end>종목 검색</NavLink>
+          <NavLink to="/watchlist">관심 종목</NavLink>
+          <NavLink to="/portfolio">포트폴리오</NavLink>
+          <NavLink to="/alerts">알림</NavLink>
+        </nav>
 
-        {loading && (
-            <div className="loading" role="status" aria-live="polite">
-              <div className="spinner" aria-hidden="true" />
+        <Routes>
+          <Route path="/" element={<>
+            <StockSearchForm
+                loading={loading}
+                onSingleSearch={handleSingleSearch}
+                onMultipleSearch={handleMultipleSearch}
+            />
 
-              <div className="loading-text">
-                조회 중입니다...
-              </div>
-            </div>
-        )}
+            {loading && (
+                <div className="loading" role="status" aria-live="polite">
+                  <div className="spinner" aria-hidden="true" />
 
-        <StockResultList stocks={stocks} searched={searched} loading={loading} />
+                  <div className="loading-text">조회 중입니다...</div>
+                </div>
+            )}
 
-        {stocks.length === 1 && (
-            <button type="button" onClick={addCurrentToWatchlist}>관심종목 추가</button>
-        )}
+            <StockResultList stocks={stocks} searched={searched} loading={loading} />
 
-        <Watchlist codes={watchlist} onSearch={handleSingleSearch} onRemove={deleteWatchlist} />
+            {stocks.length === 1 && (
+                <button type="button" onClick={addCurrentToWatchlist}>관심종목 추가</button>
+            )}
 
-        <Portfolio positions={portfolio} valuations={valuations} loading={portfolioLoading}
-                   onSave={savePosition} onRemove={deletePosition} onValuate={valuatePortfolio}/>
+            <Suspense fallback={<div className="loading-text">차트를 불러오는 중...</div>}>
+              <StockDailyChart stockCode={stocks[0]?.code} dailyPrices={dailyPrices}/>
+            </Suspense>
+          </>}/>
 
-        <AlertCenter onError={handleError}/>
+          <Route path="/watchlist" element={
+            <Watchlist codes={watchlist} onSearch={searchFromWatchlist} onRemove={deleteWatchlist}/>
+          }/>
 
-        <Suspense fallback={<div className="loading-text">차트를 불러오는 중...</div>}>
-          <StockDailyChart
-              stockCode={stocks[0]?.code}
-              dailyPrices={dailyPrices}
-          />
-        </Suspense>
+          <Route path="/portfolio" element={
+            <Portfolio positions={portfolio} valuations={valuations} loading={portfolioLoading}
+                       onSave={savePosition} onRemove={deletePosition} onValuate={valuatePortfolio}/>
+          }/>
+
+          <Route path="/alerts" element={<AlertCenter onError={handleError}/>}/>
+          <Route path="*" element={<Navigate to="/" replace/>}/>
+        </Routes>
 
         {error && (
             <div className="error" role="alert">

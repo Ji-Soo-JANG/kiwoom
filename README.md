@@ -145,6 +145,9 @@ java -jar target/kiwoom-0.0.1-SNAPSHOT.jar
 
 브라우저: `http://localhost:8080`
 
+화면별 주소는 종목 검색 `/`, 관심 종목 `/watchlist`, 포트폴리오 `/portfolio`, 알림
+`/alerts`입니다. 각 주소로 직접 접근하거나 새로고침해도 React 화면이 열립니다.
+
 보호된 API는 세션 로그인이 필요합니다. `APP_USERNAME`, `APP_PASSWORD`로 로그인하면
 발급된 `SESSION` 쿠키가 이후 요청에 사용됩니다. 운영 환경에서는 기본값을 사용하지 마세요.
 
