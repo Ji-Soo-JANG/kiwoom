@@ -1,23 +1,24 @@
 package com.example.kiwoom.service;
 
+import com.example.kiwoom.repository.WatchlistRepository;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Mono;
 import java.util.List;
-import java.util.Set;
-import java.util.concurrent.ConcurrentSkipListSet;
 
 @Service
 public class WatchlistService {
-    private final Set<String> codes = new ConcurrentSkipListSet<>();
+    private final WatchlistRepository repository;
 
-    public List<String> findAll() { return List.copyOf(codes); }
+    public WatchlistService(WatchlistRepository repository) { this.repository = repository; }
 
-    public String add(String code) {
+    public Mono<List<String>> findAll() { return repository.findAll().collectList(); }
+
+    public Mono<String> add(String code) {
         String normalized = validate(code);
-        codes.add(normalized);
-        return normalized;
+        return repository.add(normalized).thenReturn(normalized);
     }
 
-    public void remove(String code) { codes.remove(validate(code)); }
+    public Mono<Void> remove(String code) { return repository.remove(validate(code)); }
 
     private String validate(String code) {
         if (code == null || !code.trim().matches("\\d{6}")) {

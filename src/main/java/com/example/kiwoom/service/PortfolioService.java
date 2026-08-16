@@ -2,6 +2,7 @@ package com.example.kiwoom.service;
 
 import com.example.kiwoom.dto.PortfolioPosition;
 import com.example.kiwoom.dto.PortfolioValuation;
+import com.example.kiwoom.repository.PortfolioRepository;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -10,38 +11,35 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 public class PortfolioService {
-    private final Map<String, PortfolioPosition> positions = new ConcurrentHashMap<>();
+    private final PortfolioRepository repository;
     private final KiwoomApiService kiwoomApiService;
 
-    public PortfolioService(KiwoomApiService kiwoomApiService) {
+    public PortfolioService(KiwoomApiService kiwoomApiService, PortfolioRepository repository) {
         this.kiwoomApiService = kiwoomApiService;
+        this.repository = repository;
     }
 
-    public List<PortfolioPosition> findAll() {
-        return positions.values().stream()
-                .sorted(Comparator.comparing(PortfolioPosition::code)).toList();
+    public Flux<PortfolioPosition> findAll() {
+        return repository.findAll();
     }
 
-    public PortfolioPosition save(PortfolioPosition position) {
+    public Mono<PortfolioPosition> save(PortfolioPosition position) {
         validate(position);
-        positions.put(position.code(), position);
-        return position;
+        return repository.save(position);
     }
 
-    public void remove(String code) {
+    public Mono<Void> remove(String code) {
         if (code == null || !code.matches("\\d{6}")) {
             throw new IllegalArgumentException("종목 코드는 6자리 숫자여야 합니다");
         }
-        positions.remove(code);
+        return repository.remove(code);
     }
 
     public Mono<List<PortfolioValuation>> valuate() {
-        return Flux.fromIterable(findAll())
+        return findAll()
                 .flatMap(position -> kiwoomApiService.getStockCurrentPrice(position.code())
                         .map(price -> calculate(position, new BigDecimal(price.getCurrentPrice()))), 3)
                 .collectSortedList(Comparator.comparing(PortfolioValuation::code));

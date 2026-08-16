@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
+import reactor.core.publisher.Flux;
 import java.util.List;
 
 @RestController
@@ -17,16 +18,16 @@ public class PortfolioController {
     public PortfolioController(PortfolioService service) { this.service = service; }
 
     @GetMapping
-    public List<PortfolioPosition> findAll() { return service.findAll(); }
+    public Flux<PortfolioPosition> findAll() { return service.findAll(); }
 
     @PutMapping("/{code}")
-    public PortfolioPosition save(@PathVariable String code, @RequestBody PortfolioPosition request) {
+    public Mono<PortfolioPosition> save(@PathVariable String code, @RequestBody PortfolioPosition request) {
         return service.save(new PortfolioPosition(code, request.quantity(), request.averagePrice()));
     }
 
     @DeleteMapping("/{code}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void remove(@PathVariable String code) { service.remove(code); }
+    public Mono<Void> remove(@PathVariable String code) { return service.remove(code); }
 
     @GetMapping("/valuation")
     public Mono<List<PortfolioValuation>> valuate() { return service.valuate(); }

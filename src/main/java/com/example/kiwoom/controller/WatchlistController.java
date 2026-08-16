@@ -5,6 +5,7 @@ import com.example.kiwoom.service.WatchlistService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Mono;
 import java.util.List;
 
 @RestController
@@ -16,13 +17,13 @@ public class WatchlistController {
     public WatchlistController(WatchlistService service) { this.service = service; }
 
     @GetMapping
-    public List<String> findAll() { return service.findAll(); }
+    public Mono<List<String>> findAll() { return service.findAll(); }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public String add(@RequestBody WatchlistRequest request) { return service.add(request.code()); }
+    public Mono<String> add(@RequestBody WatchlistRequest request) { return service.add(request.code()); }
 
     @DeleteMapping("/{code}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void remove(@PathVariable String code) { service.remove(code); }
+    public Mono<Void> remove(@PathVariable String code) { return service.remove(code); }
 }

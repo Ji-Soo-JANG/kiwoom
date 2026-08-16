@@ -2,6 +2,7 @@ package com.example.kiwoom.service;
 
 import com.example.kiwoom.dto.PortfolioPosition;
 import com.example.kiwoom.dto.PortfolioValuation;
+import com.example.kiwoom.repository.PortfolioRepository;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -11,7 +12,8 @@ import static org.mockito.Mockito.mock;
 
 class PortfolioServiceTest {
 
-    private final PortfolioService portfolioService = new PortfolioService(mock(KiwoomApiService.class));
+    private final PortfolioService portfolioService = new PortfolioService(
+            mock(KiwoomApiService.class), mock(PortfolioRepository.class));
 
     @Test
     void calculatesProfitAndReturnRate() {

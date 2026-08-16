@@ -16,6 +16,7 @@ kiwoom/
 │   │   │   ├── dto/                             # 현재가·일봉 응답 모델
 │   │   │   ├── error/                           # 공통 API 오류 응답 및 예외 처리
 │   │   │   ├── mapper/                          # 키움 JSON 응답 변환
+│   │   │   ├── repository/                      # R2DBC 영속 저장소
 │   │   │   └── service/                         # 토큰·캐시 및 조회 흐름
 │   │   └── resources/
 │   │       ├── static/                         # React 빌드 결과물
@@ -74,7 +75,23 @@ KIWOOM_MAX_RETRIES=2
 KIWOOM_RETRY_BACKOFF=200ms
 KIWOOM_CURRENT_PRICE_CACHE_TTL=3s
 CORS_ALLOWED_ORIGINS=http://localhost:5173,http://localhost:8080
+POSTGRES_PASSWORD=안전한 데이터베이스 비밀번호
+DATABASE_USERNAME=kiwoom
+DATABASE_R2DBC_URL=r2dbc:postgresql://localhost:5432/kiwoom
+DATABASE_JDBC_URL=jdbc:postgresql://localhost:5432/kiwoom
 ```
+
+PostgreSQL은 Docker Compose로 실행할 수 있습니다. 최초 실행 시 Flyway가 관심 종목과
+포트폴리오 테이블을 자동 생성하며, 데이터는 Docker volume에 유지됩니다.
+
+```powershell
+Copy-Item .env.example .env
+# .env의 키와 비밀번호를 실제 값으로 변경
+docker compose up -d --wait postgres
+```
+
+DB 컨테이너만 중지할 때는 `docker compose stop postgres`를 사용합니다. 데이터를 포함한
+volume까지 삭제하는 `docker compose down -v`는 초기화가 필요한 경우에만 사용합니다.
 
 의존성 업데이트 주기와 보안 반영 기준은 [`docs/dependency-policy.md`](docs/dependency-policy.md)를 따릅니다.
 
@@ -210,6 +227,8 @@ Spring Boot Actuator의 `GET /actuator/health`를 사용합니다.
 - **Reactor** - 비동기 처리 (Mono, Flux)
 - **Jackson** - JSON 처리
 - **Thymeleaf** - HTML 템플릿 엔진
+- **PostgreSQL 15 / R2DBC** - 관심 종목과 포트폴리오 영속 저장
+- **Flyway** - 데이터베이스 스키마 마이그레이션
 
 ### 프론트엔드
 - **React 19** - UI 라이브러리
