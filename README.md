@@ -64,6 +64,8 @@ KIWOOM_CURRENT_PRICE_CACHE_TTL=3s
 CORS_ALLOWED_ORIGINS=http://localhost:5173,http://localhost:8080
 ```
 
+의존성 업데이트 주기와 보안 반영 기준은 [`docs/dependency-policy.md`](docs/dependency-policy.md)를 따릅니다.
+
 ```bash
 # IDE에서 프로젝트 재로드
 File → Invalidate Caches → Invalidate and Restart
