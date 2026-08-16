@@ -50,8 +50,10 @@ public class KiwoomController {
     @GetMapping("/stock-price/{code}/daily")
     @Operation(summary = "종목 일봉 조회")
     public Mono<List<DailyPriceResponse>> getDailyPrices(
-            @PathVariable String code, @RequestParam(required = false) String baseDate) {
-        return kiwoomApiService.getDailyPrices(code, baseDate);
+            @PathVariable String code,
+            @RequestParam(required = false) String baseDate,
+            @RequestParam(defaultValue = "120") int limit) {
+        return kiwoomApiService.getDailyPrices(code, baseDate, limit);
     }
 
     @GetMapping("/stocks/search")
@@ -60,5 +62,15 @@ public class KiwoomController {
             @RequestParam String q,
             @RequestParam(required = false, defaultValue = "ALL") String market) {
         return kiwoomApiService.searchStocks(q, market);
+    }
+
+    @GetMapping("/admin/stock-catalog")
+    public KiwoomApiService.StockCatalogStatus stockCatalogStatus() {
+        return kiwoomApiService.stockCatalogStatus();
+    }
+
+    @PostMapping("/admin/stock-catalog/refresh")
+    public Mono<KiwoomApiService.StockCatalogStatus> refreshStockCatalog() {
+        return kiwoomApiService.refreshStockCatalog();
     }
 }

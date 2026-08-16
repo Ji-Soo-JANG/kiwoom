@@ -52,6 +52,7 @@ public class SecurityConfig {
                                         .permitAll()
                                         .pathMatchers(
                                                 "/actuator/**",
+                                                "/api/kiwoom/admin/**",
                                                 "/swagger-ui/**",
                                                 "/swagger-ui.html",
                                                 "/v3/api-docs/**")

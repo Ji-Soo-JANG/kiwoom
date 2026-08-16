@@ -53,7 +53,9 @@ public class KiwoomApiService {
     private final AtomicReference<AccessToken> cachedAccessToken = new AtomicReference<>();
     private final TechnicalIndicatorService indicatorService;
     private Mono<AccessToken> tokenRefreshMono;
-    private final Mono<List<StockSearchResult>> stockCatalog;
+    private volatile Mono<List<StockSearchResult>> stockCatalog;
+    private volatile Instant stockCatalogRefreshedAt;
+    private volatile int stockCatalogSize;
 
     public KiwoomApiService(
             KiwoomHttpClient client,
@@ -79,13 +81,7 @@ public class KiwoomApiService {
         Gauge.builder("kiwoom.cache.entries", dailyPriceCache, Map::size)
                 .tag("type", "daily")
                 .register(meterRegistry);
-        this.stockCatalog =
-                fetchStockCatalog()
-                        .cache(
-                                value -> Duration.ofHours(12),
-                                error -> Duration.ZERO,
-                                () -> Duration.ZERO,
-                                Schedulers.parallel());
+        this.stockCatalog = createStockCatalog();
     }
 
     public Mono<StockPriceResponse> getStockCurrentPrice(String code) {
@@ -161,6 +157,12 @@ public class KiwoomApiService {
     }
 
     public Mono<List<DailyPriceResponse>> getDailyPrices(String code, String baseDate) {
+        return getDailyPrices(code, baseDate, 120);
+    }
+
+    public Mono<List<DailyPriceResponse>> getDailyPrices(String code, String baseDate, int limit) {
+        if (limit < 1 || limit > 500)
+            return Mono.error(new IllegalArgumentException("일봉 조회 건수는 1부터 500 사이여야 합니다"));
         final String normalizedCode;
         try {
             normalizedCode = normalizeStockCode(code);
@@ -179,19 +181,27 @@ public class KiwoomApiService {
         }
         DailyCacheKey key = new DailyCacheKey(normalizedCode, date);
         if (dailyPriceCacheTtl.isZero() || dailyPriceCacheTtl.isNegative()) {
-            return fetchDailyPrices(key);
+            return fetchDailyPrices(key).map(prices -> limit(prices, limit));
         }
         Mono<List<DailyPriceResponse>> cached = dailyPriceCache.get(key);
         if (cached != null) {
             dailyCacheHits.increment();
-            return cached;
+            return cached.map(prices -> limit(prices, limit));
         }
-        return dailyPriceCache.computeIfAbsent(
-                key,
-                cacheKey ->
-                        fetchDailyPrices(cacheKey)
-                                .doOnError(error -> dailyPriceCache.remove(cacheKey))
-                                .cache(dailyPriceCacheTtl));
+        return dailyPriceCache
+                .computeIfAbsent(
+                        key,
+                        cacheKey ->
+                                fetchDailyPrices(cacheKey)
+                                        .doOnError(error -> dailyPriceCache.remove(cacheKey))
+                                        .cache(dailyPriceCacheTtl))
+                .map(prices -> limit(prices, limit));
+    }
+
+    private List<DailyPriceResponse> limit(List<DailyPriceResponse> prices, int limit) {
+        return prices.size() <= limit
+                ? prices
+                : List.copyOf(prices.subList(prices.size() - limit, prices.size()));
     }
 
     private Mono<List<DailyPriceResponse>> fetchDailyPrices(DailyCacheKey key) {
@@ -249,6 +259,29 @@ public class KiwoomApiService {
                                                 .thenComparing(StockSearchResult::name))
                                 .limit(20)
                                 .toList());
+    }
+
+    public synchronized Mono<StockCatalogStatus> refreshStockCatalog() {
+        stockCatalog = createStockCatalog();
+        return stockCatalog.map(items -> stockCatalogStatus());
+    }
+
+    public StockCatalogStatus stockCatalogStatus() {
+        return new StockCatalogStatus(stockCatalogRefreshedAt, stockCatalogSize);
+    }
+
+    private Mono<List<StockSearchResult>> createStockCatalog() {
+        return fetchStockCatalog()
+                .doOnNext(
+                        items -> {
+                            stockCatalogRefreshedAt = Instant.now();
+                            stockCatalogSize = items.size();
+                        })
+                .cache(
+                        value -> Duration.ofHours(12),
+                        error -> Duration.ZERO,
+                        () -> Duration.ZERO,
+                        Schedulers.parallel());
     }
 
     private Mono<List<StockSearchResult>> fetchStockCatalog() {
@@ -362,6 +395,8 @@ public class KiwoomApiService {
     private record DailyCacheKey(String code, String baseDate) {}
 
     public record DailyPriceCacheStats(long hits, long apiCalls, int entries) {}
+
+    public record StockCatalogStatus(Instant refreshedAt, int stockCount) {}
 
     private Counter counter(MeterRegistry registry, String cache, String result) {
         return Counter.builder("kiwoom.cache.accesses")
