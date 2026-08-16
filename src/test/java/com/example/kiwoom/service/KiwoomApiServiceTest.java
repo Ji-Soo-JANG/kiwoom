@@ -276,6 +276,8 @@ class KiwoomApiServiceTest {
         assertEquals(1, result.size());
         assertEquals("005930", result.getFirst().code());
         assertEquals("KOSPI", result.getFirst().market());
+        assertEquals("005930", service.searchStocks("삼성 전자", "ALL").block().getFirst().code());
+        assertEquals("005930", service.searchStocks("ㅅㅅㅈㅈ", "ALL").block().getFirst().code());
     }
 
     @Test

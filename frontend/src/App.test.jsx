@@ -25,11 +25,11 @@ describe('App routes', () => {
         </MemoryRouter>
       </QueryClientProvider>
     );
-    expect(screen.getByLabelText('종목 코드 (단일 조회)')).toBeInTheDocument();
+    expect(screen.getByLabelText('종목 검색')).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('link', { name: '포트폴리오' }));
     expect(await screen.findByRole('heading', { name: '포트폴리오' })).toBeInTheDocument();
-    expect(screen.queryByLabelText('종목 코드 (단일 조회)')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('종목 검색')).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('link', { name: '알림' }));
     expect(await screen.findByRole('heading', { name: '주가·지표 알림' })).toBeInTheDocument();
@@ -53,7 +53,7 @@ describe('App routes', () => {
       </QueryClientProvider>
     );
 
-    fireEvent.change(screen.getByLabelText('종목 코드 (단일 조회)'), {
+    fireEvent.change(screen.getByLabelText('종목 검색'), {
       target: { value: '005930' }
     });
     fireEvent.click(screen.getByRole('button', { name: '단일 조회' }));

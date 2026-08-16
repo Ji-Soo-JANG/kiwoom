@@ -25,14 +25,25 @@ function StockSearchForm({ loading, onSingleSearch, onMultipleSearch }) {
 
   const submitSingle = (event) => {
     event?.preventDefault();
-    const code = singleCode.trim();
+    const keyword = singleCode.trim();
 
-    if (!/^\d{6}$/.test(code)) {
-      setValidationError('종목 코드는 6자리 숫자로 입력하세요.');
+    if (/^\d{6}$/.test(keyword)) {
+      setValidationError('');
+      onSingleSearch(keyword);
       return;
     }
+    const stock = suggestions.data?.[0];
+    if (!stock) {
+      setValidationError(
+        suggestions.isFetching
+          ? '종목을 검색하고 있습니다. 잠시 후 다시 시도하세요.'
+          : '일치하는 종목을 찾지 못했습니다.'
+      );
+      return;
+    }
+    selectStock(stock);
     setValidationError('');
-    onSingleSearch(code);
+    onSingleSearch(stock.code);
   };
 
   const submitMultiple = (event) => {
@@ -66,7 +77,7 @@ function StockSearchForm({ loading, onSingleSearch, onMultipleSearch }) {
       )}
       <form onSubmit={submitSingle} noValidate>
         <div className="input-group">
-          <label htmlFor="singleCode">종목 코드 (단일 조회)</label>
+          <label htmlFor="singleCode">종목 검색</label>
 
           <input
             id="singleCode"
@@ -76,10 +87,10 @@ function StockSearchForm({ loading, onSingleSearch, onMultipleSearch }) {
             aria-invalid={Boolean(validationError)}
             value={singleCode}
             disabled={loading}
-            placeholder="예: 005930 (삼성전자)"
+            placeholder="예: 삼성전자, 삼성 전자, ㅅㅅㅈㅈ, 005930"
             onChange={(event) => setSingleCode(event.target.value)}
           />
-          <small id="stock-code-help">종목명으로 찾은 뒤 선택하거나 6자리 코드를 입력하세요.</small>
+          <small id="stock-code-help">종목명·초성·6자리 코드로 검색하고 Enter를 누르세요.</small>
           <label htmlFor="stock-market" className="stock-market-label">
             시장
           </label>

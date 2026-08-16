@@ -228,7 +228,7 @@ public class KiwoomApiService {
 
     public Mono<List<StockSearchResult>> searchStocks(String query, String market) {
         if (query == null || query.isBlank()) return Mono.just(List.of());
-        String keyword = query.trim().toLowerCase();
+        String keyword = normalizeSearchText(query);
         String normalizedMarket =
                 market == null || market.isBlank() ? "ALL" : market.trim().toUpperCase();
         if (!List.of("ALL", "KOSPI", "KOSDAQ").contains(normalizedMarket)) {
@@ -244,21 +244,49 @@ public class KiwoomApiService {
                                 .filter(
                                         item ->
                                                 item.code().contains(keyword)
-                                                        || item.name()
-                                                                .toLowerCase()
+                                                        || normalizeSearchText(item.name())
+                                                                .contains(keyword)
+                                                        || koreanInitials(item.name())
                                                                 .contains(keyword))
                                 .sorted(
                                         Comparator.comparing(
                                                         (StockSearchResult item) ->
-                                                                !item.code().startsWith(keyword))
+                                                                !item.code().equals(keyword)
+                                                                        && !normalizeSearchText(
+                                                                                        item.name())
+                                                                                .equals(keyword))
                                                 .thenComparing(
                                                         item ->
-                                                                !item.name()
-                                                                        .toLowerCase()
-                                                                        .startsWith(keyword))
+                                                                !item.code().startsWith(keyword)
+                                                                        && !normalizeSearchText(
+                                                                                        item.name())
+                                                                                .startsWith(keyword)
+                                                                        && !koreanInitials(
+                                                                                        item.name())
+                                                                                .startsWith(
+                                                                                        keyword))
+                                                .thenComparing(
+                                                        item -> normalizeSearchText(item.name()))
                                                 .thenComparing(StockSearchResult::name))
                                 .limit(20)
                                 .toList());
+    }
+
+    private String normalizeSearchText(String value) {
+        return value.trim().toLowerCase(java.util.Locale.ROOT).replaceAll("[\\s·._-]", "");
+    }
+
+    private String koreanInitials(String value) {
+        String initials = "ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ";
+        StringBuilder result = new StringBuilder();
+        for (char character : normalizeSearchText(value).toCharArray()) {
+            if (character >= '가' && character <= '힣') {
+                result.append(initials.charAt((character - '가') / (21 * 28)));
+            } else {
+                result.append(character);
+            }
+        }
+        return result.toString();
     }
 
     public synchronized Mono<StockCatalogStatus> refreshStockCatalog() {

@@ -67,7 +67,7 @@ test('종목을 검색하고 관심 종목에 추가한다', async ({ page }) =>
   });
   await page.goto('/');
 
-  await page.getByLabel('종목 코드 (단일 조회)').fill('005930');
+  await page.getByLabel('종목 검색').fill('005930');
   await page.getByRole('button', { name: '단일 조회' }).click();
   await expect(page.getByRole('region', { name: '주가 조회 결과' })).toContainText('75,000원');
   await page.getByRole('button', { name: '관심종목 추가' }).click();
@@ -128,7 +128,7 @@ test('키움 네트워크 오류를 사용자 메시지로 표시한다', async 
   });
   await page.goto('/');
 
-  await page.getByLabel('종목 코드 (단일 조회)').fill('005930');
+  await page.getByLabel('종목 검색').fill('005930');
   await page.getByRole('button', { name: '단일 조회' }).click();
   await expect(page.getByRole('alert')).toContainText('키움 서비스가 일시적으로 응답하지 않습니다');
   await expect(page.getByRole('status')).toContainText('조회된 종목이 없습니다');
