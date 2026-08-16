@@ -9,9 +9,12 @@
     "/api/kiwoom/stocks/search": { "get": { "responses": { "200": { "$ref": "#/components/responses/StockSearchResults" } } } },
     "/api/watchlist": {
       "get": { "responses": { "200": { "$ref": "#/components/responses/Watchlist" } } },
-      "post": { "requestBody": { "$ref": "#/components/requestBodies/WatchlistRequest" }, "responses": { "201": { "description": "Created", "content": { "application/json": { "schema": { "type": "string" } } } } } }
+      "post": { "requestBody": { "$ref": "#/components/requestBodies/WatchlistRequest" }, "responses": { "201": { "$ref": "#/components/responses/WatchlistItem" } } }
     },
-    "/api/watchlist/{code}": { "delete": { "responses": { "204": { "description": "Deleted" } } } },
+    "/api/watchlist/{code}": {
+      "put": { "requestBody": { "$ref": "#/components/requestBodies/WatchlistRequest" }, "responses": { "200": { "$ref": "#/components/responses/WatchlistItem" } } },
+      "delete": { "responses": { "204": { "description": "Deleted" } } }
+    },
     "/api/portfolio": { "get": { "responses": { "200": { "$ref": "#/components/responses/Portfolio" } } } },
     "/api/portfolio/{code}": {
       "put": { "requestBody": { "$ref": "#/components/requestBodies/PortfolioPosition" }, "responses": { "200": { "$ref": "#/components/responses/PortfolioPosition" } } },
@@ -19,9 +22,14 @@
     },
     "/api/portfolio/valuation": { "get": { "responses": { "200": { "$ref": "#/components/responses/PortfolioValuation" } } } },
     "/api/portfolio/transactions": {
-      "get": { "responses": { "200": { "$ref": "#/components/responses/PortfolioTrades" } } },
+      "get": { "responses": { "200": { "$ref": "#/components/responses/PortfolioTradePage" } } },
       "post": { "requestBody": { "$ref": "#/components/requestBodies/PortfolioTradeRequest" }, "responses": { "201": { "$ref": "#/components/responses/PortfolioTrade" } } }
     },
+    "/api/portfolio/transactions/export": { "get": { "responses": { "200": { "description": "CSV export" } } } },
+    "/api/portfolio/transactions/import": { "post": { "responses": { "200": { "$ref": "#/components/responses/PortfolioTrades" } } } },
+    "/api/portfolio/transactions/profit-trend": { "get": { "responses": { "200": { "$ref": "#/components/responses/PortfolioProfitTrend" } } } },
+    "/api/kiwoom/admin/stock-catalog": { "get": { "responses": { "200": { "$ref": "#/components/responses/StockCatalogStatus" } } } },
+    "/api/kiwoom/admin/stock-catalog/refresh": { "post": { "responses": { "200": { "$ref": "#/components/responses/StockCatalogStatus" } } } },
     "/api/alerts/rules": {
       "get": { "responses": { "200": { "$ref": "#/components/responses/AlertRules" } } },
       "post": { "requestBody": { "$ref": "#/components/requestBodies/AlertRuleRequest" }, "responses": { "201": { "$ref": "#/components/responses/AlertRule" } } }
@@ -31,7 +39,7 @@
       "delete": { "responses": { "204": { "description": "Deleted" } } }
     },
     "/api/alerts/evaluate": { "post": { "responses": { "200": { "$ref": "#/components/responses/AlertEvents" } } } },
-    "/api/alerts/events": { "get": { "responses": { "200": { "$ref": "#/components/responses/AlertEvents" } } } },
+    "/api/alerts/events": { "get": { "responses": { "200": { "$ref": "#/components/responses/AlertEventPage" } } } },
     "/api/alerts/events/{id}/read": { "post": { "responses": { "204": { "description": "Marked as read" } } } }
   },
   "components": {
@@ -40,17 +48,22 @@
       "StockPriceResponse": { "type": "object", "required": ["code", "currentPrice", "changeAmount", "changeRate"], "properties": { "code": { "type": "string" }, "currentPrice": { "type": "string" }, "changeAmount": { "type": "string" }, "changeRate": { "type": "string" } } },
       "DailyPriceResponse": { "type": "object", "required": ["date", "openPrice", "highPrice", "lowPrice", "closePrice", "volume"], "properties": { "date": { "type": "string" }, "openPrice": { "type": "integer", "format": "int64" }, "highPrice": { "type": "integer", "format": "int64" }, "lowPrice": { "type": "integer", "format": "int64" }, "closePrice": { "type": "integer", "format": "int64" }, "volume": { "type": "integer", "format": "int64" }, "rsi": { "type": "number", "nullable": true }, "macd": { "type": "number", "nullable": true }, "signal": { "type": "number", "nullable": true } } },
       "StockSearchResult": { "type": "object", "required": ["code", "name", "market"], "properties": { "code": { "type": "string" }, "name": { "type": "string" }, "market": { "type": "string" } } },
-      "WatchlistRequest": { "type": "object", "required": ["code"], "properties": { "code": { "type": "string" } } },
+      "WatchlistRequest": { "type": "object", "required": ["code"], "properties": { "code": { "type": "string" }, "groupName": { "type": "string" }, "note": { "type": "string" } } },
+      "WatchlistItem": { "type": "object", "required": ["code", "groupName", "note"], "properties": { "code": { "type": "string" }, "groupName": { "type": "string" }, "note": { "type": "string" } } },
+      "StockCatalogStatus": { "type": "object", "required": ["stockCount"], "properties": { "refreshedAt": { "type": "string", "format": "date-time", "nullable": true }, "stockCount": { "type": "integer" } } },
+      "PortfolioProfitPoint": { "type": "object", "required": ["date", "realizedProfitLoss", "unrealizedProfitLoss", "totalProfitLoss"], "properties": { "date": { "type": "string", "format": "date" }, "realizedProfitLoss": { "type": "number" }, "unrealizedProfitLoss": { "type": "number" }, "totalProfitLoss": { "type": "number" } } },
       "PortfolioPosition": { "type": "object", "required": ["code", "quantity", "averagePrice"], "properties": { "code": { "type": "string" }, "quantity": { "type": "number" }, "averagePrice": { "type": "number" } } },
       "PortfolioValuation": { "allOf": [{ "$ref": "#/components/schemas/PortfolioPosition" }, { "type": "object", "required": ["currentPrice", "purchaseAmount", "evaluationAmount", "profitLoss", "returnRate"], "properties": { "currentPrice": { "type": "number" }, "purchaseAmount": { "type": "number" }, "evaluationAmount": { "type": "number" }, "profitLoss": { "type": "number" }, "returnRate": { "type": "number" } } }] },
       "TradeType": { "type": "string", "enum": ["BUY", "SELL"] },
       "PortfolioTradeRequest": { "type": "object", "required": ["code", "type", "quantity", "price"], "properties": { "code": { "type": "string" }, "type": { "$ref": "#/components/schemas/TradeType" }, "quantity": { "type": "number" }, "price": { "type": "number" }, "fee": { "type": "number" }, "tax": { "type": "number" } } },
       "PortfolioTrade": { "allOf": [{ "$ref": "#/components/schemas/PortfolioTradeRequest" }, { "type": "object", "required": ["id", "realizedProfitLoss", "tradedAt"], "properties": { "id": { "type": "integer", "format": "int64" }, "realizedProfitLoss": { "type": "number" }, "tradedAt": { "type": "string", "format": "date-time" } } }] },
+      "PortfolioTradePage": { "type": "object", "required": ["content", "page", "size", "totalElements", "totalPages"], "properties": { "content": { "type": "array", "items": { "$ref": "#/components/schemas/PortfolioTrade" } }, "page": { "type": "integer" }, "size": { "type": "integer" }, "totalElements": { "type": "integer", "format": "int64" }, "totalPages": { "type": "integer" } } },
       "AlertConditionType": { "type": "string", "enum": ["PRICE_ABOVE", "PRICE_BELOW", "CHANGE_RATE_ABOVE", "CHANGE_RATE_BELOW", "RSI_ABOVE", "RSI_BELOW", "MACD_CROSS_UP", "MACD_CROSS_DOWN"] },
       "AlertRuleRequest": { "type": "object", "required": ["code", "conditionType"], "properties": { "code": { "type": "string" }, "conditionType": { "$ref": "#/components/schemas/AlertConditionType" }, "threshold": { "type": "number", "nullable": true } } },
       "AlertRuleUpdateRequest": { "type": "object", "properties": { "threshold": { "type": "number", "nullable": true }, "enabled": { "type": "boolean", "nullable": true } } },
       "AlertRule": { "allOf": [{ "$ref": "#/components/schemas/AlertRuleRequest" }, { "type": "object", "required": ["id", "enabled", "lastState"], "properties": { "id": { "type": "integer", "format": "int64" }, "enabled": { "type": "boolean" }, "lastState": { "type": "boolean" } } }] },
-      "AlertEvent": { "type": "object", "required": ["id", "ruleId", "code", "conditionType", "observedValue", "triggeredAt"], "properties": { "id": { "type": "integer", "format": "int64" }, "ruleId": { "type": "integer", "format": "int64" }, "code": { "type": "string" }, "conditionType": { "$ref": "#/components/schemas/AlertConditionType" }, "observedValue": { "type": "number" }, "threshold": { "type": "number", "nullable": true }, "triggeredAt": { "type": "string", "format": "date-time" }, "readAt": { "type": "string", "format": "date-time", "nullable": true } } }
+      "AlertEvent": { "type": "object", "required": ["id", "ruleId", "code", "conditionType", "observedValue", "triggeredAt"], "properties": { "id": { "type": "integer", "format": "int64" }, "ruleId": { "type": "integer", "format": "int64" }, "code": { "type": "string" }, "conditionType": { "$ref": "#/components/schemas/AlertConditionType" }, "observedValue": { "type": "number" }, "threshold": { "type": "number", "nullable": true }, "triggeredAt": { "type": "string", "format": "date-time" }, "readAt": { "type": "string", "format": "date-time", "nullable": true } } },
+      "AlertEventPage": { "type": "object", "required": ["content", "page", "size", "totalElements", "totalPages"], "properties": { "content": { "type": "array", "items": { "$ref": "#/components/schemas/AlertEvent" } }, "page": { "type": "integer" }, "size": { "type": "integer" }, "totalElements": { "type": "integer", "format": "int64" }, "totalPages": { "type": "integer" } } }
     },
     "requestBodies": {
       "WatchlistRequest": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/WatchlistRequest" } } } },
@@ -65,15 +78,20 @@
       "StockPrices": { "description": "OK", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/StockPriceResponse" } } } } },
       "DailyPrices": { "description": "OK", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/DailyPriceResponse" } } } } },
       "StockSearchResults": { "description": "OK", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/StockSearchResult" } } } } },
-      "Watchlist": { "description": "OK", "content": { "application/json": { "schema": { "type": "array", "items": { "type": "string" } } } } },
+      "Watchlist": { "description": "OK", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/WatchlistItem" } } } } },
+      "WatchlistItem": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/WatchlistItem" } } } },
+      "StockCatalogStatus": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/StockCatalogStatus" } } } },
+      "PortfolioProfitTrend": { "description": "OK", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/PortfolioProfitPoint" } } } } },
       "Portfolio": { "description": "OK", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/PortfolioPosition" } } } } },
       "PortfolioPosition": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PortfolioPosition" } } } },
       "PortfolioValuation": { "description": "OK", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/PortfolioValuation" } } } } },
       "PortfolioTrades": { "description": "OK", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/PortfolioTrade" } } } } },
+      "PortfolioTradePage": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PortfolioTradePage" } } } },
       "PortfolioTrade": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PortfolioTrade" } } } },
       "AlertRules": { "description": "OK", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/AlertRule" } } } } },
       "AlertRule": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AlertRule" } } } },
-      "AlertEvents": { "description": "OK", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/AlertEvent" } } } } }
+      "AlertEvents": { "description": "OK", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/AlertEvent" } } } } },
+      "AlertEventPage": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AlertEventPage" } } } }
     }
   }
 }

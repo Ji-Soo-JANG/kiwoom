@@ -106,6 +106,14 @@ IntelliJ, Docker와 Vite 개발 서버 실행은 [`docs/local-development.md`](d
 .\scripts\start-dev.ps1
 ```
 
+로컬 DB 관리:
+
+```powershell
+.\scripts\backup-db.ps1
+.\scripts\restore-db.ps1 -BackupFile .\backups\kiwoom-날짜.sql -ConfirmRestore
+.\scripts\reset-db.ps1 -ConfirmReset
+```
+
 ```powershell
 # Windows
 .\mvnw.cmd clean test

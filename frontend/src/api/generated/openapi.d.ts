@@ -168,15 +168,7 @@ export interface paths {
             };
             requestBody: components["requestBodies"]["WatchlistRequest"];
             responses: {
-                /** @description Created */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": string;
-                    };
-                };
+                201: components["responses"]["WatchlistItem"];
             };
         };
         delete?: never;
@@ -193,7 +185,18 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        put?: never;
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: components["requestBodies"]["WatchlistRequest"];
+            responses: {
+                200: components["responses"]["WatchlistItem"];
+            };
+        };
         post?: never;
         delete: {
             parameters: {
@@ -332,7 +335,7 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                200: components["responses"]["PortfolioTrades"];
+                200: components["responses"]["PortfolioTradePage"];
             };
         };
         put?: never;
@@ -346,6 +349,147 @@ export interface paths {
             requestBody: components["requestBodies"]["PortfolioTradeRequest"];
             responses: {
                 201: components["responses"]["PortfolioTrade"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/portfolio/transactions/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description CSV export */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/portfolio/transactions/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                200: components["responses"]["PortfolioTrades"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/portfolio/transactions/profit-trend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                200: components["responses"]["PortfolioProfitTrend"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/kiwoom/admin/stock-catalog": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                200: components["responses"]["StockCatalogStatus"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/kiwoom/admin/stock-catalog/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                200: components["responses"]["StockCatalogStatus"];
             };
         };
         delete?: never;
@@ -479,7 +623,7 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                200: components["responses"]["AlertEvents"];
+                200: components["responses"]["AlertEventPage"];
             };
         };
         put?: never;
@@ -559,6 +703,25 @@ export interface components {
         };
         WatchlistRequest: {
             code: string;
+            groupName?: string;
+            note?: string;
+        };
+        WatchlistItem: {
+            code: string;
+            groupName: string;
+            note: string;
+        };
+        StockCatalogStatus: {
+            /** Format: date-time */
+            refreshedAt?: string | null;
+            stockCount: number;
+        };
+        PortfolioProfitPoint: {
+            /** Format: date */
+            date: string;
+            realizedProfitLoss: number;
+            unrealizedProfitLoss: number;
+            totalProfitLoss: number;
         };
         PortfolioPosition: {
             code: string;
@@ -588,6 +751,14 @@ export interface components {
             realizedProfitLoss: number;
             /** Format: date-time */
             tradedAt: string;
+        };
+        PortfolioTradePage: {
+            content: components["schemas"]["PortfolioTrade"][];
+            page: number;
+            size: number;
+            /** Format: int64 */
+            totalElements: number;
+            totalPages: number;
         };
         /** @enum {string} */
         AlertConditionType: "PRICE_ABOVE" | "PRICE_BELOW" | "CHANGE_RATE_ABOVE" | "CHANGE_RATE_BELOW" | "RSI_ABOVE" | "RSI_BELOW" | "MACD_CROSS_UP" | "MACD_CROSS_DOWN";
@@ -619,6 +790,14 @@ export interface components {
             triggeredAt: string;
             /** Format: date-time */
             readAt?: string | null;
+        };
+        AlertEventPage: {
+            content: components["schemas"]["AlertEvent"][];
+            page: number;
+            size: number;
+            /** Format: int64 */
+            totalElements: number;
+            totalPages: number;
         };
     };
     responses: {
@@ -673,7 +852,34 @@ export interface components {
                 [name: string]: unknown;
             };
             content: {
-                "application/json": string[];
+                "application/json": components["schemas"]["WatchlistItem"][];
+            };
+        };
+        /** @description OK */
+        WatchlistItem: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["WatchlistItem"];
+            };
+        };
+        /** @description OK */
+        StockCatalogStatus: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["StockCatalogStatus"];
+            };
+        };
+        /** @description OK */
+        PortfolioProfitTrend: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["PortfolioProfitPoint"][];
             };
         };
         /** @description OK */
@@ -713,6 +919,15 @@ export interface components {
             };
         };
         /** @description OK */
+        PortfolioTradePage: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["PortfolioTradePage"];
+            };
+        };
+        /** @description OK */
         PortfolioTrade: {
             headers: {
                 [name: string]: unknown;
@@ -746,6 +961,15 @@ export interface components {
             };
             content: {
                 "application/json": components["schemas"]["AlertEvent"][];
+            };
+        };
+        /** @description OK */
+        AlertEventPage: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["AlertEventPage"];
             };
         };
     };

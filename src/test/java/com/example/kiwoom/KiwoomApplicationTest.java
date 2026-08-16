@@ -126,9 +126,28 @@ class KiwoomApplicationTest {
                 .expectStatus()
                 .isOk()
                 .expectBody()
-                .json("[\"005930\"]");
+                .jsonPath("$[0].code")
+                .isEqualTo("005930")
+                .jsonPath("$[0].groupName")
+                .isEqualTo("기본");
 
         webTestClient.delete().uri("/api/watchlist/005930").exchange().expectStatus().isNoContent();
+    }
+
+    @Test
+    @WithMockUser(username = "admin", roles = "ADMIN")
+    void returnsBadRequestForInvalidPortfolioInput() {
+        webTestClient
+                .put()
+                .uri("/api/portfolio/005930")
+                .bodyValue("{\"quantity\":-1,\"averagePrice\":0}")
+                .header("Content-Type", "application/json")
+                .exchange()
+                .expectStatus()
+                .isBadRequest()
+                .expectBody()
+                .jsonPath("$.code")
+                .isEqualTo("INVALID_REQUEST");
     }
 
     @Test
