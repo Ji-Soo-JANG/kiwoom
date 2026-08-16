@@ -48,13 +48,16 @@ public class PortfolioTradeRepository {
                 .one();
     }
 
-    public Flux<PortfolioTrade> findAll(String username) {
+    public Flux<PortfolioTrade> findAll(String username, int page, int size) {
         return database.sql(
                         """
                 SELECT id, code, trade_type, quantity, price, fee, tax, realized_profit_loss, traded_at
                 FROM portfolio_trade WHERE username = :username ORDER BY traded_at DESC, id DESC
+                LIMIT :size OFFSET :offset
                 """)
                 .bind("username", username)
+                .bind("size", size)
+                .bind("offset", page * size)
                 .map(
                         (row, metadata) ->
                                 new PortfolioTrade(
@@ -68,5 +71,13 @@ public class PortfolioTradeRepository {
                                         row.get("realized_profit_loss", BigDecimal.class),
                                         row.get("traded_at", OffsetDateTime.class)))
                 .all();
+    }
+
+    public Mono<Long> count(String username) {
+        return database.sql(
+                        "SELECT COUNT(*) AS count FROM portfolio_trade WHERE username = :username")
+                .bind("username", username)
+                .map(row -> row.get("count", Long.class))
+                .one();
     }
 }

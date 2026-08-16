@@ -321,7 +321,7 @@ class KiwoomApplicationTest {
                 .expectStatus()
                 .isOk()
                 .expectBody()
-                .jsonPath("$.length()")
+                .jsonPath("$.content.length()")
                 .isEqualTo(2);
 
         webTestClient.delete().uri("/api/portfolio/000660").exchange().expectStatus().isNoContent();

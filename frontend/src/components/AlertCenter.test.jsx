@@ -19,7 +19,7 @@ describe('AlertCenter', () => {
   beforeEach(() => {
     vi.resetAllMocks();
     api.getAlertRules.mockResolvedValue([]);
-    api.getAlertEvents.mockResolvedValue([]);
+    api.getAlertEvents.mockResolvedValue({ content: [], page: 0, size: 20, totalElements: 0 });
   });
 
   it('목표가 규칙을 추가하고 목록을 새로 불러온다', async () => {

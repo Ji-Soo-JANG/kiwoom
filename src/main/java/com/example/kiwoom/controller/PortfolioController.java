@@ -4,6 +4,7 @@ import com.example.kiwoom.dto.PortfolioPosition;
 import com.example.kiwoom.dto.PortfolioValuation;
 import com.example.kiwoom.service.PortfolioService;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import java.security.Principal;
 import java.util.List;
 import org.springframework.http.HttpStatus;
@@ -30,7 +31,7 @@ public class PortfolioController {
     public Mono<PortfolioPosition> save(
             Principal principal,
             @PathVariable String code,
-            @RequestBody PortfolioPosition request) {
+            @Valid @RequestBody PortfolioPosition request) {
         return service.save(
                 principal.getName(),
                 new PortfolioPosition(code, request.quantity(), request.averagePrice()));

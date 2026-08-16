@@ -13,7 +13,7 @@ describe('App routes', () => {
     api.getWatchlist.mockResolvedValue([]);
     api.getPortfolio.mockResolvedValue([]);
     api.getAlertRules.mockResolvedValue([]);
-    api.getAlertEvents.mockResolvedValue([]);
+    api.getAlertEvents.mockResolvedValue({ content: [], page: 0, size: 20, totalElements: 0 });
   });
 
   it('내비게이션으로 포트폴리오와 알림 화면을 분리해 표시한다', async () => {

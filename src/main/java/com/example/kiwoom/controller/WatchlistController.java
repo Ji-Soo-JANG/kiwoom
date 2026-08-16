@@ -3,6 +3,7 @@ package com.example.kiwoom.controller;
 import com.example.kiwoom.dto.WatchlistRequest;
 import com.example.kiwoom.service.WatchlistService;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import java.security.Principal;
 import java.util.List;
 import org.springframework.http.HttpStatus;
@@ -26,7 +27,7 @@ public class WatchlistController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public Mono<String> add(Principal principal, @RequestBody WatchlistRequest request) {
+    public Mono<String> add(Principal principal, @Valid @RequestBody WatchlistRequest request) {
         return service.add(principal.getName(), request.code());
     }
 

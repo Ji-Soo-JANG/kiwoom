@@ -29,7 +29,9 @@ async function mockApi(page, overrides = {}) {
       state.portfolio = [{ code, ...body }];
       return json(route, state.portfolio[0]);
     }
-    if (key === 'GET /api/alerts/rules' || key === 'GET /api/alerts/events') return json(route, []);
+    if (key === 'GET /api/alerts/rules') return json(route, []);
+    if (key === 'GET /api/alerts/events')
+      return json(route, { content: [], page: 0, size: 20, totalElements: 0, totalPages: 0 });
     return json(route, { code: 'UNEXPECTED_REQUEST', message: key }, 500);
   });
   return state;

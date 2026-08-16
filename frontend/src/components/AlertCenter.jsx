@@ -40,7 +40,7 @@ function AlertCenter({ onError }) {
   const rulesQuery = useQuery({ queryKey: ['alerts', 'rules'], queryFn: getAlertRules });
   const eventsQuery = useQuery({ queryKey: ['alerts', 'events'], queryFn: () => getAlertEvents() });
   const rules = rulesQuery.data ?? [];
-  const events = eventsQuery.data ?? [];
+  const events = eventsQuery.data?.content ?? [];
   const refresh = () =>
     Promise.all([
       queryClient.invalidateQueries({ queryKey: ['alerts', 'rules'] }),

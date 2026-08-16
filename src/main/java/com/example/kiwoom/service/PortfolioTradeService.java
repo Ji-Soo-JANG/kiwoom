@@ -8,7 +8,6 @@ import java.math.RoundingMode;
 import java.time.OffsetDateTime;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Service
@@ -22,8 +21,12 @@ public class PortfolioTradeService {
         this.tradeRepository = tradeRepository;
     }
 
-    public Flux<PortfolioTrade> findAll(String username) {
-        return tradeRepository.findAll(username);
+    public Mono<PageResponse<PortfolioTrade>> findAll(String username, int page, int size) {
+        validatePage(page, size);
+        return Mono.zip(
+                        tradeRepository.findAll(username, page, size).collectList(),
+                        tradeRepository.count(username))
+                .map(tuple -> new PageResponse<>(tuple.getT1(), page, size, tuple.getT2()));
     }
 
     @Transactional(transactionManager = "connectionFactoryTransactionManager")
@@ -107,6 +110,11 @@ public class PortfolioTradeService {
                 request.price(),
                 fee,
                 tax);
+    }
+
+    private void validatePage(int page, int size) {
+        if (page < 0) throw new IllegalArgumentException("페이지 번호는 0 이상이어야 합니다");
+        if (size < 1 || size > 100) throw new IllegalArgumentException("페이지 크기는 1부터 100 사이여야 합니다");
     }
 
     private record TradeResult(PortfolioPosition position, PortfolioTrade trade) {}

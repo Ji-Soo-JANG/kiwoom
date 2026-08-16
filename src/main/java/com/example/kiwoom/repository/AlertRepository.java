@@ -175,7 +175,7 @@ public class AlertRepository {
                 .one();
     }
 
-    public Flux<AlertEvent> findEvents(String username, boolean unreadOnly) {
+    public Flux<AlertEvent> findEvents(String username, boolean unreadOnly, int page, int size) {
         String condition = unreadOnly ? " AND read_at IS NULL" : "";
         return database.sql(
                         """
@@ -183,10 +183,22 @@ public class AlertRepository {
                 FROM alert_event WHERE username = :username
                 """
                                 + condition
-                                + " ORDER BY triggered_at DESC, id DESC")
+                                + " ORDER BY triggered_at DESC, id DESC LIMIT :size OFFSET :offset")
                 .bind("username", username)
+                .bind("size", size)
+                .bind("offset", page * size)
                 .map((row, metadata) -> mapEvent(row))
                 .all();
+    }
+
+    public Mono<Long> countEvents(String username, boolean unreadOnly) {
+        String condition = unreadOnly ? " AND read_at IS NULL" : "";
+        return database.sql(
+                        "SELECT COUNT(*) AS count FROM alert_event WHERE username = :username"
+                                + condition)
+                .bind("username", username)
+                .map(row -> row.get("count", Long.class))
+                .one();
     }
 
     public Mono<AlertEvent> findEvent(String username, long id) {

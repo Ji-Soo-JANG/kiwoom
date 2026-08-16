@@ -122,8 +122,14 @@ public class AlertService {
         return (latestClose - previousClose) * 100d / previousClose;
     }
 
-    public Flux<AlertEvent> findEvents(String username, boolean unreadOnly) {
-        return repository.findEvents(username, unreadOnly);
+    public Mono<PageResponse<AlertEvent>> findEvents(
+            String username, boolean unreadOnly, int page, int size) {
+        if (page < 0) throw new IllegalArgumentException("페이지 번호는 0 이상이어야 합니다");
+        if (size < 1 || size > 100) throw new IllegalArgumentException("페이지 크기는 1부터 100 사이여야 합니다");
+        return Mono.zip(
+                        repository.findEvents(username, unreadOnly, page, size).collectList(),
+                        repository.countEvents(username, unreadOnly))
+                .map(tuple -> new PageResponse<>(tuple.getT1(), page, size, tuple.getT2()));
     }
 
     public Mono<Void> markRead(String username, long id) {

@@ -3,6 +3,7 @@ package com.example.kiwoom.controller;
 import com.example.kiwoom.dto.*;
 import com.example.kiwoom.service.AlertService;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import java.security.Principal;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -26,7 +27,8 @@ public class AlertController {
 
     @PostMapping("/rules")
     @ResponseStatus(HttpStatus.CREATED)
-    public Mono<AlertRule> addRule(Principal principal, @RequestBody AlertRuleRequest request) {
+    public Mono<AlertRule> addRule(
+            Principal principal, @Valid @RequestBody AlertRuleRequest request) {
         return service.addRule(principal.getName(), request);
     }
 
@@ -50,9 +52,12 @@ public class AlertController {
     }
 
     @GetMapping("/events")
-    public Flux<AlertEvent> findEvents(
-            Principal principal, @RequestParam(defaultValue = "false") boolean unreadOnly) {
-        return service.findEvents(principal.getName(), unreadOnly);
+    public Mono<PageResponse<AlertEvent>> findEvents(
+            Principal principal,
+            @RequestParam(defaultValue = "false") boolean unreadOnly,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return service.findEvents(principal.getName(), unreadOnly, page, size);
     }
 
     @PostMapping("/events/{id}/read")

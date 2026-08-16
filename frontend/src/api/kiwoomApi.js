@@ -99,7 +99,7 @@ export const updateAlertRule = (id, threshold, enabled) =>
   });
 export const deleteAlertRule = (id) => requestJson(`/api/alerts/rules/${id}`, { method: 'DELETE' });
 export const evaluateAlerts = () => requestJson('/api/alerts/evaluate', { method: 'POST' });
-export const getAlertEvents = (unreadOnly = false) =>
-  requestJson(`/api/alerts/events?unreadOnly=${unreadOnly}`);
+export const getAlertEvents = (unreadOnly = false, page = 0, size = 20) =>
+  requestJson(`/api/alerts/events?unreadOnly=${unreadOnly}&page=${page}&size=${size}`);
 export const markAlertRead = (id) =>
   requestJson(`/api/alerts/events/${id}/read`, { method: 'POST' });
