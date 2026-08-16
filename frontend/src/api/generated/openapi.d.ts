@@ -166,6 +166,33 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/kiwoom/strategy-candidates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                200: components["responses"]["StrategyScan"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/kiwoom/account/portfolio": {
         parameters: {
             query?: never;
@@ -775,6 +802,34 @@ export interface components {
             /** Format: date-time */
             updatedAt: string;
         };
+        StrategyCandidate: {
+            code: string;
+            name: string;
+            /** Format: int64 */
+            currentPrice: number;
+            /** Format: int32 */
+            score: number;
+            qualified: boolean;
+            /** Format: double */
+            drawdownRate: number;
+            /** Format: double */
+            boxRangeRate: number;
+            /** Format: int32 */
+            volumeSpikeCount: number;
+            /** Format: double */
+            breakoutRate: number;
+            /** Format: double */
+            pullbackRate: number;
+            matchedConditions: string[];
+        };
+        StrategyScanResponse: {
+            candidates: components["schemas"]["StrategyCandidate"][];
+            /** Format: int32 */
+            scannedCount: number;
+            scope: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
         AccountPosition: {
             code: string;
             name: string;
@@ -963,6 +1018,15 @@ export interface components {
             };
             content: {
                 "application/json": components["schemas"]["MarketRankingsResponse"];
+            };
+        };
+        /** @description OK */
+        StrategyScan: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["StrategyScanResponse"];
             };
         };
         /** @description OK */

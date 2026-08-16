@@ -9,6 +9,8 @@ import com.example.kiwoom.dto.MarketRankingsResponse;
 import com.example.kiwoom.dto.StockPriceResponse;
 import com.example.kiwoom.dto.StockProductType;
 import com.example.kiwoom.dto.StockSearchResult;
+import com.example.kiwoom.dto.StrategyCandidate;
+import com.example.kiwoom.dto.StrategyScanResponse;
 import com.example.kiwoom.error.KiwoomAuthenticationException;
 import com.example.kiwoom.mapper.KiwoomResponseMapper;
 import io.micrometer.core.instrument.Counter;
@@ -56,6 +58,7 @@ public class KiwoomApiService {
     private final Counter tokenRefreshes;
     private final AtomicReference<AccessToken> cachedAccessToken = new AtomicReference<>();
     private final TechnicalIndicatorService indicatorService;
+    private final StrategyPatternDetector strategyPatternDetector = new StrategyPatternDetector();
     private Mono<AccessToken> tokenRefreshMono;
     private volatile Mono<List<StockSearchResult>> stockCatalog;
     private volatile Instant stockCatalogRefreshedAt;
@@ -334,6 +337,56 @@ public class KiwoomApiService {
 
     public Mono<MarketRankingsResponse> getMarketRankings() {
         return marketRankings;
+    }
+
+    public Mono<StrategyScanResponse> scanStrategyCandidates() {
+        return getMarketRankings()
+                .flatMapMany(
+                        rankings -> {
+                            Map<String, MarketRankingItem> pool = new java.util.LinkedHashMap<>();
+                            java.util.stream.Stream.of(
+                                            rankings.gainers(),
+                                            rankings.losers(),
+                                            rankings.mostTraded())
+                                    .flatMap(List::stream)
+                                    .forEach(item -> pool.putIfAbsent(item.code(), item));
+                            return Flux.fromIterable(pool.values())
+                                    .flatMap(
+                                            item ->
+                                                    getDailyPrices(item.code(), null, 250)
+                                                            .map(
+                                                                    prices ->
+                                                                            strategyPatternDetector
+                                                                                    .analyze(
+                                                                                            item,
+                                                                                            prices))
+                                                            .onErrorResume(
+                                                                    error -> {
+                                                                        logger.warn(
+                                                                                "strategy_candidate_skipped code={} errorType={}",
+                                                                                item.code(),
+                                                                                error.getClass()
+                                                                                        .getSimpleName());
+                                                                        return Mono.empty();
+                                                                    }),
+                                            2)
+                                    .collectList()
+                                    .map(
+                                            candidates ->
+                                                    new StrategyScanResponse(
+                                                            candidates.stream()
+                                                                    .sorted(
+                                                                            Comparator.comparingInt(
+                                                                                            StrategyCandidate
+                                                                                                    ::score)
+                                                                                    .reversed())
+                                                                    .limit(10)
+                                                                    .toList(),
+                                                            pool.size(),
+                                                            "당일 급등·급락·거래량 상위 후보군",
+                                                            Instant.now()));
+                        })
+                .next();
     }
 
     public Mono<AccountPortfolioResponse> getAccountPortfolio() {

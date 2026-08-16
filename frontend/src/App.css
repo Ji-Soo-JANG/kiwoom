@@ -90,9 +90,74 @@ body {
   color: #98a2b3;
   font-weight: 400;
 }
+.strategy-results {
+  border: 1px solid #d0d5dd;
+  border-radius: 10px;
+  margin-bottom: 20px;
+  padding: 18px;
+}
+.strategy-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+.strategy-heading p,
+.strategy-scope,
+.strategy-warning {
+  color: #667085;
+  margin-top: 5px;
+  font-size: 12px;
+}
+.strategy-heading button {
+  flex: 0 0 auto;
+}
+.strategy-candidate-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+}
+.strategy-candidate {
+  display: grid;
+  grid-template-columns: 58px 130px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+  background: #f8f9fc;
+  border: 1px solid transparent;
+}
+.strategy-candidate.qualified {
+  background: #ecfdf3;
+  border-color: #6ce9a6;
+}
+.strategy-score {
+  color: #4f46e5;
+  font-weight: 800;
+}
+.strategy-stock,
+.strategy-metrics {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.strategy-stock small,
+.strategy-metrics small {
+  color: #667085;
+  margin-top: 3px;
+  font-weight: 400;
+}
+.strategy-warning {
+  margin-top: 12px;
+}
 @media (max-width: 850px) {
   .ranking-grid {
     grid-template-columns: 1fr;
+  }
+  .strategy-candidate {
+    grid-template-columns: 52px minmax(0, 1fr);
+  }
+  .strategy-metrics {
+    grid-column: 1 / -1;
   }
 }
 .account-summary {

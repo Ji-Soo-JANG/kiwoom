@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { getMarketRankings } from '../api/kiwoomApi';
+import { getMarketRankings, getStrategyCandidates } from '../api/kiwoomApi';
 
 const sections = [
   { key: 'gainers', title: '급등주', description: '전일 대비 상승률 상위' },
@@ -10,6 +10,12 @@ const sections = [
 const formatNumber = (value) => Number(value).toLocaleString('ko-KR');
 
 function MarketDiscovery({ onSelectStock }) {
+  const strategy = useQuery({
+    queryKey: ['strategy-candidates'],
+    queryFn: getStrategyCandidates,
+    staleTime: 5 * 60 * 1000,
+    retry: false
+  });
   const rankings = useQuery({
     queryKey: ['market-rankings'],
     queryFn: getMarketRankings,
@@ -37,6 +43,59 @@ function MarketDiscovery({ onSelectStock }) {
           {rankings.isFetching ? '새로고침 중...' : '새로고침'}
         </button>
       </div>
+
+      <article className="strategy-results" aria-labelledby="strategy-results-title">
+        <div className="strategy-heading">
+          <div>
+            <h3 id="strategy-results-title">급락 후 횡보·돌파·눌림목 후보</h3>
+            <p>당일 순위 종목의 최근 250개 일봉을 분석한 1차 후보입니다.</p>
+          </div>
+          <button type="button" onClick={() => strategy.refetch()} disabled={strategy.isFetching}>
+            {strategy.isFetching ? '조건 검색 중...' : '조건 다시 검색'}
+          </button>
+        </div>
+        {strategy.isPending && <div className="loading-text">전략 조건을 분석하는 중...</div>}
+        {strategy.error && (
+          <div className="error" role="alert">
+            전략 후보를 불러오지 못했습니다: {strategy.error.message}
+          </div>
+        )}
+        {strategy.data && (
+          <>
+            <p className="strategy-scope">
+              범위: {strategy.data.scope} · {strategy.data.scannedCount}개 분석 · 70점 이상 조건 충족
+            </p>
+            {strategy.data.candidates.length === 0 ? (
+              <p className="empty-state">현재 후보군에는 분석 가능한 종목이 없습니다.</p>
+            ) : (
+              <div className="strategy-candidate-list">
+                {strategy.data.candidates.map((stock) => (
+                  <button
+                    type="button"
+                    className={stock.qualified ? 'strategy-candidate qualified' : 'strategy-candidate'}
+                    key={stock.code}
+                    onClick={() => onSelectStock(stock.code)}
+                  >
+                    <span className="strategy-score">{stock.score}점</span>
+                    <span className="strategy-stock">
+                      <strong>{stock.name}</strong>
+                      <small>{stock.code}</small>
+                    </span>
+                    <span className="strategy-metrics">
+                      급락 {stock.drawdownRate.toFixed(1)}% · 박스폭 {stock.boxRangeRate.toFixed(1)}% ·
+                      눌림 {stock.pullbackRate.toFixed(1)}%
+                      <small>{stock.matchedConditions.join(' · ')}</small>
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+        <p className="strategy-warning">
+          전체 시장 스캔이 아니라 당일 순위 후보군을 분석한 결과이며 매수 추천이 아닙니다.
+        </p>
+      </article>
 
       <div className="ranking-grid">
         {sections.map((section) => (

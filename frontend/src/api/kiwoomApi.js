@@ -97,6 +97,7 @@ export const searchStocks = (query, market = 'ALL', productType = 'ALL') =>
     `/api/kiwoom/stocks/search?q=${encodeURIComponent(query)}&market=${encodeURIComponent(market)}&productType=${encodeURIComponent(productType)}`
   );
 export const getMarketRankings = () => requestJson('/api/kiwoom/market-rankings');
+export const getStrategyCandidates = () => requestJson('/api/kiwoom/strategy-candidates');
 export const getAccountPortfolio = () => requestJson('/api/kiwoom/account/portfolio');
 
 export const getAlertRules = () => requestJson('/api/alerts/rules');

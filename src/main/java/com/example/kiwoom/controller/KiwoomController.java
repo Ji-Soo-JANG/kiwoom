@@ -5,6 +5,7 @@ import com.example.kiwoom.dto.DailyPriceResponse;
 import com.example.kiwoom.dto.MarketRankingsResponse;
 import com.example.kiwoom.dto.StockPriceResponse;
 import com.example.kiwoom.dto.StockSearchResult;
+import com.example.kiwoom.dto.StrategyScanResponse;
 import com.example.kiwoom.service.KiwoomApiService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -72,6 +73,12 @@ public class KiwoomController {
     @Operation(summary = "급등·급락·거래량 상위 종목 조회")
     public Mono<MarketRankingsResponse> marketRankings() {
         return kiwoomApiService.getMarketRankings();
+    }
+
+    @GetMapping("/strategy-candidates")
+    @Operation(summary = "급락·횡보·거래량·돌파·눌림목 전략 후보 조회")
+    public Mono<StrategyScanResponse> strategyCandidates() {
+        return kiwoomApiService.scanStrategyCandidates();
     }
 
     @GetMapping("/account/portfolio")
