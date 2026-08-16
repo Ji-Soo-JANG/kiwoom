@@ -1,7 +1,9 @@
 package com.example.kiwoom.service;
 
 import com.example.kiwoom.config.KiwoomApiProperties;
+import com.example.kiwoom.client.KiwoomHttpClient;
 import com.example.kiwoom.dto.StockPriceResponse;
+import com.example.kiwoom.mapper.KiwoomResponseMapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
@@ -30,9 +32,11 @@ class KiwoomApiServiceTest {
     void setUp() throws IOException {
         server = new MockWebServer();
         server.start();
-        service = new KiwoomApiService(
-                WebClient.create(),
-                new KiwoomApiProperties(
+        service = createServiceWithCache(Duration.ZERO);
+    }
+
+    private KiwoomApiProperties properties(Duration cacheTtl) {
+        return new KiwoomApiProperties(
                         server.url("/").toString(),
                         "test-key",
                         "test-secret",
@@ -40,10 +44,7 @@ class KiwoomApiServiceTest {
                         Duration.ofSeconds(2),
                         5,
                         2,
-                        Duration.ofMillis(1),
-                        Duration.ZERO
-                ),
-                new ObjectMapper()
+                        Duration.ofMillis(1), cacheTtl
         );
     }
 
@@ -249,14 +250,12 @@ class KiwoomApiServiceTest {
     }
 
     private KiwoomApiService createServiceWithCache(Duration cacheTtl) {
+        KiwoomApiProperties properties = properties(cacheTtl);
+        ObjectMapper objectMapper = new ObjectMapper();
         return new KiwoomApiService(
-                WebClient.create(),
-                new KiwoomApiProperties(
-                        server.url("/").toString(), "test-key", "test-secret",
-                        Duration.ofSeconds(1), Duration.ofSeconds(2), 5, 2,
-                        Duration.ofMillis(1), cacheTtl
-                ),
-                new ObjectMapper()
+                new KiwoomHttpClient(WebClient.create(), properties),
+                new KiwoomResponseMapper(objectMapper),
+                properties
         );
     }
 }

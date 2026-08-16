@@ -10,11 +10,13 @@ kiwoom/
 │   ├── main/
 │   │   ├── java/com/example/kiwoom/
 │   │   │   ├── KiwoomApplication.java          # Spring Boot 메인 애플리케이션
+│   │   │   ├── client/                          # 키움 HTTP 호출 및 재시도
 │   │   │   ├── config/                          # WebClient 및 CORS 설정
 │   │   │   ├── controller/                      # REST API 및 웹 페이지 진입점
 │   │   │   ├── dto/                             # 현재가·일봉 응답 모델
 │   │   │   ├── error/                           # 공통 API 오류 응답 및 예외 처리
-│   │   │   └── service/                         # 키움 API 연동 및 조회 로직
+│   │   │   ├── mapper/                          # 키움 JSON 응답 변환
+│   │   │   └── service/                         # 토큰·캐시 및 조회 흐름
 │   │   └── resources/
 │   │       ├── static/                         # React 빌드 결과물
 │   │       └── templates/index.html            # 기존 Thymeleaf HTML
