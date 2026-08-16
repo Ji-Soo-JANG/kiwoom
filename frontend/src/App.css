@@ -243,13 +243,13 @@ button:focus-visible, input:focus-visible {
   height: 350px;
 }
 
-.watchlist, .portfolio {
+.watchlist, .portfolio, .alert-center {
   margin-top: 30px;
   padding-top: 20px;
   border-top: 1px solid #e0e0e0;
 }
 
-.watchlist h2, .portfolio h2 {
+.watchlist h2, .portfolio h2, .alert-center h2 {
   margin-bottom: 16px;
 }
 
@@ -270,12 +270,27 @@ button:focus-visible, input:focus-visible {
 .valuation-table caption { font-weight: 600; margin-bottom: 8px; }
 .valuation-table th, .valuation-table td { padding: 8px; border-bottom: 1px solid #e0e0e0; text-align: right; white-space: nowrap; }
 .valuation-table th:first-child, .valuation-table td:first-child { text-align: left; }
+.alert-heading { display: flex; align-items: center; gap: 8px; }
+.alert-badge { min-width: 24px; padding: 3px 8px; border-radius: 999px; background: #b42318; color: white; font-size: 12px; text-align: center; }
+.alert-form { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; margin-bottom: 16px; }
+.alert-form button { grid-column: 1 / -1; }
+.alert-form select { width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 5px; background: white; }
+.alert-toolbar { display: flex; gap: 8px; margin-bottom: 14px; }
+.alert-list { list-style: none; margin-bottom: 16px; }
+.alert-list li { padding: 12px 0; border-bottom: 1px solid #e0e0e0; }
+.alert-rule-row, .alert-event-row { display: flex; align-items: center; gap: 8px; }
+.alert-rule-row span, .alert-event-row span { flex: 1; }
+.alert-rule-row button, .alert-event-row button { flex: 0 0 auto; }
+.alert-event-unread { font-weight: 600; border-left: 3px solid #b42318; padding-left: 9px !important; }
+.alert-section-title { margin: 18px 0 10px; font-size: 16px; }
 
 @media (max-width: 520px) {
   body { padding: 8px; align-items: flex-start; }
   .container { padding: 20px 14px; }
   .portfolio-form { grid-template-columns: 1fr; }
   .portfolio-form button { grid-column: auto; }
+  .alert-form { grid-template-columns: 1fr; }
+  .alert-form button { grid-column: auto; }
 }
 
 @media (prefers-reduced-motion: reduce) {

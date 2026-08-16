@@ -20,6 +20,7 @@ import StockResultList
   from './components/StockResultList';
 import Watchlist from './components/Watchlist';
 import Portfolio from './components/Portfolio';
+import AlertCenter from './components/AlertCenter';
 
 const StockDailyChart = lazy(() =>
     import('./components/StockDailyChart')
@@ -88,7 +89,7 @@ function App() {
 
   const handleError = (err) => {
     setError(
-        '주가 조회 중 오류가 발생했습니다: '
+        '요청 처리 중 오류가 발생했습니다: '
         + err.message
     );
   };
@@ -177,6 +178,8 @@ function App() {
 
         <Portfolio positions={portfolio} valuations={valuations} loading={portfolioLoading}
                    onSave={savePosition} onRemove={deletePosition} onValuate={valuatePortfolio}/>
+
+        <AlertCenter onError={handleError}/>
 
         <Suspense fallback={<div className="loading-text">차트를 불러오는 중...</div>}>
           <StockDailyChart

@@ -78,3 +78,24 @@ export const removePortfolioPosition = (code) => requestJson(
     `/api/portfolio/${encodeURIComponent(code)}`, {method: 'DELETE'});
 
 export const getPortfolioValuation = () => requestJson('/api/portfolio/valuation');
+
+export const getAlertRules = () => requestJson('/api/alerts/rules');
+export const createAlertRule = (code, conditionType, threshold) => requestJson(
+    '/api/alerts/rules', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({code, conditionType, threshold})
+    });
+export const updateAlertRule = (id, threshold, enabled) => requestJson(
+    `/api/alerts/rules/${id}`, {
+        method: 'PATCH',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({threshold, enabled})
+    });
+export const deleteAlertRule = (id) => requestJson(
+    `/api/alerts/rules/${id}`, {method: 'DELETE'});
+export const evaluateAlerts = () => requestJson('/api/alerts/evaluate', {method: 'POST'});
+export const getAlertEvents = (unreadOnly = false) => requestJson(
+    `/api/alerts/events?unreadOnly=${unreadOnly}`);
+export const markAlertRead = (id) => requestJson(
+    `/api/alerts/events/${id}/read`, {method: 'POST'});
