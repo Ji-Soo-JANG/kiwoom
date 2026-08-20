@@ -36,9 +36,7 @@ describe('App routes', () => {
     expect(screen.getByLabelText('종목 검색')).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('link', { name: '포트폴리오' }));
-    expect(
-      await screen.findByRole('heading', { name: '내 계좌 포트폴리오' })
-    ).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: '내 계좌 포트폴리오' })).toBeInTheDocument();
     expect(screen.queryByLabelText('종목 검색')).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('link', { name: '알림' }));

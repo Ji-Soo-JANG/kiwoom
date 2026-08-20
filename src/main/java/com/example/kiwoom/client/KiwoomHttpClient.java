@@ -13,6 +13,7 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientRequestException;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
 import reactor.util.retry.Retry;
 
@@ -77,12 +78,18 @@ public class KiwoomHttpClient {
     }
 
     public Mono<String> requestDailyPrices(String code, String baseDate, String accessToken) {
+        return requestPeriodPrices(code, baseDate, "ka10081", accessToken);
+    }
+
+    /** 기간별 차트 조회. apiId는 일봉 ka10081, 주봉 ka10082, 월봉 ka10083, 년봉 ka10094입니다. */
+    public Mono<String> requestPeriodPrices(
+            String code, String baseDate, String apiId, String accessToken) {
         return post(
                 "/api/dostk/chart",
                 accessToken,
-                "ka10081",
+                apiId,
                 Map.of("stk_cd", code, "base_dt", baseDate, "upd_stkpc_tp", "1"),
-                "일봉 API 호출 실패");
+                "차트 API 호출 실패");
     }
 
     public Mono<String> requestStockList(String marketType, String accessToken) {
@@ -198,6 +205,11 @@ public class KiwoomHttpClient {
                                             error ->
                                                     new RetryableKiwoomException(
                                                             "키움 API 네트워크 연결 또는 응답 시간 초과", error))
+                                    .onErrorMap(
+                                            KiwoomHttpClient::isTransientResponseFailure,
+                                            error ->
+                                                    new RetryableKiwoomException(
+                                                            "키움 API 응답을 읽는 중 연결이 끊어졌습니다", error))
                                     .doOnSuccess(value -> record(sample, path, "success"))
                                     .doOnError(error -> record(sample, path, "failure"));
                         })
@@ -217,6 +229,24 @@ public class KiwoomHttpClient {
                 .tag("outcome", outcome)
                 .register(meterRegistry)
                 .increment();
+    }
+
+    /**
+     * HTTP 200을 받았지만 본문을 읽는 도중 연결이 끊어지는 등 일시적으로 재시도 가능한 응답 수신 오류인지 판단합니다. 키움 서버가 본문을 모두 보내기 전에 연결을
+     * 닫으면 WebClient는 원인을 숨기고 "200 OK from POST ..." 형태의 WebClientResponseException만 남기므로 상태 코드로
+     * 판별합니다.
+     */
+    private static boolean isTransientResponseFailure(Throwable error) {
+        if (error instanceof WebClientResponseException responseError) {
+            return responseError.getStatusCode().is2xxSuccessful();
+        }
+        for (Throwable cause = error; cause != null; cause = cause.getCause()) {
+            String type = cause.getClass().getSimpleName();
+            if (type.equals("PrematureCloseException") || type.equals("AbortedException")) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static String removeTrailingSlash(String value) {

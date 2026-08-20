@@ -23,6 +23,7 @@ public class WatchlistRepository {
                         (row, metadata) ->
                                 new WatchlistItem(
                                         row.get("code", String.class),
+                                        null,
                                         row.get("group_name", String.class),
                                         row.get("note", String.class)))
                 .all();

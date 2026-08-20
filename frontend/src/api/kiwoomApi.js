@@ -50,11 +50,18 @@ export const getCurrentPrice = (code) => {
   return requestJson(`/api/kiwoom/stock-price/${encodedCode}`);
 };
 
-/** @param {string} code @returns {Promise<DailyPriceResponse[]>} */
-export const getDailyPrices = (code) => {
+/**
+ * @param {string} code
+ * @param {string} [period] 차트 주기: day(일봉), week(주봉), month(월봉), year(년봉), 기본 day
+ * @param {number} [limit] 조회 건수, 기본 500
+ * @returns {Promise<DailyPriceResponse[]>}
+ */
+export const getDailyPrices = (code, period = 'day', limit = 500) => {
   const encodedCode = encodeURIComponent(code);
 
-  return requestJson(`/api/kiwoom/stock-price/${encodedCode}/daily`);
+  return requestJson(
+    `/api/kiwoom/stock-price/${encodedCode}/daily?period=${encodeURIComponent(period)}&limit=${limit}`
+  );
 };
 
 export const getMultiplePrices = (codes) => {
@@ -97,7 +104,17 @@ export const searchStocks = (query, market = 'ALL', productType = 'ALL') =>
     `/api/kiwoom/stocks/search?q=${encodeURIComponent(query)}&market=${encodeURIComponent(market)}&productType=${encodeURIComponent(productType)}`
   );
 export const getMarketRankings = () => requestJson('/api/kiwoom/market-rankings');
-export const getStrategyCandidates = () => requestJson('/api/kiwoom/strategy-candidates');
+/** @param {number} [boxRangeDays] 박스권 횡보 기준 기간(거래일), 기본 60일 */
+export const getStrategyCandidates = (boxRangeDays = 60) =>
+  requestJson(`/api/kiwoom/strategy-candidates?boxRangeDays=${encodeURIComponent(boxRangeDays)}`);
+export const getMarketDataStatus = () => requestJson('/api/kiwoom/admin/market-data');
+export const synchronizeMarketData = (limit = 20) =>
+  requestJson(`/api/kiwoom/admin/market-data/sync?limit=${encodeURIComponent(limit)}`, {
+    method: 'POST'
+  });
+export const getFullMarketDataStatus = () => requestJson('/api/kiwoom/admin/full-market-data');
+export const synchronizeFullMarketData = () =>
+  requestJson('/api/kiwoom/admin/full-market-data/sync', { method: 'POST' });
 export const getAccountPortfolio = () => requestJson('/api/kiwoom/account/portfolio');
 
 export const getAlertRules = () => requestJson('/api/alerts/rules');

@@ -4,7 +4,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import {
   getCurrentPrice,
-  getDailyPrices,
   getMultiplePrices,
   getWatchlist,
   addToWatchlist,
@@ -28,7 +27,6 @@ function App({ currentUser, onLogout }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [stocks, setStocks] = useState([]);
-  const [dailyPrices, setDailyPrices] = useState([]);
 
   const [loading, setLoading] = useState(false);
 
@@ -50,12 +48,10 @@ function App({ currentUser, onLogout }) {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['watchlist'] })
   });
 
-
   const initializeSearch = () => {
     setLoading(true);
     setError('');
     setStocks([]);
-    setDailyPrices([]);
     setSearched(true);
   };
 
@@ -97,10 +93,9 @@ function App({ currentUser, onLogout }) {
     navigate('/chart');
 
     try {
-      const [stock, daily] = await Promise.all([getCurrentPrice(code), getDailyPrices(code)]);
+      const stock = await getCurrentPrice(code);
 
       setStocks([stock]);
-      setDailyPrices(daily);
     } catch (err) {
       handleError(err);
     } finally {
@@ -184,7 +179,7 @@ function App({ currentUser, onLogout }) {
               )}
 
               <Suspense fallback={<div className="loading-text">차트를 불러오는 중...</div>}>
-                <StockDailyChart stockCode={stocks[0]?.code} dailyPrices={dailyPrices} />
+                <StockDailyChart stockCode={stocks[0]?.code} />
               </Suspense>
             </>
           }

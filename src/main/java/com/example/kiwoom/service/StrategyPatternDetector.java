@@ -8,23 +8,33 @@ import java.util.Comparator;
 import java.util.List;
 
 public class StrategyPatternDetector {
-    private static final int BASE_DAYS = 60;
+    /** 기본 박스권 횡보 기준 기간(거래일). 프론트엔드에서 조절하지 않을 때 사용합니다. */
+    public static final int DEFAULT_BASE_DAYS = 60;
+
+    private static final int MIN_BASE_DAYS = 20;
+    private static final int MAX_BASE_DAYS = 250;
     private static final int BREAKOUT_LOOKBACK = 10;
 
     public StrategyCandidate analyze(
             MarketRankingItem stock, List<DailyPriceResponse> sourcePrices) {
+        return analyze(stock, sourcePrices, DEFAULT_BASE_DAYS);
+    }
+
+    public StrategyCandidate analyze(
+            MarketRankingItem stock, List<DailyPriceResponse> sourcePrices, int baseDays) {
+        int boxDays = Math.max(MIN_BASE_DAYS, Math.min(baseDays, MAX_BASE_DAYS));
         List<DailyPriceResponse> prices =
                 sourcePrices.stream()
                         .sorted(Comparator.comparing(DailyPriceResponse::getDate))
                         .toList();
-        if (prices.size() < BASE_DAYS + BREAKOUT_LOOKBACK + 20) {
+        if (prices.size() < boxDays + BREAKOUT_LOOKBACK + 20) {
             return insufficient(stock);
         }
 
         Analysis best = null;
-        int firstBreakout = Math.max(BASE_DAYS + 20, prices.size() - BREAKOUT_LOOKBACK);
+        int firstBreakout = Math.max(boxDays + 20, prices.size() - BREAKOUT_LOOKBACK);
         for (int index = firstBreakout; index < prices.size() - 1; index++) {
-            Analysis analysis = analyzeBreakout(prices, index);
+            Analysis analysis = analyzeBreakout(prices, index, boxDays);
             if (best == null || analysis.score > best.score) best = analysis;
         }
         if (best == null) return insufficient(stock);
@@ -43,8 +53,9 @@ public class StrategyPatternDetector {
                 List.copyOf(best.matchedConditions));
     }
 
-    private Analysis analyzeBreakout(List<DailyPriceResponse> prices, int breakoutIndex) {
-        int baseStart = breakoutIndex - BASE_DAYS;
+    private Analysis analyzeBreakout(
+            List<DailyPriceResponse> prices, int breakoutIndex, int baseDays) {
+        int baseStart = breakoutIndex - baseDays;
         List<DailyPriceResponse> base = prices.subList(baseStart, breakoutIndex);
         List<DailyPriceResponse> history = prices.subList(0, baseStart);
         DailyPriceResponse breakout = prices.get(breakoutIndex);
@@ -92,7 +103,7 @@ public class StrategyPatternDetector {
         }
         if (boxRange <= 0.30) {
             score += 15;
-            matched.add("60거래일 박스권 횡보");
+            matched.add(baseDays + "거래일 박스권 횡보");
         }
         if (volumeSpikes >= 2) {
             score += 15;

@@ -9,8 +9,6 @@ import com.example.kiwoom.dto.MarketRankingsResponse;
 import com.example.kiwoom.dto.StockPriceResponse;
 import com.example.kiwoom.dto.StockProductType;
 import com.example.kiwoom.dto.StockSearchResult;
-import com.example.kiwoom.dto.StrategyCandidate;
-import com.example.kiwoom.dto.StrategyScanResponse;
 import com.example.kiwoom.error.KiwoomAuthenticationException;
 import com.example.kiwoom.mapper.KiwoomResponseMapper;
 import io.micrometer.core.instrument.Counter;
@@ -39,6 +37,12 @@ import reactor.core.scheduler.Schedulers;
 public class KiwoomApiService {
     private static final int MAX_STOCK_CODES = 20;
     private static final Duration TOKEN_REFRESH_MARGIN = Duration.ofMinutes(1);
+    private static final Map<String, String> PERIOD_API_IDS =
+            Map.of(
+                    "day", "ka10081",
+                    "week", "ka10082",
+                    "month", "ka10083",
+                    "year", "ka10094");
     private static final Logger logger = LoggerFactory.getLogger(KiwoomApiService.class);
 
     private final KiwoomHttpClient client;
@@ -58,7 +62,6 @@ public class KiwoomApiService {
     private final Counter tokenRefreshes;
     private final AtomicReference<AccessToken> cachedAccessToken = new AtomicReference<>();
     private final TechnicalIndicatorService indicatorService;
-    private final StrategyPatternDetector strategyPatternDetector = new StrategyPatternDetector();
     private Mono<AccessToken> tokenRefreshMono;
     private volatile Mono<List<StockSearchResult>> stockCatalog;
     private volatile Instant stockCatalogRefreshedAt;
@@ -168,12 +171,20 @@ public class KiwoomApiService {
     }
 
     public Mono<List<DailyPriceResponse>> getDailyPrices(String code, String baseDate) {
-        return getDailyPrices(code, baseDate, 120);
+        return getPeriodPrices(code, baseDate, 120, "day");
     }
 
     public Mono<List<DailyPriceResponse>> getDailyPrices(String code, String baseDate, int limit) {
+        return getPeriodPrices(code, baseDate, limit, "day");
+    }
+
+    /**
+     * @param period 차트 주기: day(일봉), week(주봉), month(월봉), year(년봉). 알 수 없는 값은 일봉으로 처리합니다.
+     */
+    public Mono<List<DailyPriceResponse>> getPeriodPrices(
+            String code, String baseDate, int limit, String period) {
         if (limit < 1 || limit > 500)
-            return Mono.error(new IllegalArgumentException("일봉 조회 건수는 1부터 500 사이여야 합니다"));
+            return Mono.error(new IllegalArgumentException("차트 조회 건수는 1부터 500 사이여야 합니다"));
         final String normalizedCode;
         try {
             normalizedCode = normalizeStockCode(code);
@@ -190,9 +201,14 @@ public class KiwoomApiService {
         } catch (DateTimeParseException error) {
             return Mono.error(new IllegalArgumentException("기준일자는 유효한 yyyyMMdd 날짜여야 합니다"));
         }
-        DailyCacheKey key = new DailyCacheKey(normalizedCode, date);
+        String normalizedPeriod =
+                period == null || period.isBlank()
+                        ? "day"
+                        : period.trim().toLowerCase(java.util.Locale.ROOT);
+        String apiId = PERIOD_API_IDS.getOrDefault(normalizedPeriod, "ka10081");
+        DailyCacheKey key = new DailyCacheKey(normalizedCode, date, apiId);
         if (dailyPriceCacheTtl.isZero() || dailyPriceCacheTtl.isNegative()) {
-            return fetchDailyPrices(key).map(prices -> limit(prices, limit));
+            return fetchChartPrices(key).map(prices -> limit(prices, limit));
         }
         Mono<List<DailyPriceResponse>> cached = dailyPriceCache.get(key);
         if (cached != null) {
@@ -203,7 +219,7 @@ public class KiwoomApiService {
                 .computeIfAbsent(
                         key,
                         cacheKey ->
-                                fetchDailyPrices(cacheKey)
+                                fetchChartPrices(cacheKey)
                                         .doOnError(error -> dailyPriceCache.remove(cacheKey))
                                         .cache(dailyPriceCacheTtl))
                 .map(prices -> limit(prices, limit));
@@ -215,18 +231,23 @@ public class KiwoomApiService {
                 : List.copyOf(prices.subList(prices.size() - limit, prices.size()));
     }
 
-    private Mono<List<DailyPriceResponse>> fetchDailyPrices(DailyCacheKey key) {
+    private Mono<List<DailyPriceResponse>> fetchChartPrices(DailyCacheKey key) {
         return Mono.defer(
                 () -> {
                     dailyApiCalls.increment();
                     return getAccessToken()
                             .flatMap(
                                     token ->
-                                            requestDailyPrices(
-                                                    key.code(), key.baseDate(), token.value()))
+                                            requestChartPrices(
+                                                    key.code(),
+                                                    key.baseDate(),
+                                                    key.apiId(),
+                                                    token.value()))
                             .onErrorResume(
                                     KiwoomAuthenticationException.class,
-                                    error -> retryDailyPrices(key.code(), key.baseDate()));
+                                    error ->
+                                            retryChartPrices(
+                                                    key.code(), key.baseDate(), key.apiId()));
                 });
     }
 
@@ -331,62 +352,16 @@ public class KiwoomApiService {
         return stockCatalog.map(items -> stockCatalogStatus());
     }
 
+    public Mono<List<StockSearchResult>> getStockCatalog() {
+        return stockCatalog;
+    }
+
     public StockCatalogStatus stockCatalogStatus() {
         return new StockCatalogStatus(stockCatalogRefreshedAt, stockCatalogSize);
     }
 
     public Mono<MarketRankingsResponse> getMarketRankings() {
         return marketRankings;
-    }
-
-    public Mono<StrategyScanResponse> scanStrategyCandidates() {
-        return getMarketRankings()
-                .flatMapMany(
-                        rankings -> {
-                            Map<String, MarketRankingItem> pool = new java.util.LinkedHashMap<>();
-                            java.util.stream.Stream.of(
-                                            rankings.gainers(),
-                                            rankings.losers(),
-                                            rankings.mostTraded())
-                                    .flatMap(List::stream)
-                                    .forEach(item -> pool.putIfAbsent(item.code(), item));
-                            return Flux.fromIterable(pool.values())
-                                    .flatMap(
-                                            item ->
-                                                    getDailyPrices(item.code(), null, 250)
-                                                            .map(
-                                                                    prices ->
-                                                                            strategyPatternDetector
-                                                                                    .analyze(
-                                                                                            item,
-                                                                                            prices))
-                                                            .onErrorResume(
-                                                                    error -> {
-                                                                        logger.warn(
-                                                                                "strategy_candidate_skipped code={} errorType={}",
-                                                                                item.code(),
-                                                                                error.getClass()
-                                                                                        .getSimpleName());
-                                                                        return Mono.empty();
-                                                                    }),
-                                            2)
-                                    .collectList()
-                                    .map(
-                                            candidates ->
-                                                    new StrategyScanResponse(
-                                                            candidates.stream()
-                                                                    .sorted(
-                                                                            Comparator.comparingInt(
-                                                                                            StrategyCandidate
-                                                                                                    ::score)
-                                                                                    .reversed())
-                                                                    .limit(10)
-                                                                    .toList(),
-                                                            pool.size(),
-                                                            "당일 급등·급락·거래량 상위 후보군",
-                                                            Instant.now()));
-                        })
-                .next();
     }
 
     public Mono<AccountPortfolioResponse> getAccountPortfolio() {
@@ -540,10 +515,10 @@ public class KiwoomApiService {
                 .map(body -> mapper.parseStockList(market, body));
     }
 
-    private Mono<List<DailyPriceResponse>> requestDailyPrices(
-            String code, String date, String token) {
-        logger.info("daily_prices_requested code={} baseDate={}", code, date);
-        return client.requestDailyPrices(code, date, token)
+    private Mono<List<DailyPriceResponse>> requestChartPrices(
+            String code, String date, String apiId, String token) {
+        logger.info("chart_prices_requested code={} baseDate={} apiId={}", code, date, apiId);
+        return client.requestPeriodPrices(code, date, apiId, token)
                 .map(mapper::parseDailyPrices)
                 .map(indicatorService::enrich)
                 .timeout(Duration.ofSeconds(15));
@@ -600,9 +575,11 @@ public class KiwoomApiService {
         return getAccessToken().flatMap(token -> requestStockCurrentPrice(code, token.value()));
     }
 
-    private Mono<List<DailyPriceResponse>> retryDailyPrices(String code, String date) {
+    private Mono<List<DailyPriceResponse>> retryChartPrices(
+            String code, String date, String apiId) {
         invalidateAccessToken();
-        return getAccessToken().flatMap(token -> requestDailyPrices(code, date, token.value()));
+        return getAccessToken()
+                .flatMap(token -> requestChartPrices(code, date, apiId, token.value()));
     }
 
     private String normalizeStockCode(String code) {
@@ -619,7 +596,7 @@ public class KiwoomApiService {
         }
     }
 
-    private record DailyCacheKey(String code, String baseDate) {}
+    private record DailyCacheKey(String code, String baseDate, String apiId) {}
 
     public record DailyPriceCacheStats(long hits, long apiCalls, int entries) {}
 

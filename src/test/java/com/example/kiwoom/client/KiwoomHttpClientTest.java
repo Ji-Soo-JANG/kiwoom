@@ -14,6 +14,7 @@ import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
+import okhttp3.mockwebserver.SocketPolicy;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -48,6 +49,47 @@ class KiwoomHttpClientTest {
 
         assertEquals(KiwoomErrorCode.UPSTREAM_UNAVAILABLE, error.errorCode());
         assertEquals(3, server.getRequestCount());
+    }
+
+    @Test
+    void retriesWhenServerClosesConnectionDuringResponseBody() {
+        for (int attempt = 0; attempt < 3; attempt++) {
+            server.enqueue(
+                    new MockResponse()
+                            .setResponseCode(200)
+                            .setBody("{\"return_code\":0")
+                            .setSocketPolicy(SocketPolicy.DISCONNECT_DURING_RESPONSE_BODY));
+        }
+
+        RetryableKiwoomException error =
+                assertThrows(
+                        RetryableKiwoomException.class,
+                        () ->
+                                client(Duration.ofSeconds(1))
+                                        .requestCurrentPrice("005930", "token")
+                                        .block());
+
+        assertEquals(KiwoomErrorCode.UPSTREAM_UNAVAILABLE, error.errorCode());
+        assertEquals(3, server.getRequestCount());
+    }
+
+    @Test
+    void acceptsLargeStockListResponsesWithinMemoryLimit() {
+        StringBuilder body = new StringBuilder("{\"return_code\":0,\"list\":[");
+        for (int i = 0; i < 15000; i++) {
+            if (i > 0) body.append(',');
+            body.append("{\"code\":\"")
+                    .append(String.format("%06d", i))
+                    .append("\",\"name\":\"테스트종목")
+                    .append(i)
+                    .append("\"}");
+        }
+        body.append("]}");
+        server.enqueue(new MockResponse().setResponseCode(200).setBody(body.toString()));
+
+        String response = client(Duration.ofSeconds(1)).requestStockList("0", "token").block();
+
+        assertTrue(response.contains("\"name\":\"테스트종목14999\""));
     }
 
     @Test

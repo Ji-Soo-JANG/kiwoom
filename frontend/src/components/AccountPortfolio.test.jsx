@@ -21,7 +21,7 @@ describe('AccountPortfolio', () => {
           code: '005930',
           name: '삼성전자',
           quantity: 10,
-          availableQuantity: 10,
+          availableQuantity: 5,
           averagePrice: 70000,
           currentPrice: 75000,
           purchaseAmount: 700000,
@@ -43,8 +43,20 @@ describe('AccountPortfolio', () => {
     );
 
     expect(await screen.findByText(/1234567890/)).toBeInTheDocument();
-    expect(screen.getByText('삼성전자')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: /삼성전자/ }));
+
+    // 종목명 (테이블 + 카드 뷰에 각각 존재)
+    expect(screen.getAllByText('삼성전자').length).toBeGreaterThanOrEqual(1);
+
+    // 종목코드 (테이블 + 카드 뷰)
+    expect(screen.getAllByText('005930').length).toBeGreaterThanOrEqual(2);
+
+    // 매입금액, 평균단가, 수익률 표시 확인 (요약+테이블+카드에 여러 번 노출)
+    expect(screen.getAllByText(/700,000원/).length).toBeGreaterThanOrEqual(2);
+    expect(screen.getAllByText(/70,000원/).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText(/7\.14%/).length).toBeGreaterThanOrEqual(1);
+
+    // 종목 클릭 시 onSelectStock 호출
+    fireEvent.click(screen.getAllByText('삼성전자')[0]);
     expect(onSelectStock).toHaveBeenCalledWith('005930');
   });
 });

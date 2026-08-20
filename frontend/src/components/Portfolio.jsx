@@ -10,7 +10,8 @@ function Portfolio({
   onSave,
   onRemove,
   onValuate,
-  onImportTrades
+  onImportTrades,
+  onSelectStock
 }) {
   const [code, setCode] = useState('');
   const [quantity, setQuantity] = useState('');
@@ -110,9 +111,22 @@ function Portfolio({
         <ul className="portfolio-list">
           {positions.map((position) => (
             <li key={position.code}>
-              <span>
-                <strong>{position.code}</strong> · {formatNumber(position.quantity)}주 · 평균{' '}
-                {formatNumber(position.averagePrice)}원
+              <span
+                className={onSelectStock ? 'clickable-position' : undefined}
+                onClick={onSelectStock ? () => onSelectStock(position.code) : undefined}
+                role={onSelectStock ? 'button' : undefined}
+                tabIndex={onSelectStock ? 0 : undefined}
+                onKeyDown={
+                  onSelectStock
+                    ? (e) => {
+                        if (e.key === 'Enter' || e.key === ' ') onSelectStock(position.code);
+                      }
+                    : undefined
+                }
+              >
+                <strong>{position.name || position.code}</strong>
+                {position.name && <small className="position-code-tag">{position.code}</small>} ·{' '}
+                {formatNumber(position.quantity)}주 · 평균 {formatNumber(position.averagePrice)}원
               </span>
               <button
                 type="button"
@@ -200,7 +214,8 @@ function Portfolio({
               <caption>현재가 기준 포트폴리오 평가</caption>
               <thead>
                 <tr>
-                  <th>종목</th>
+                  <th>종목명</th>
+                  <th>종목코드</th>
                   <th>현재가</th>
                   <th>평가금액</th>
                   <th>비중</th>
@@ -210,8 +225,13 @@ function Portfolio({
               </thead>
               <tbody>
                 {valuations.map((item) => (
-                  <tr key={item.code}>
-                    <td>{item.code}</td>
+                  <tr
+                    key={item.code}
+                    onClick={onSelectStock ? () => onSelectStock(item.code) : undefined}
+                    className={onSelectStock ? 'clickable-row' : undefined}
+                  >
+                    <td>{item.name || item.code}</td>
+                    <td className="position-code">{item.code}</td>
                     <td>{formatNumber(item.currentPrice)}원</td>
                     <td>{formatNumber(item.evaluationAmount)}원</td>
                     <td>

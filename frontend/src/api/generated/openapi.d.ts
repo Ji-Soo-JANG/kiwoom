@@ -94,7 +94,10 @@ export interface paths {
         };
         get: {
             parameters: {
-                query?: never;
+                query?: {
+                    period?: "day" | "week" | "month" | "year";
+                    limit?: number;
+                };
                 header?: never;
                 path?: never;
                 cookie?: never;
@@ -175,7 +178,9 @@ export interface paths {
         };
         get: {
             parameters: {
-                query?: never;
+                query?: {
+                    boxRangeDays?: number;
+                };
                 header?: never;
                 path?: never;
                 cookie?: never;
@@ -187,6 +192,116 @@ export interface paths {
         };
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/kiwoom/admin/market-data": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                200: components["responses"]["MarketDataStatus"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/kiwoom/admin/market-data/sync": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: {
+                    limit?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                200: components["responses"]["MarketDataStatus"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/kiwoom/admin/full-market-data": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                200: components["responses"]["MarketDataStatus"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/kiwoom/admin/full-market-data/sync": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                200: components["responses"]["MarketDataStatus"];
+            };
+        };
         delete?: never;
         options?: never;
         head?: never;
@@ -830,6 +945,27 @@ export interface components {
             /** Format: date-time */
             updatedAt: string;
         };
+        MarketDataSyncStatus: {
+            /** Format: int64 */
+            stockCount: number;
+            /** Format: int64 */
+            candleCount: number;
+            /** Format: int64 */
+            syncedStockCount: number;
+            /** Format: int64 */
+            failedStockCount: number;
+            /** Format: date */
+            latestTradeDate?: string;
+            /** Format: int32 */
+            processedInLastRun: number;
+            /** Format: int32 */
+            succeededInLastRun: number;
+            /** Format: int32 */
+            failedInLastRun: number;
+            running: boolean;
+            /** Format: date-time */
+            checkedAt: string;
+        };
         AccountPosition: {
             code: string;
             name: string;
@@ -1027,6 +1163,15 @@ export interface components {
             };
             content: {
                 "application/json": components["schemas"]["StrategyScanResponse"];
+            };
+        };
+        /** @description OK */
+        MarketDataStatus: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["MarketDataSyncStatus"];
             };
         };
         /** @description OK */

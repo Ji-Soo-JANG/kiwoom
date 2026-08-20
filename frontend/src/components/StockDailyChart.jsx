@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import {
   Bar,
   Brush,
@@ -14,13 +15,22 @@ import {
   YAxis
 } from 'recharts';
 
+import { getDailyPrices } from '../api/kiwoomApi';
 import { formatDate, formatShortDate } from '../utils/stockFormat';
 import { addTechnicalIndicators } from '../utils/technicalIndicators';
+
+const timeframes = [
+  { value: 'day', label: '일봉' },
+  { value: 'week', label: '주봉' },
+  { value: 'month', label: '월봉' },
+  { value: 'year', label: '년봉' }
+];
 
 const periods = [
   { value: 30, label: '1개월' },
   { value: 60, label: '3개월' },
   { value: 120, label: '6개월' },
+  { value: 250, label: '1년' },
   { value: 0, label: '전체' }
 ];
 const number = (value) => Number(value).toLocaleString('ko-KR', { maximumFractionDigits: 2 });
@@ -69,10 +79,21 @@ const PriceTooltip = ({ active, payload, label }) => {
   );
 };
 
-function StockDailyChart({ stockCode, dailyPrices }) {
+function StockDailyChart({ stockCode }) {
   const [period, setPeriod] = useState(() =>
     Number(localStorage.getItem('kiwoom.chart.period') ?? 60)
   );
+  const [timeframe, setTimeframe] = useState(
+    () => localStorage.getItem('kiwoom.chart.timeframe') ?? 'day'
+  );
+  const pricesQuery = useQuery({
+    queryKey: ['stock-daily', stockCode, timeframe],
+    queryFn: () => getDailyPrices(stockCode, timeframe),
+    enabled: Boolean(stockCode),
+    staleTime: 5 * 60 * 1000,
+    retry: false
+  });
+  const dailyPrices = useMemo(() => pricesQuery.data ?? [], [pricesQuery.data]);
   const enriched = useMemo(
     () =>
       addTechnicalIndicators(dailyPrices).map((item) => ({
@@ -82,7 +103,19 @@ function StockDailyChart({ stockCode, dailyPrices }) {
     [dailyPrices]
   );
   const chartData = period === 0 ? enriched : enriched.slice(-period);
+  const timeframeLabel = timeframes.find((item) => item.value === timeframe)?.label ?? '일봉';
 
+  if (!stockCode) return null;
+  if (pricesQuery.error) {
+    return (
+      <div className="error" role="alert">
+        차트 데이터를 불러오지 못했습니다: {pricesQuery.error.message}
+      </div>
+    );
+  }
+  if (pricesQuery.isPending) {
+    return <div className="loading-text">차트 데이터를 불러오는 중...</div>;
+  }
   if (dailyPrices.length === 0) return null;
 
   const latest = enriched[enriched.length - 1];
@@ -96,8 +129,25 @@ function StockDailyChart({ stockCode, dailyPrices }) {
     <section className="chart-section" aria-labelledby="daily-chart-title">
       <div className="chart-heading">
         <h2 id="daily-chart-title" className="chart-title">
-          {stockCode} 일봉 차트
+          {stockCode} {timeframeLabel} 차트
         </h2>
+        <label>
+          차트 종류
+          <select
+            value={timeframe}
+            onChange={(event) => {
+              const value = event.target.value;
+              setTimeframe(value);
+              localStorage.setItem('kiwoom.chart.timeframe', value);
+            }}
+          >
+            {timeframes.map((item) => (
+              <option key={item.value} value={item.value}>
+                {item.label}
+              </option>
+            ))}
+          </select>
+        </label>
         <label>
           조회 기간
           <select
@@ -199,7 +249,9 @@ function StockDailyChart({ stockCode, dailyPrices }) {
         type="button"
         onClick={() => {
           localStorage.removeItem('kiwoom.chart.period');
+          localStorage.removeItem('kiwoom.chart.timeframe');
           setPeriod(60);
+          setTimeframe('day');
         }}
       >
         차트 설정 초기화

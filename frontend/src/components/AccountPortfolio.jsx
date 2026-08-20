@@ -43,25 +43,111 @@ function AccountPortfolio({ onSelectStock }) {
       {data.positions.length === 0 ? (
         <p className="empty-state">현재 보유 중인 국내주식이 없습니다.</p>
       ) : (
-        <div className="valuation-table-wrapper">
-          <table className="valuation-table">
-            <caption>키움 계좌 보유종목</caption>
-            <thead><tr><th>종목</th><th>보유수량</th><th>평균단가</th><th>현재가</th><th>평가금액</th><th>손익</th><th>수익률</th></tr></thead>
-            <tbody>
-              {data.positions.map((position) => (
-                <tr key={position.code} onClick={() => onSelectStock(position.code)}>
-                  <td><button type="button">{position.name}<small>{position.code}</small></button></td>
-                  <td>{number(position.quantity)}주</td>
-                  <td>{number(position.averagePrice)}원</td>
-                  <td>{number(position.currentPrice)}원</td>
-                  <td>{number(position.evaluationAmount)}원</td>
-                  <td className={position.profitLoss >= 0 ? 'price-up' : 'price-down'}>{number(position.profitLoss)}원</td>
-                  <td>{position.returnRate.toFixed(2)}%</td>
+        <>
+          {/* 데스크톱 테이블 뷰 */}
+          <div className="valuation-table-wrapper">
+            <table className="valuation-table">
+              <caption>키움 계좌 보유종목</caption>
+              <thead>
+                <tr>
+                  <th>종목명</th>
+                  <th>종목코드</th>
+                  <th>보유수량</th>
+                  <th>가능수량</th>
+                  <th>매입금액</th>
+                  <th>평균단가</th>
+                  <th>현재가</th>
+                  <th>평가금액</th>
+                  <th>손익</th>
+                  <th>수익률</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {data.positions.map((position) => (
+                  <tr key={position.code} onClick={() => onSelectStock(position.code)}>
+                    <td>
+                      <button type="button" className="position-name-btn">
+                        {position.name}
+                      </button>
+                    </td>
+                    <td className="position-code">{position.code}</td>
+                    <td>{number(position.quantity)}주</td>
+                    <td>{number(position.availableQuantity)}주</td>
+                    <td>{number(position.purchaseAmount)}원</td>
+                    <td>{number(position.averagePrice)}원</td>
+                    <td>{number(position.currentPrice)}원</td>
+                    <td>{number(position.evaluationAmount)}원</td>
+                    <td className={position.profitLoss >= 0 ? 'price-up' : 'price-down'}>
+                      {number(position.profitLoss)}원
+                    </td>
+                    <td className={position.returnRate >= 0 ? 'price-up' : 'price-down'}>
+                      {position.returnRate.toFixed(2)}%
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* 모바일 카드 뷰 */}
+          <div className="position-card-list">
+            {data.positions.map((position) => (
+              <article
+                key={position.code}
+                className="position-card"
+                onClick={() => onSelectStock(position.code)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') onSelectStock(position.code);
+                }}
+              >
+                <div className="position-card-header">
+                  <span className="position-card-name">{position.name}</span>
+                  <span className="position-card-code">{position.code}</span>
+                </div>
+                <div className="position-card-grid">
+                  <div>
+                    <dt>보유수량</dt>
+                    <dd>{number(position.quantity)}주</dd>
+                  </div>
+                  <div>
+                    <dt>가능수량</dt>
+                    <dd>{number(position.availableQuantity)}주</dd>
+                  </div>
+                  <div>
+                    <dt>매입금액</dt>
+                    <dd>{number(position.purchaseAmount)}원</dd>
+                  </div>
+                  <div>
+                    <dt>평균단가</dt>
+                    <dd>{number(position.averagePrice)}원</dd>
+                  </div>
+                  <div>
+                    <dt>현재가</dt>
+                    <dd>{number(position.currentPrice)}원</dd>
+                  </div>
+                  <div>
+                    <dt>평가금액</dt>
+                    <dd>{number(position.evaluationAmount)}원</dd>
+                  </div>
+                  <div>
+                    <dt>손익</dt>
+                    <dd className={position.profitLoss >= 0 ? 'price-up' : 'price-down'}>
+                      {number(position.profitLoss)}원
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>수익률</dt>
+                    <dd className={position.returnRate >= 0 ? 'price-up' : 'price-down'}>
+                      {position.returnRate.toFixed(2)}%
+                    </dd>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        </>
       )}
     </section>
   );

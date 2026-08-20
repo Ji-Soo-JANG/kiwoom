@@ -8,9 +8,6 @@ body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   background: linear-gradient(135deg, #4f46e5 0%, #764ba2 100%);
   min-height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: center;
   padding: 20px;
 }
 
@@ -21,6 +18,7 @@ body {
   padding: 40px;
   max-width: 1100px;
   width: 100%;
+  margin: 0 auto;
 }
 
 .market-discovery-heading {
@@ -96,6 +94,25 @@ body {
   margin-bottom: 20px;
   padding: 18px;
 }
+.market-data-status {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  border: 1px solid #e4e7ec;
+  border-radius: 10px;
+  background: #f8f9fc;
+  margin-bottom: 16px;
+  padding: 14px 18px;
+}
+.market-data-status p {
+  color: #667085;
+  margin-top: 4px;
+  font-size: 12px;
+}
+.market-data-status button {
+  flex: 0 0 auto;
+}
 .strategy-heading {
   display: flex;
   justify-content: space-between;
@@ -111,6 +128,41 @@ body {
 }
 .strategy-heading button {
   flex: 0 0 auto;
+}
+.box-range-control {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 14px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #f8f9fc;
+  font-size: 13px;
+}
+.box-range-control label {
+  flex: 0 0 auto;
+  margin: 0;
+  color: #475467;
+  font-size: 13px;
+}
+.box-range-control strong {
+  color: #4f46e5;
+}
+.box-range-control input[type='range'] {
+  flex: 1;
+  accent-color: #4f46e5;
+  cursor: pointer;
+}
+.box-range-control small {
+  flex: 0 0 auto;
+  color: #98a2b3;
+  font-size: 11px;
+}
+@media (max-width: 850px) {
+  .box-range-control {
+    align-items: stretch;
+    flex-direction: column;
+  }
 }
 .strategy-candidate-list {
   display: grid;
@@ -159,6 +211,10 @@ body {
   .strategy-metrics {
     grid-column: 1 / -1;
   }
+  .market-data-status {
+    align-items: stretch;
+    flex-direction: column;
+  }
 }
 .account-summary {
   display: grid;
@@ -172,31 +228,111 @@ body {
   background: #f8f9fc;
 }
 .account-summary dt {
-  color: #667085;
+  color: #333;
   font-size: 12px;
 }
 .account-summary dd {
   margin-top: 6px;
   font-size: 16px;
   font-weight: 700;
+  color: #333;
 }
 .account-portfolio .valuation-table tbody tr {
   cursor: pointer;
 }
-.account-portfolio .valuation-table td button {
-  display: flex;
-  flex-direction: column;
+.position-name-btn {
   padding: 0;
   background: transparent;
+  color: #333;
+  font: inherit;
+  cursor: pointer;
   text-align: left;
 }
-.account-portfolio .valuation-table td button small {
+.position-name-btn:hover {
+  text-decoration: underline;
+}
+.position-code {
+  color: #667085;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.position-code-tag {
   color: #98a2b3;
+  font-weight: 400;
+  font-size: 13px;
+}
+.clickable-row {
+  cursor: pointer;
+}
+.clickable-row:hover {
+  background: #f8f9fc;
+}
+.clickable-position {
+  cursor: pointer;
+}
+.clickable-position:hover {
+  text-decoration: underline;
+}
+.position-card-list {
+  display: none;
 }
 @media (max-width: 850px) {
   .account-summary {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+  .valuation-table-wrapper {
+    overflow-x: auto;
+  }
+  .position-card-list {
+    display: grid;
+    gap: 12px;
+  }
+  .valuation-table-wrapper table {
+    min-width: 800px;
+  }
+}
+.position-card {
+  border: 1px solid #e4e7ec;
+  border-radius: 10px;
+  padding: 16px;
+  background: #fff;
+  cursor: pointer;
+  transition: box-shadow 0.15s;
+}
+.position-card:hover {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+.position-card-header {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.position-card-name {
+  font-weight: 700;
+  font-size: 15px;
+  color: #333;
+}
+.position-card-code {
+  color: #667085;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.position-card-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px 16px;
+}
+.position-card-grid dt {
+  color: #333;
+  font-size: 12px;
+}
+.position-card-grid dd {
+  margin-top: 3px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+  font-variant-numeric: tabular-nums;
 }
 
 .app-header {
@@ -633,6 +769,133 @@ input:focus-visible {
 .alert-center h2 {
   margin-bottom: 16px;
 }
+.watchlist-group {
+  margin-bottom: 20px;
+}
+.watchlist-group-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #475467;
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #eaecf0;
+}
+.watchlist-group-count {
+  background: #f2f4f7;
+  color: #667085;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+.watchlist-card-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+}
+.watchlist-card {
+  border: 1px solid #e4e7ec;
+  border-radius: 10px;
+  padding: 14px 16px;
+  background: #fff;
+  cursor: pointer;
+  transition: box-shadow 0.15s;
+}
+.watchlist-card:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+.watchlist-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.watchlist-card-identity {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.watchlist-card-name {
+  font-weight: 700;
+  font-size: 15px;
+  color: #333;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.watchlist-card-code {
+  color: #667085;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.watchlist-card-actions {
+  display: flex;
+  gap: 4px;
+  flex: 0 0 auto;
+}
+.watchlist-btn-edit,
+.watchlist-btn-remove,
+.watchlist-btn-save,
+.watchlist-btn-cancel {
+  flex: 0 0 auto;
+  padding: 4px 10px;
+  font-size: 12px;
+  border-radius: 5px;
+  border: 1px solid #d0d5dd;
+  background: #fff;
+  color: #344054;
+  cursor: pointer;
+}
+.watchlist-btn-edit:hover {
+  background: #f2f4f7;
+}
+.watchlist-btn-remove {
+  color: #c33;
+  border-color: #fcc;
+}
+.watchlist-btn-remove:hover {
+  background: #fee;
+}
+.watchlist-btn-save {
+  background: #4f46e5;
+  color: #fff;
+  border-color: #4f46e5;
+}
+.watchlist-btn-save:hover {
+  background: #4338ca;
+}
+.watchlist-btn-cancel {
+  background: #f2f4f7;
+}
+.watchlist-card-note {
+  margin-top: 8px;
+  color: #667085;
+  font-size: 13px;
+}
+.watchlist-edit-form {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.watchlist-edit-form label {
+  font-size: 12px;
+  color: #667085;
+  margin-bottom: 0;
+}
+.watchlist-edit-form input {
+  padding: 6px 8px;
+  border: 1px solid #d0d5dd;
+  border-radius: 5px;
+  font-size: 13px;
+}
+@media (max-width: 600px) {
+  .watchlist-card-list {
+    grid-template-columns: 1fr;
+  }
+}
 
 .portfolio-form {
   display: grid;
@@ -684,6 +947,12 @@ input:focus-visible {
   border-bottom: 1px solid #e0e0e0;
   text-align: right;
   white-space: nowrap;
+  color: #333;
+}
+.valuation-table th {
+  color: #667085;
+  font-size: 12px;
+  font-weight: 600;
 }
 .valuation-table th:first-child,
 .valuation-table td:first-child {
@@ -709,13 +978,14 @@ input:focus-visible {
   border-radius: 5px;
 }
 .portfolio-summary dt {
-  color: #667085;
+  color: #333;
   font-size: 12px;
 }
 .portfolio-summary dd {
   margin-top: 4px;
   font-size: 16px;
   font-weight: 700;
+  color: #333;
 }
 .alert-heading {
   display: flex;
@@ -787,7 +1057,6 @@ input:focus-visible {
 @media (max-width: 520px) {
   body {
     padding: 8px;
-    align-items: flex-start;
   }
   .container {
     padding: 20px 14px;

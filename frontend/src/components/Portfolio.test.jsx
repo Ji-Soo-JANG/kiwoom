@@ -73,4 +73,65 @@ describe('Portfolio', () => {
 
     expect(onSave).toHaveBeenCalledWith('005930', 12, 70000);
   });
+
+  it('종목명이 있으면 종목명과 코드를 함께 표시하고 클릭 시 차트로 이동한다', () => {
+    const onSelectStock = vi.fn();
+    render(
+      <Portfolio
+        positions={[{ code: '005930', name: '삼성전자', quantity: 10, averagePrice: 70000 }]}
+        valuations={[
+          {
+            code: '005930',
+            name: '삼성전자',
+            quantity: 10,
+            averagePrice: 70000,
+            purchaseAmount: 700000,
+            currentPrice: 75000,
+            evaluationAmount: 750000,
+            profitLoss: 50000,
+            returnRate: 7.14
+          }
+        ]}
+        loading={false}
+        onSave={vi.fn()}
+        onRemove={vi.fn()}
+        onValuate={vi.fn()}
+        onSelectStock={onSelectStock}
+      />
+    );
+
+    // 포지션 목록에서 종목명 표시
+    expect(screen.getAllByText('삼성전자').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('005930').length).toBeGreaterThanOrEqual(1);
+
+    // 평가 테이블에서 종목명·종목코드 별도 표시
+    expect(screen.getByText('종목명')).toBeInTheDocument();
+    expect(screen.getByText('종목코드')).toBeInTheDocument();
+
+    // 포지션 클릭 시 onSelectStock 호출
+    fireEvent.click(screen.getAllByText('삼성전자')[0]);
+    expect(onSelectStock).toHaveBeenCalledWith('005930');
+  });
+
+  it('종목명 없이도 코드로 표시되고 클릭 동작이 동작한다', () => {
+    const onSelectStock = vi.fn();
+    render(
+      <Portfolio
+        positions={[{ code: '005930', quantity: 10, averagePrice: 70000 }]}
+        valuations={[]}
+        loading={false}
+        onSave={vi.fn()}
+        onRemove={vi.fn()}
+        onValuate={vi.fn()}
+        onSelectStock={onSelectStock}
+      />
+    );
+
+    // 종목명 없이 코드로 표시
+    expect(screen.getByText('005930')).toBeInTheDocument();
+
+    // 코드 클릭 시 onSelectStock 호출
+    fireEvent.click(screen.getByText('005930'));
+    expect(onSelectStock).toHaveBeenCalledWith('005930');
+  });
 });

@@ -39,6 +39,40 @@ class KiwoomApplicationTest {
     void contextLoads() {}
 
     @Test
+    @WithMockUser(username = "admin", roles = "ADMIN")
+    void returnsMarketDataStorageStatus() {
+        webTestClient
+                .get()
+                .uri("/api/kiwoom/admin/market-data")
+                .exchange()
+                .expectStatus()
+                .isOk()
+                .expectBody()
+                .jsonPath("$.stockCount")
+                .isNumber()
+                .jsonPath("$.candleCount")
+                .isNumber()
+                .jsonPath("$.running")
+                .isEqualTo(false);
+    }
+
+    @Test
+    @WithMockUser(username = "admin", roles = "ADMIN")
+    void scansStoredMarketDataWithoutCallingKiwoom() {
+        webTestClient
+                .get()
+                .uri("/api/kiwoom/strategy-candidates")
+                .exchange()
+                .expectStatus()
+                .isOk()
+                .expectBody()
+                .jsonPath("$.scannedCount")
+                .isEqualTo(0)
+                .jsonPath("$.scope")
+                .isEqualTo("로컬 DB에 90개 이상 일봉이 저장된 전체 종목");
+    }
+
+    @Test
     void rejectsUnauthenticatedPortfolioRequest() {
         webTestClient.get().uri("/api/portfolio").exchange().expectStatus().isUnauthorized();
     }
@@ -63,7 +97,7 @@ class KiwoomApplicationTest {
     @Test
     void isolatesWatchlistsByAuthenticatedUser() {
         watchlistRepository
-                .save("alice", new com.example.kiwoom.dto.WatchlistItem("035420", "기본", ""))
+                .save("alice", new com.example.kiwoom.dto.WatchlistItem("035420", null, "기본", ""))
                 .block();
 
         assertThat(

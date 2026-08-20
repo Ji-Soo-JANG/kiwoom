@@ -72,9 +72,16 @@ public class KiwoomResponseMapper {
     public List<DailyPriceResponse> parseDailyPrices(String json) {
         try {
             JsonNode root = objectMapper.readTree(json);
-            verifySuccess(root, "키움 일봉 조회 오류");
+            verifySuccess(root, "키움 차트 조회 오류");
             JsonNode array = root.path("stk_dt_pole_chart_qry");
-            if (!array.isArray()) throw invalidResponse("일봉 배열을 찾을 수 없습니다");
+            // 일봉 외 기간(주봉·월봉·년봉)은 다른 키를 사용할 수 있으므로
+            // 응답 루트에서 첫 번째 배열을 찾아 fallback합니다.
+            if (!array.isArray() || array.isEmpty()) {
+                array = findFirstArray(root);
+            }
+            if (array == null || !array.isArray()) {
+                throw invalidResponse("차트 배열을 찾을 수 없습니다");
+            }
             List<DailyPriceResponse> result = new ArrayList<>();
             for (JsonNode item : array) {
                 result.add(
@@ -193,6 +200,27 @@ public class KiwoomResponseMapper {
         } catch (JsonProcessingException | NumberFormatException error) {
             throw invalidResponse("계좌 평가잔고 응답 JSON 파싱 실패");
         }
+    }
+
+    /**
+     * JSON 노드에서 첫 번째 배열을 재귀적으로 찾습니다. 키움 REST API의 주봉·월봉·년봉 응답은 일봉과 다른 배열 키를 사용할 수 있으므로, 특정 키가 없을 때
+     * 이 메서드로 fallback합니다.
+     */
+    private JsonNode findFirstArray(JsonNode node) {
+        if (node.isArray()) return node;
+        if (node.isObject()) {
+            var fieldNames = node.fieldNames();
+            while (fieldNames.hasNext()) {
+                JsonNode child = node.path(fieldNames.next());
+                if (child.isArray() && !child.isEmpty()) return child;
+            }
+            fieldNames = node.fieldNames();
+            while (fieldNames.hasNext()) {
+                JsonNode child = findFirstArray(node.path(fieldNames.next()));
+                if (child != null) return child;
+            }
+        }
+        return null;
     }
 
     private String firstText(JsonNode node, String... fields) {

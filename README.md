@@ -222,12 +222,16 @@ GET /api/kiwoom/stock-prices?codes=005930,000660,035420
 실패하면 일부 성공 목록을 반환하지 않고 전체 요청을 공통 오류 응답(HTTP 502)으로 처리합니다.
 중복 종목 코드는 한 번만 조회하며 한 번에 최대 20개까지 요청할 수 있습니다.
 
-#### 3. 일봉 조회
+#### 3. 기간별 차트 조회
 ```
-GET /api/kiwoom/stock-price/005930/daily?baseDate=20260816
+GET /api/kiwoom/stock-price/005930/daily?baseDate=20260816&period=day&limit=500
 ```
 
-`baseDate`를 생략하면 서울 시간 기준 오늘 날짜를 사용합니다.
+`baseDate`를 생략하면 서울 시간 기준 오늘 날짜를 사용합니다. `period`는
+`day`(일봉, 기본), `week`(주봉), `month`(월봉), `year`(년봉)를 지원하며 각각 키움
+`ka10081`, `ka10082`, `ka10083`, `ka10094`로 조회합니다. `limit`는 최대 500건까지
+요청할 수 있고 차트 화면에서 종류(일봉·주봉·월봉·년봉)와 조회 기간(1개월~전체)을
+바꿀 수 있습니다.
 
 #### 3-1. 종목 검색과 자동완성
 
@@ -247,6 +251,27 @@ GET /api/kiwoom/stocks/search?q=ETF&market=ALL&productType=ETF
 
 ```http
 GET /api/kiwoom/market-rankings
+```
+
+### 시장 데이터 로컬 저장
+
+종목 탐색 화면에서 `다음 20개 종목 수집`을 누르면 종목 마스터와 최근 일봉을 PostgreSQL에
+저장합니다. 수집은 미수집 종목, 이전 실패 종목, 가장 오래전에 갱신한 종목 순서로 진행되며
+같은 종목·거래일 데이터는 갱신되므로 중복되지 않습니다.
+
+```http
+GET /api/kiwoom/admin/market-data
+POST /api/kiwoom/admin/market-data/sync?limit=20
+```
+
+최초 적재 시 버튼을 여러 번 실행해 전체 종목을 순차 수집할 수 있습니다. 한 요청의 최대
+처리량은 500종목이며 키움 API 호출 제한을 고려해 작은 단위부터 사용하는 것을 권장합니다.
+개발 서버를 장 마감 후 자동 갱신하려면 다음 환경변수를 설정합니다.
+
+```text
+MARKET_DATA_SCHEDULER_ENABLED=true
+MARKET_DATA_SYNC_BATCH_SIZE=100
+MARKET_DATA_SYNC_CRON=0 10 16 * * MON-FRI
 ```
 
 키움 `ka10027`과 `ka10030`을 이용해 급등주·급락주·거래량 상위 종목을 최대 10개씩

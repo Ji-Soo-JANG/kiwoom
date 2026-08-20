@@ -252,6 +252,38 @@ class KiwoomApiServiceTest {
     }
 
     @Test
+    @DisplayName("주기 파라미터에 맞는 차트 api-id로 요청한다")
+    void requestsChartByPeriod() throws InterruptedException {
+        enqueueJson(
+                200,
+                """
+                {"return_code":0,"token":"access-token","expires_dt":"20991231235959"}
+                """);
+        String chartResponse =
+                """
+                {"return_code":0,"stk_dt_pole_chart_qry":[
+                  {"dt":"20260815","open_pric":"70000","high_pric":"71000","low_pric":"69000","cur_prc":"70500","trde_qty":"1000"}
+                ]}
+                """;
+        enqueueJson(200, chartResponse);
+        enqueueJson(200, chartResponse);
+        enqueueJson(200, chartResponse);
+        enqueueJson(200, chartResponse);
+
+        assertEquals(1, service.getPeriodPrices("005930", "20260816", 120, "week").block().size());
+        assertEquals(1, service.getPeriodPrices("005930", "20260816", 120, "month").block().size());
+        assertEquals(1, service.getPeriodPrices("005930", "20260816", 120, "year").block().size());
+        assertEquals(
+                1, service.getPeriodPrices("005930", "20260816", 120, "unknown").block().size());
+
+        assertEquals("/oauth2/token", server.takeRequest().getPath());
+        assertEquals("ka10082", server.takeRequest().getHeader("api-id"));
+        assertEquals("ka10083", server.takeRequest().getHeader("api-id"));
+        assertEquals("ka10094", server.takeRequest().getHeader("api-id"));
+        assertEquals("ka10081", server.takeRequest().getHeader("api-id"));
+    }
+
+    @Test
     @DisplayName("종목명과 시장으로 종목 목록을 검색한다")
     void searchesStockCatalogByNameAndMarket() {
         enqueueJson(

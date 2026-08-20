@@ -2,11 +2,14 @@ package com.example.kiwoom.controller;
 
 import com.example.kiwoom.dto.AccountPortfolioResponse;
 import com.example.kiwoom.dto.DailyPriceResponse;
+import com.example.kiwoom.dto.MarketDataSyncStatus;
 import com.example.kiwoom.dto.MarketRankingsResponse;
 import com.example.kiwoom.dto.StockPriceResponse;
 import com.example.kiwoom.dto.StockSearchResult;
 import com.example.kiwoom.dto.StrategyScanResponse;
 import com.example.kiwoom.service.KiwoomApiService;
+import com.example.kiwoom.service.MarketDataCollectionService;
+import com.example.kiwoom.service.StrategyScanService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
@@ -24,9 +27,16 @@ import reactor.core.publisher.Mono;
 public class KiwoomController {
 
     private final KiwoomApiService kiwoomApiService;
+    private final MarketDataCollectionService marketDataCollectionService;
+    private final StrategyScanService strategyScanService;
 
-    public KiwoomController(KiwoomApiService kiwoomApiService) {
+    public KiwoomController(
+            KiwoomApiService kiwoomApiService,
+            MarketDataCollectionService marketDataCollectionService,
+            StrategyScanService strategyScanService) {
         this.kiwoomApiService = kiwoomApiService;
+        this.marketDataCollectionService = marketDataCollectionService;
+        this.strategyScanService = strategyScanService;
     }
 
     /**
@@ -52,12 +62,13 @@ public class KiwoomController {
     }
 
     @GetMapping("/stock-price/{code}/daily")
-    @Operation(summary = "종목 일봉 조회")
+    @Operation(summary = "종목 기간별 차트 조회(일봉·주봉·월봉·년봉)")
     public Mono<List<DailyPriceResponse>> getDailyPrices(
             @PathVariable String code,
             @RequestParam(required = false) String baseDate,
-            @RequestParam(defaultValue = "120") int limit) {
-        return kiwoomApiService.getDailyPrices(code, baseDate, limit);
+            @RequestParam(defaultValue = "120") int limit,
+            @RequestParam(defaultValue = "day") String period) {
+        return kiwoomApiService.getPeriodPrices(code, baseDate, limit, period);
     }
 
     @GetMapping("/stocks/search")
@@ -77,8 +88,22 @@ public class KiwoomController {
 
     @GetMapping("/strategy-candidates")
     @Operation(summary = "급락·횡보·거래량·돌파·눌림목 전략 후보 조회")
-    public Mono<StrategyScanResponse> strategyCandidates() {
-        return kiwoomApiService.scanStrategyCandidates();
+    public Mono<StrategyScanResponse> strategyCandidates(
+            @RequestParam(defaultValue = "60") int boxRangeDays) {
+        return strategyScanService.scan(boxRangeDays);
+    }
+
+    @GetMapping("/admin/market-data")
+    @Operation(summary = "저장된 종목·일봉 데이터 수집 상태 조회")
+    public Mono<MarketDataSyncStatus> marketDataStatus() {
+        return marketDataCollectionService.status();
+    }
+
+    @PostMapping("/admin/market-data/sync")
+    @Operation(summary = "종목 목록 저장 및 일봉 증분 수집")
+    public Mono<MarketDataSyncStatus> synchronizeMarketData(
+            @RequestParam(defaultValue = "20") int limit) {
+        return marketDataCollectionService.synchronize(limit);
     }
 
     @GetMapping("/account/portfolio")

@@ -10,6 +10,8 @@ import reactor.netty.resources.ConnectionProvider;
 
 @Configuration
 public class WebClientConfig {
+    /** 종목 목록(ka10099) 응답은 전체 시장 종목을 포함해 기본 버퍼(256KB)를 초과할 수 있어 넉넉하게 설정합니다. */
+    private static final int MAX_IN_MEMORY_SIZE = 16 * 1024 * 1024;
 
     @Bean
     public WebClient webClient(KiwoomApiProperties properties) {
@@ -26,6 +28,9 @@ public class WebClientConfig {
 
         return WebClient.builder()
                 .clientConnector(new ReactorClientHttpConnector(httpClient))
+                .codecs(
+                        configurer ->
+                                configurer.defaultCodecs().maxInMemorySize(MAX_IN_MEMORY_SIZE))
                 .build();
     }
 }
