@@ -7,7 +7,8 @@ function AccountPortfolio({ onSelectStock }) {
   const portfolio = useQuery({
     queryKey: ['kiwoom-account-portfolio'],
     queryFn: getAccountPortfolio,
-    staleTime: 10 * 1000
+    staleTime: 10 * 1000,
+    refetchOnWindowFocus: false
   });
 
   if (portfolio.isPending) return <div className="loading-text">계좌 잔고를 불러오는 중...</div>;

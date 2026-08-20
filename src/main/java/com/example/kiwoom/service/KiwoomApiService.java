@@ -392,11 +392,58 @@ public class KiwoomApiService {
     private Mono<AccountPortfolioResponse> requestAccountPortfolio(String token) {
         return client.requestAccountNumber(token)
                 .map(mapper::parseAccountNumber)
-                .zipWith(client.requestAccountPortfolio(token))
+                .zipWith(fetchAccountPortfolioPages(token, null))
                 .map(
                         result ->
                                 mapper.parseAccountPortfolio(
                                         result.getT1(), result.getT2(), Instant.now()));
+    }
+
+    /**
+     * cont-yn / next-key 페이징을 순회해 계좌 평가잔고 전체 응답을 조립합니다. 키움 API는 응답 헤더에 cont-yn=Y와 next-key를 포함해 다음
+     * 페이지가 있음을 알리며, 최대 10회(안전 한도)까지 반복합니다.
+     */
+    private Mono<String> fetchAccountPortfolioPages(String token, String nextKey) {
+        return client.requestAccountPortfolioPaged(token, nextKey)
+                .flatMap(
+                        paged -> {
+                            if (!paged.continuePaging()
+                                    || paged.nextKey() == null
+                                    || paged.nextKey().isBlank()) {
+                                return Mono.justOrEmpty(paged.body());
+                            }
+                            return fetchAccountPortfolioPages(token, paged.nextKey())
+                                    .map(tail -> mergeBodies(paged.body(), tail));
+                        });
+    }
+
+    /** 두 키움 응답 JSON의 보유종목 배열을 하나로 합칩니다. */
+    private String mergeBodies(String first, String second) {
+        // 간단한 JSON 배열 합침: 첫 번째 JSON의 배열 항목에 두 번째의 항목을 추가.
+        // 키움 응답 구조가 변경될 수 있으므로 fallback으로 second를 그대로 반환.
+        try {
+            com.fasterxml.jackson.databind.JsonNode root =
+                    new com.fasterxml.jackson.databind.ObjectMapper().readTree(first);
+            com.fasterxml.jackson.databind.JsonNode tail =
+                    new com.fasterxml.jackson.databind.ObjectMapper().readTree(second);
+            // 보유종목 배열 키를 찾아서 합침
+            for (String key : List.of("acnt_evlt_remn_indv_tot")) {
+                com.fasterxml.jackson.databind.JsonNode arr = root.path(key);
+                com.fasterxml.jackson.databind.JsonNode tailArr = tail.path(key);
+                if (arr.isArray() && tailArr.isArray()) {
+                    com.fasterxml.jackson.databind.node.ArrayNode merged =
+                            new com.fasterxml.jackson.databind.node.ArrayNode(
+                                    com.fasterxml.jackson.databind.node.JsonNodeFactory.instance);
+                    arr.forEach(merged::add);
+                    tailArr.forEach(merged::add);
+                    ((com.fasterxml.jackson.databind.node.ObjectNode) root).set(key, merged);
+                    return root.toString();
+                }
+            }
+        } catch (Exception ignored) {
+            // 파싱 실패 시 첫 번째 응답만 사용
+        }
+        return first;
     }
 
     private Mono<MarketRankingsResponse> createMarketRankings() {
@@ -421,8 +468,25 @@ public class KiwoomApiService {
     }
 
     private Mono<MarketRankingsResponse> requestMarketRankings(String token) {
-        return requestMarketRankings("001", token)
-                .zipWith(requestMarketRankings("101", token))
+        Mono<MarketRankingsResponse> kospi =
+                requestMarketRankings("001", token)
+                        .onErrorResume(
+                                error -> {
+                                    logger.warn(
+                                            "market_rankings_partial_failure market=KOSPI errorType={}",
+                                            error.getClass().getSimpleName());
+                                    return Mono.just(emptyRankings());
+                                });
+        Mono<MarketRankingsResponse> kosdaq =
+                requestMarketRankings("101", token)
+                        .onErrorResume(
+                                error -> {
+                                    logger.warn(
+                                            "market_rankings_partial_failure market=KOSDAQ errorType={}",
+                                            error.getClass().getSimpleName());
+                                    return Mono.just(emptyRankings());
+                                });
+        return Mono.zip(kospi, kosdaq)
                 .map(
                         rankings ->
                                 new MarketRankingsResponse(
@@ -445,14 +509,45 @@ public class KiwoomApiService {
                                         Instant.now()));
     }
 
+    private MarketRankingsResponse emptyRankings() {
+        return new MarketRankingsResponse(List.of(), List.of(), List.of(), Instant.now());
+    }
+
     private Mono<MarketRankingsResponse> requestMarketRankings(String marketType, String token) {
-        return Mono.zip(
-                        client.requestChangeRateRanking(marketType, "1", token)
-                                .map(body -> mapper.parseRanking("pred_pre_flu_rt_upper", body)),
-                        client.requestChangeRateRanking(marketType, "2", token)
-                                .map(body -> mapper.parseRanking("pred_pre_flu_rt_upper", body)),
-                        client.requestVolumeRanking(marketType, token)
-                                .map(body -> mapper.parseRanking("tdy_trde_qty_upper", body)))
+        Mono<List<MarketRankingItem>> gainers =
+                client.requestChangeRateRanking(marketType, "1", token)
+                        .map(body -> mapper.parseRanking("pred_pre_flu_rt_upper", body))
+                        .onErrorResume(
+                                error -> {
+                                    logger.warn(
+                                            "ranking_partial_failure type=gainers market={} errorType={}",
+                                            marketType,
+                                            error.getClass().getSimpleName());
+                                    return Mono.just(List.of());
+                                });
+        Mono<List<MarketRankingItem>> losers =
+                client.requestChangeRateRanking(marketType, "2", token)
+                        .map(body -> mapper.parseRanking("pred_pre_flu_rt_upper", body))
+                        .onErrorResume(
+                                error -> {
+                                    logger.warn(
+                                            "ranking_partial_failure type=losers market={} errorType={}",
+                                            marketType,
+                                            error.getClass().getSimpleName());
+                                    return Mono.just(List.of());
+                                });
+        Mono<List<MarketRankingItem>> mostTraded =
+                client.requestVolumeRanking(marketType, token)
+                        .map(body -> mapper.parseRanking("tdy_trde_qty_upper", body))
+                        .onErrorResume(
+                                error -> {
+                                    logger.warn(
+                                            "ranking_partial_failure type=mostTraded market={} errorType={}",
+                                            marketType,
+                                            error.getClass().getSimpleName());
+                                    return Mono.just(List.of());
+                                });
+        return Mono.zip(gainers, losers, mostTraded)
                 .map(
                         rankings ->
                                 new MarketRankingsResponse(

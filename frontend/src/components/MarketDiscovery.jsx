@@ -1,4 +1,5 @@
-import { useDeferredValue, useState } from 'react';
+import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
+import { useDeferredValue } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   getFullMarketDataStatus,
@@ -8,6 +9,44 @@ import {
   synchronizeFullMarketData,
   synchronizeMarketData
 } from '../api/kiwoomApi';
+
+/**
+ * 수동 새로고침 디바운스: 연속 클릭을 방지하고 다음 갱신 가능 시점을 표시합니다.
+ * REFRESH_COOLDOWN_MS 이후에야 다시 새로고침할 수 있습니다.
+ */
+const REFRESH_COOLDOWN_MS = 30_000;
+
+function useRefreshCooldown() {
+  const [cooldownEnd, setCooldownEnd] = useState(0);
+  const [remaining, setRemaining] = useState(0);
+  const timerRef = useRef(null);
+
+  useEffect(() => {
+    if (cooldownEnd === 0) return;
+    const tick = () => {
+      const left = Math.max(0, cooldownEnd - Date.now());
+      setRemaining(left);
+      if (left <= 0) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+    timerRef.current = setInterval(tick, 1000);
+    tick();
+    return () => clearInterval(timerRef.current);
+  }, [cooldownEnd]);
+
+  const canRefresh = remaining <= 0;
+  const triggerCooldown = useCallback(() => {
+    setCooldownEnd(Date.now() + REFRESH_COOLDOWN_MS);
+  }, []);
+
+  return {
+    canRefresh,
+    remainingSeconds: Math.ceil(remaining / 1000),
+    triggerCooldown
+  };
+}
 
 const sections = [
   { key: 'gainers', title: '급등주', description: '전일 대비 상승률 상위' },
@@ -21,6 +60,7 @@ function MarketDiscovery({ onSelectStock }) {
   const queryClient = useQueryClient();
   const [boxRangeDays, setBoxRangeDays] = useState(60);
   const deferredBoxRangeDays = useDeferredValue(boxRangeDays);
+  const refreshCooldown = useRefreshCooldown();
   const marketData = useQuery({ queryKey: ['market-data-status'], queryFn: getMarketDataStatus });
   const synchronize = useMutation({
     mutationFn: () => synchronizeMarketData(20),
@@ -45,7 +85,8 @@ function MarketDiscovery({ onSelectStock }) {
     queryKey: ['market-rankings'],
     queryFn: getMarketRankings,
     staleTime: 30 * 1000,
-    refetchInterval: 60 * 1000
+    refetchInterval: 60 * 1000,
+    refetchOnWindowFocus: false
   });
 
   if (rankings.isPending) return <div className="loading-text">시장 순위를 불러오는 중...</div>;
@@ -64,8 +105,19 @@ function MarketDiscovery({ onSelectStock }) {
           <h2 id="market-discovery-title">종목 발견</h2>
           <p>시장 흐름을 빠르게 살펴보고 종목을 눌러 상세 주가를 확인하세요.</p>
         </div>
-        <button type="button" onClick={() => rankings.refetch()} disabled={rankings.isFetching}>
-          {rankings.isFetching ? '새로고침 중...' : '새로고침'}
+        <button
+          type="button"
+          onClick={() => {
+            rankings.refetch();
+            refreshCooldown.triggerCooldown();
+          }}
+          disabled={rankings.isFetching || !refreshCooldown.canRefresh}
+        >
+          {rankings.isFetching
+            ? '새로고침 중...'
+            : !refreshCooldown.canRefresh
+              ? `${refreshCooldown.remainingSeconds}초 후 갱신 가능`
+              : '새로고침'}
         </button>
       </div>
 
@@ -209,13 +261,22 @@ function MarketDiscovery({ onSelectStock }) {
         <p className="strategy-warning">
           일봉이 90개 이상 수집된 종목만 분석하며 결과는 매수 추천이 아닙니다.
         </p>
-      </article>
+      </article>        {rankings.data.updatedAt && (
+          <p className="info-text">
+            마지막 갱신: {new Date(rankings.data.updatedAt).toLocaleString('ko-KR')}
+          </p>
+        )}
 
-      <div className="ranking-grid">
+        <div className="ranking-grid">
         {sections.map((section) => (
           <article className="ranking-card" key={section.key}>
             <h3>{section.title}</h3>
             <p>{section.description}</p>
+            {rankings.data[section.key].length === 0 ? (
+              <p className="empty-state">
+                장 마감이거나 해당 순위 데이터가 없습니다.
+              </p>
+            ) : (
             <ol>
               {rankings.data[section.key].map((stock, index) => (
                 <li key={stock.code}>
@@ -232,8 +293,9 @@ function MarketDiscovery({ onSelectStock }) {
                     </span>
                   </button>
                 </li>
-              ))}
+              )              )}
             </ol>
+            )}
           </article>
         ))}
       </div>

@@ -114,6 +114,21 @@ public class KiwoomHttpClient {
                 "계좌 평가잔고 API 호출 실패");
     }
 
+    /**
+     * cont-yn / next-key 페이징을 지원하는 계좌 평가잔고 조회.
+     *
+     * @param nextKey 다음 페이지 키. null이면 첫 페이지.
+     */
+    public Mono<PagedResponse> requestAccountPortfolioPaged(String accessToken, String nextKey) {
+        return postPaged(
+                "/api/dostk/acnt",
+                accessToken,
+                "kt00018",
+                Map.of("qry_tp", "1", "dmst_stex_tp", "KRX"),
+                nextKey,
+                "계좌 평가잔고 API 호출 실패");
+    }
+
     public Mono<String> requestChangeRateRanking(
             String marketType, String sortType, String accessToken) {
         return post(
@@ -150,6 +165,9 @@ public class KiwoomHttpClient {
                         "stex_tp", "3"),
                 "거래량 순위 API 호출 실패");
     }
+
+    /** cont-yn, next-key 응답 헤더를 PagedResponse로 묶어 반환합니다. */
+    public record PagedResponse(String body, boolean continuePaging, String nextKey) {}
 
     private Mono<String> post(
             String path,
@@ -247,6 +265,90 @@ public class KiwoomHttpClient {
             }
         }
         return false;
+    }
+
+    /** cont-yn / next-key 페이징 응답을 지원하는 POST 요청입니다. 응답 본문과 함께 다음 페이지 키를 반환합니다. */
+    private Mono<PagedResponse> postPaged(
+            String path,
+            String token,
+            String apiId,
+            Map<String, String> body,
+            String nextKey,
+            String failureMessage) {
+        return Mono.defer(
+                        () -> {
+                            Timer.Sample sample = Timer.start(meterRegistry);
+                            WebClient.RequestBodySpec request =
+                                    webClient.post().uri(baseUrl + path);
+                            if (token != null) request.header("Authorization", "Bearer " + token);
+                            if (apiId != null) request.header("api-id", apiId);
+                            if (nextKey != null && !nextKey.isBlank()) {
+                                request.header("cont-yn", "Y");
+                                request.header("next-key", nextKey);
+                            }
+                            return request.contentType(MediaType.APPLICATION_JSON)
+                                    .accept(MediaType.APPLICATION_JSON)
+                                    .bodyValue(body)
+                                    .retrieve()
+                                    .onStatus(
+                                            status -> status.value() == 401,
+                                            response ->
+                                                    Mono.just(
+                                                            new KiwoomAuthenticationException(
+                                                                    "키움 인증이 만료되었습니다")))
+                                    .onStatus(
+                                            status ->
+                                                    status.value() == 429
+                                                            || status.is5xxServerError(),
+                                            response ->
+                                                    Mono.just(
+                                                            new RetryableKiwoomException(
+                                                                    response.statusCode())))
+                                    .onStatus(
+                                            status -> status.isError(),
+                                            response ->
+                                                    response.bodyToMono(String.class)
+                                                            .defaultIfEmpty(failureMessage)
+                                                            .map(
+                                                                    bodyText ->
+                                                                            KiwoomApiException
+                                                                                    .fromResponse(
+                                                                                            response.statusCode()
+                                                                                                    .value(),
+                                                                                            failureMessage
+                                                                                                    + " ("
+                                                                                                    + response
+                                                                                                            .statusCode()
+                                                                                                    + "): "
+                                                                                                    + bodyText)))
+                                    .toEntity(String.class)
+                                    .map(
+                                            entity -> {
+                                                String contYn =
+                                                        entity.getHeaders().getFirst("cont-yn");
+                                                String nk =
+                                                        entity.getHeaders().getFirst("next-key");
+                                                boolean cont =
+                                                        contYn != null
+                                                                && contYn.trim()
+                                                                        .equalsIgnoreCase("Y");
+                                                return new PagedResponse(
+                                                        entity.getBody(), cont, nk);
+                                            })
+                                    .onErrorMap(
+                                            WebClientRequestException.class,
+                                            error ->
+                                                    new RetryableKiwoomException(
+                                                            "키움 API 네트워크 연결 또는 응답 시간 초과", error))
+                                    .onErrorMap(
+                                            KiwoomHttpClient::isTransientResponseFailure,
+                                            error ->
+                                                    new RetryableKiwoomException(
+                                                            "키움 API 응답을 읽는 중 연결이 끊어졌습니다", error))
+                                    .doOnSuccess(value -> record(sample, path, "success"))
+                                    .doOnError(error -> record(sample, path, "failure"));
+                        })
+                .retryWhen(transientRetry);
     }
 
     private static String removeTrailingSlash(String value) {

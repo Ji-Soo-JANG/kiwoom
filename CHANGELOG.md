@@ -70,7 +70,64 @@
 | 구분 | 테스트 수 | 결과 |
 |------|-----------|------|
 | 백엔드 (JUnit) | 77 | ✅ 전부 통과 |
-| 프론트엔드 (Vitest) | 43 | ✅ 전부 통과 |
+| 프론트엔드 (Vitest) | 46 | ✅ 전부 통과 |
 | ESLint | — | ✅ 경고 없음 |
 | Spotless 포맷 | — | ✅ 적용 완료 |
+| Vite 빌드 | — | ✅ 정적 산출물 갱신 완료 |
+
+---
+
+## 2026-08-21
+
+### P0 — 실 API 연동 안정화
+
+#### 1. 계좌 API cont-yn/next-key 페이징 및 안정성
+
+키움 REST API의 계좌 평가잔고(`kt00018`) 응답에 포함되는 `cont-yn`/`next-key` 페이징을 순회해 보유종목 전체를 조회하도록 변경했다.
+
+**백엔드**
+- `KiwoomHttpClient` — `postPaged()` 메서드를 추가해 응답 헤더의 `cont-yn`과 `next-key`를 파싱한다.
+- `KiwoomHttpClient.requestAccountPortfolioPaged(accessToken, nextKey)` — 요청 헤더에 `cont-yn: Y`와 `next-key`를 포함해 다음 페이지를 요청한다.
+- `KiwoomApiService.fetchAccountPortfolioPages()` — 재귀적으로 페이징을 순회해 모든 보유종목을 하나로 합친다.
+- `KiwoomResponseMapper.parseAccountPortfolio()` — 보유종목 배열이 없는 응답(빈 계좌)도 안전하게 처리한다.
+
+**프론트엔드**
+- `AccountPortfolio` — `refetchOnWindowFocus: false`를 적용해 창 전환 시 불필요한 재호출을 방지한다.
+
+#### 2. 시장 순위 API 부분 실패 격리
+
+시장 순위 조회 시 코스피 또는 코스닥, 급등·급락·거래량 중 하나만 실패해도 나머지 목록은 계속 표시하도록 격리했다.
+
+**백엔드**
+- `KiwoomApiService.requestMarketRankings(token)` — 코스피/코스닥 각각에 `onErrorResume`을 적용해 한쪽 실패 시 빈 목록으로 대체한다.
+- `KiwoomApiService.requestMarketRankings(marketType, token)` — 급등/급락/거래량 각 순위에도 `onErrorResume`을 적용해 개별 순위 실패 시 빈 목록으로 대체한다.
+- 부분 실패 시 `market_rankings_partial_failure`와 `ranking_partial_failure` 로그를 남긴다.
+
+**프론트엔드**
+- `MarketDiscovery` — 빈 순위 목록일 때 "장 마감이거나 해당 순위 데이터가 없습니다" 안내 문구를 표시한다.
+- 마지막 갱신 시각을 표시한다.
+
+#### 3. API 호출량 관리
+
+수동 새로고침의 연속 클릭을 방지하고 다음 갱신 가능 시점을 표시한다.
+
+**프론트엔드**
+- `useRefreshCooldown` 훅 — 30초 쿨다운 동안 연속 클릭을 차단하고 남은 초 수를 표시한다.
+- `rankings` 쿼리에 `refetchOnWindowFocus: false`를 적용해 창 전환 시 자동 재조회를 방지한다.
+- 새로고침 버튼이 쿨다운 중일 때 "N초 후 갱신 가능" 상태를 표시한다.
+
+#### 4. 민감 정보 보호
+
+**백엔드**
+- `KiwoomResponseMapper.maskAccountNumber()` — 계좌번호를 앞 3자리와 뒤 2자리만 노출하고 나머지를 `***`로 마스킹한다.
+  - 예: `123-456-78901` → `123-***-**01`
+- `parseAccountPortfolio()`가 마스킹된 계좌번호를 `AccountPortfolioResponse`에 포함시켜 화면과 로그에 전체 계좌번호가 노출되지 않는다.
+- 기존 테스트(`doesNotLogCredentialsOrAccessToken`)에서 API secret과 접근 토큰이 로그에 포함되지 않는지를 검증한다.
+
+### 검증 결과
+
+| 구분 | 테스트 수 | 결과 |
+|------|-----------|------|
+| 백엔드 (JUnit) | 77 | ✅ 전부 통과 |
+| 프론트엔드 (Vitest) | 46 | ✅ 전부 통과 |
 | Vite 빌드 | — | ✅ 정적 산출물 갱신 완료 |

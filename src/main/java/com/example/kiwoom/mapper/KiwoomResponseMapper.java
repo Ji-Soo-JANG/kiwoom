@@ -169,7 +169,18 @@ public class KiwoomResponseMapper {
             JsonNode root = objectMapper.readTree(json);
             verifySuccess(root, "키움 계좌 평가잔고 조회 오류");
             JsonNode array = root.path("acnt_evlt_remn_indv_tot");
-            if (!array.isArray()) throw invalidResponse("계좌 보유종목 배열을 찾을 수 없습니다");
+            if (!array.isArray()) {
+                // 빈 보유종목: 배열이 없거나 비어있는 경우 빈 리스트 반환
+                return new AccountPortfolioResponse(
+                        maskAccountNumber(accountNumber),
+                        absoluteLong(firstText(root, "tot_pur_amt")),
+                        absoluteLong(firstText(root, "tot_evlt_amt")),
+                        signedLong(firstText(root, "tot_evlt_pl")),
+                        decimal(firstText(root, "tot_prft_rt")),
+                        absoluteLong(firstText(root, "prsm_dpst_aset_amt")),
+                        List.of(),
+                        updatedAt);
+            }
             List<AccountPosition> positions = new ArrayList<>();
             for (JsonNode item : array) {
                 String code = normalizeRankingCode(firstText(item, "stk_cd", "stk_no"));
@@ -189,7 +200,7 @@ public class KiwoomResponseMapper {
                                 decimal(firstText(item, "prft_rt", "evltv_prft_rt"))));
             }
             return new AccountPortfolioResponse(
-                    accountNumber,
+                    maskAccountNumber(accountNumber),
                     absoluteLong(firstText(root, "tot_pur_amt")),
                     absoluteLong(firstText(root, "tot_evlt_amt")),
                     signedLong(firstText(root, "tot_evlt_pl")),
@@ -200,6 +211,16 @@ public class KiwoomResponseMapper {
         } catch (JsonProcessingException | NumberFormatException error) {
             throw invalidResponse("계좌 평가잔고 응답 JSON 파싱 실패");
         }
+    }
+
+    /** 계좌번호를 화면에 표시할 때 앞 3자리와 뒤 2자리만 노출하고 나머지를 마스킹합니다. 예: 123-456-78901 → 123-***-**01 */
+    public static String maskAccountNumber(String accountNumber) {
+        if (accountNumber == null || accountNumber.isBlank()) return accountNumber;
+        String digits = accountNumber.replaceAll("[^0-9]", "");
+        if (digits.length() < 6) return accountNumber;
+        String prefix = digits.substring(0, Math.min(3, digits.length()));
+        String suffix = digits.substring(Math.max(digits.length() - 2, 3));
+        return prefix + "-***-**" + suffix;
     }
 
     /**
