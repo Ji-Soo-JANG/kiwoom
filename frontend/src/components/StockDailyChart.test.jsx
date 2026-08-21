@@ -38,7 +38,7 @@ describe('StockDailyChart', () => {
   it('가격·거래량·보조지표 패널과 기간 선택을 제공한다', async () => {
     renderChart('005930');
 
-    expect(await screen.findByRole('heading', { name: '005930 일봉 차트' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /005930.*일봉 차트/ })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: '거래량' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'RSI(14)' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'MACD' })).toBeInTheDocument();
@@ -57,6 +57,6 @@ describe('StockDailyChart', () => {
     fireEvent.change(timeframe, { target: { value: 'week' } });
 
     await waitFor(() => expect(api.getDailyPrices).toHaveBeenCalledWith('005930', 'week'));
-    expect(await screen.findByRole('heading', { name: '005930 주봉 차트' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /005930.*주봉 차트/ })).toBeInTheDocument();
   });
 });

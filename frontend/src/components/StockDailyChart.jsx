@@ -130,6 +130,11 @@ function StockDailyChart({ stockCode }) {
       <div className="chart-heading">
         <h2 id="daily-chart-title" className="chart-title">
           {stockCode} {timeframeLabel} 차트
+          {latest && (
+            <small style={{ marginLeft: 8, fontSize: 12, color: '#98a2b3', fontWeight: 400 }}>
+              기준: {formatDate(latest.date)}
+            </small>
+          )}
         </h2>
         <label>
           차트 종류
