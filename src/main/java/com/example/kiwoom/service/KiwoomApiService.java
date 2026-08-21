@@ -60,6 +60,8 @@ public class KiwoomApiService {
     private final Counter dailyCacheHits;
     private final Counter dailyApiCalls;
     private final Counter tokenRefreshes;
+    private final Counter rankingPartialFailures;
+    private final Counter accountFailures;
     private final AtomicReference<AccessToken> cachedAccessToken = new AtomicReference<>();
     private final TechnicalIndicatorService indicatorService;
     private Mono<AccessToken> tokenRefreshMono;
@@ -87,6 +89,10 @@ public class KiwoomApiService {
         this.dailyCacheHits = counter(meterRegistry, "daily", "hit");
         this.dailyApiCalls = Counter.builder("kiwoom.api.daily.calls").register(meterRegistry);
         this.tokenRefreshes = Counter.builder("kiwoom.api.token.refreshes").register(meterRegistry);
+        this.rankingPartialFailures =
+                Counter.builder("kiwoom.api.ranking.partial_failures").register(meterRegistry);
+        this.accountFailures =
+                Counter.builder("kiwoom.api.account.failures").register(meterRegistry);
         Gauge.builder("kiwoom.cache.entries", currentPriceCache, Map::size)
                 .tag("type", "current")
                 .register(meterRegistry);
@@ -416,6 +422,13 @@ public class KiwoomApiService {
                             invalidateAccessToken();
                             return getAccessToken()
                                     .flatMap(token -> requestAccountPortfolio(token.value()));
+                        })
+                .doOnError(
+                        error -> {
+                            accountFailures.increment();
+                            logger.warn(
+                                    "account_portfolio_failed errorType={}",
+                                    error.getClass().getSimpleName());
                         });
     }
 
@@ -502,6 +515,7 @@ public class KiwoomApiService {
                 requestMarketRankings("001", token)
                         .onErrorResume(
                                 error -> {
+                                    rankingPartialFailures.increment();
                                     logger.warn(
                                             "market_rankings_partial_failure market=KOSPI errorType={}",
                                             error.getClass().getSimpleName());
@@ -511,6 +525,7 @@ public class KiwoomApiService {
                 requestMarketRankings("101", token)
                         .onErrorResume(
                                 error -> {
+                                    rankingPartialFailures.increment();
                                     logger.warn(
                                             "market_rankings_partial_failure market=KOSDAQ errorType={}",
                                             error.getClass().getSimpleName());

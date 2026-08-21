@@ -2,6 +2,9 @@ package com.example.kiwoom.error;
 
 import com.example.kiwoom.config.RequestTraceFilter;
 import java.time.Instant;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -12,6 +15,7 @@ import org.springframework.web.server.ServerWebExchange;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     @ExceptionHandler(IllegalArgumentException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
@@ -46,6 +50,17 @@ public class GlobalExceptionHandler {
             ResourceNotFoundException error, ServerWebExchange exchange) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(response("RESOURCE_NOT_FOUND", error, exchange));
+    }
+
+    @ExceptionHandler(DataAccessException.class)
+    public ResponseEntity<ApiErrorResponse> handleDatabaseError(
+            DataAccessException error, ServerWebExchange exchange) {
+        log.warn(
+                "database_error path={} errorType={}",
+                exchange.getRequest().getPath().value(),
+                error.getClass().getSimpleName());
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(response("DATABASE_ERROR", error, exchange));
     }
 
     private ApiErrorResponse response(
