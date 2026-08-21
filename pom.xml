@@ -48,7 +48,7 @@
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <optional>true</optional>
-            <version>1.18.30</version> <!-- 버전 명시 추가 -->
+            <version>1.18.46</version> <!-- 버전 명시 추가 -->
         </dependency>
 
         <!-- WebFlux 의존성 추가: WebClient와 Mono를 사용하기 위해 필수적입니다. -->
