@@ -400,6 +400,35 @@ public class KiwoomApiService {
         return marketRankings;
     }
 
+    public Mono<MarketRankingsResponse> getMarketRankings(String market) {
+        String normalizedMarket =
+                market == null || market.isBlank() ? "ALL" : market.trim().toUpperCase();
+        if (!List.of("ALL", "KOSPI", "KOSDAQ").contains(normalizedMarket)) {
+            return Mono.error(new IllegalArgumentException("시장은 ALL, KOSPI, KOSDAQ 중 하나여야 합니다"));
+        }
+        if ("ALL".equals(normalizedMarket)) return getMarketRankings();
+
+        return stockCatalog.zipWith(
+                getMarketRankings(),
+                (catalog, rankings) -> {
+                    java.util.Set<String> marketCodes =
+                            catalog.stream()
+                                    .filter(item -> normalizedMarket.equals(item.market()))
+                                    .map(StockSearchResult::code)
+                                    .collect(java.util.stream.Collectors.toSet());
+                    return new MarketRankingsResponse(
+                            filterRankings(rankings.gainers(), marketCodes),
+                            filterRankings(rankings.losers(), marketCodes),
+                            filterRankings(rankings.mostTraded(), marketCodes),
+                            rankings.updatedAt());
+                });
+    }
+
+    private List<MarketRankingItem> filterRankings(
+            List<MarketRankingItem> rankings, java.util.Set<String> marketCodes) {
+        return rankings.stream().filter(item -> marketCodes.contains(item.code())).toList();
+    }
+
     public Mono<AccountPortfolioResponse> getAccountPortfolio() {
         return accountPortfolio;
     }

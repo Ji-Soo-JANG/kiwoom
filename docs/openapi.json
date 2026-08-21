@@ -7,7 +7,7 @@
     "/api/kiwoom/stock-prices": { "get": { "responses": { "200": { "$ref": "#/components/responses/StockPrices" } } } },
     "/api/kiwoom/stock-price/{code}/daily": { "get": { "parameters": [{ "name": "period", "in": "query", "required": false, "schema": { "type": "string", "default": "day", "enum": ["day", "week", "month", "year"] } }, { "name": "limit", "in": "query", "required": false, "schema": { "type": "integer", "format": "int32", "default": 120 } }], "responses": { "200": { "$ref": "#/components/responses/DailyPrices" } } } },
     "/api/kiwoom/stocks/search": { "get": { "responses": { "200": { "$ref": "#/components/responses/StockSearchResults" } } } },
-    "/api/kiwoom/market-rankings": { "get": { "responses": { "200": { "$ref": "#/components/responses/MarketRankings" } } } },
+    "/api/kiwoom/market-rankings": { "get": { "parameters": [{ "name": "market", "in": "query", "required": false, "schema": { "type": "string", "default": "ALL" } }], "responses": { "200": { "$ref": "#/components/responses/MarketRankings" } } } },
     "/api/kiwoom/strategy-candidates": { "get": { "parameters": [{ "name": "boxRangeDays", "in": "query", "required": false, "schema": { "type": "integer", "format": "int32", "default": 60 } }], "responses": { "200": { "$ref": "#/components/responses/StrategyScan" } } } },
     "/api/kiwoom/admin/market-data": { "get": { "responses": { "200": { "$ref": "#/components/responses/MarketDataStatus" } } } },
     "/api/kiwoom/admin/market-data/sync": { "post": { "parameters": [{ "name": "limit", "in": "query", "required": false, "schema": { "type": "integer", "format": "int32", "default": 20 } }], "responses": { "200": { "$ref": "#/components/responses/MarketDataStatus" } } } },

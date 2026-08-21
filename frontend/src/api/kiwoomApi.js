@@ -103,7 +103,8 @@ export const searchStocks = (query, market = 'ALL', productType = 'ALL') =>
   requestJson(
     `/api/kiwoom/stocks/search?q=${encodeURIComponent(query)}&market=${encodeURIComponent(market)}&productType=${encodeURIComponent(productType)}`
   );
-export const getMarketRankings = () => requestJson('/api/kiwoom/market-rankings');
+export const getMarketRankings = (market = 'ALL') =>
+  requestJson(`/api/kiwoom/market-rankings?market=${encodeURIComponent(market)}`);
 /** @param {number} [boxRangeDays] 박스권 횡보 기준 기간(거래일), 기본 60일 */
 export const getStrategyCandidates = (boxRangeDays = 60) =>
   requestJson(`/api/kiwoom/strategy-candidates?boxRangeDays=${encodeURIComponent(boxRangeDays)}`);

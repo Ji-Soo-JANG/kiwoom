@@ -151,7 +151,9 @@ export interface paths {
         };
         get: {
             parameters: {
-                query?: never;
+                query?: {
+                    market?: string;
+                };
                 header?: never;
                 path?: never;
                 cookie?: never;

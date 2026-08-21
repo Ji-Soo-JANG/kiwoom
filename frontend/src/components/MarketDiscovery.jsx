@@ -54,10 +54,43 @@ const sections = [
   { key: 'mostTraded', title: '거래량 상위', description: '오늘 거래가 가장 활발한 종목' }
 ];
 
+const MARKET_CARD_SETTINGS_KEY = 'kiwoom.marketDiscovery.cards';
+const defaultCardSettings = {
+  order: sections.map((section) => section.key),
+  visible: sections.map((section) => section.key),
+  itemCount: 10,
+  market: 'ALL'
+};
+
+const loadCardSettings = () => {
+  try {
+    const saved = JSON.parse(localStorage.getItem(MARKET_CARD_SETTINGS_KEY));
+    const validKeys = new Set(sections.map((section) => section.key));
+    const order = Array.isArray(saved?.order)
+      ? [...saved.order.filter((key) => validKeys.has(key)), ...defaultCardSettings.order].filter(
+          (key, index, values) => values.indexOf(key) === index
+        )
+      : defaultCardSettings.order;
+    const visible = Array.isArray(saved?.visible)
+      ? saved.visible.filter((key) => validKeys.has(key))
+      : defaultCardSettings.visible;
+    return {
+      order,
+      visible,
+      itemCount: [5, 10].includes(saved?.itemCount) ? saved.itemCount : 10,
+      market: ['ALL', 'KOSPI', 'KOSDAQ'].includes(saved?.market) ? saved.market : 'ALL'
+    };
+  } catch {
+    return defaultCardSettings;
+  }
+};
+
 const formatNumber = (value) => Number(value).toLocaleString('ko-KR');
 
 function MarketDiscovery({ onSelectStock }) {
   const queryClient = useQueryClient();
+  const [cardSettings, setCardSettings] = useState(loadCardSettings);
+  const [showCardSettings, setShowCardSettings] = useState(false);
   const [boxRangeDays, setBoxRangeDays] = useState(60);
   const deferredBoxRangeDays = useDeferredValue(boxRangeDays);
   const refreshCooldown = useRefreshCooldown();
@@ -82,12 +115,41 @@ function MarketDiscovery({ onSelectStock }) {
     retry: false
   });
   const rankings = useQuery({
-    queryKey: ['market-rankings'],
-    queryFn: getMarketRankings,
+    queryKey: ['market-rankings', cardSettings.market],
+    queryFn: () => getMarketRankings(cardSettings.market),
+    placeholderData: (previousData) => previousData,
     staleTime: 30 * 1000,
     refetchInterval: 60 * 1000,
     refetchOnWindowFocus: false
   });
+
+  useEffect(() => {
+    localStorage.setItem(MARKET_CARD_SETTINGS_KEY, JSON.stringify(cardSettings));
+  }, [cardSettings]);
+
+  const orderedSections = cardSettings.order
+    .map((key) => sections.find((section) => section.key === key))
+    .filter((section) => section && cardSettings.visible.includes(section.key));
+
+  const updateCardOrder = (key, direction) => {
+    setCardSettings((current) => {
+      const order = [...current.order];
+      const index = order.indexOf(key);
+      const target = index + direction;
+      if (index < 0 || target < 0 || target >= order.length) return current;
+      [order[index], order[target]] = [order[target], order[index]];
+      return { ...current, order };
+    });
+  };
+
+  const toggleCard = (key) => {
+    setCardSettings((current) => ({
+      ...current,
+      visible: current.visible.includes(key)
+        ? current.visible.filter((item) => item !== key)
+        : [...current.visible, key]
+    }));
+  };
 
   if (rankings.isPending) return <div className="loading-text">시장 순위를 불러오는 중...</div>;
   if (rankings.error) {
@@ -264,8 +326,85 @@ function MarketDiscovery({ onSelectStock }) {
           마지막 갱신: {new Date(rankings.data.updatedAt).toLocaleString('ko-KR')}
         </p>
       )}
+      <div className="ranking-settings-toolbar">
+        <p>
+          {cardSettings.market === 'ALL' ? '전체 시장' : cardSettings.market} · 카드당 최대{' '}
+          {cardSettings.itemCount}개
+        </p>
+        <button type="button" onClick={() => setShowCardSettings((visible) => !visible)}>
+          {showCardSettings ? '설정 닫기' : '카드 설정'}
+        </button>
+      </div>
+      {showCardSettings && (
+        <section className="ranking-settings" aria-label="시장 탐색 카드 설정">
+          <label>
+            시장
+            <select
+              value={cardSettings.market}
+              onChange={(event) =>
+                setCardSettings((current) => ({ ...current, market: event.target.value }))
+              }
+            >
+              <option value="ALL">전체</option>
+              <option value="KOSPI">KOSPI</option>
+              <option value="KOSDAQ">KOSDAQ</option>
+            </select>
+          </label>
+          <label>
+            카드별 종목 수
+            <select
+              value={cardSettings.itemCount}
+              onChange={(event) =>
+                setCardSettings((current) => ({
+                  ...current,
+                  itemCount: Number(event.target.value)
+                }))
+              }
+            >
+              <option value="5">5개</option>
+              <option value="10">10개</option>
+            </select>
+          </label>
+          <div className="ranking-card-options">
+            {cardSettings.order.map((key, index) => {
+              const section = sections.find((item) => item.key === key);
+              return (
+                <div key={key}>
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={cardSettings.visible.includes(key)}
+                      onChange={() => toggleCard(key)}
+                    />
+                    {section.title}
+                  </label>
+                  <button
+                    type="button"
+                    aria-label={`${section.title} 앞으로 이동`}
+                    onClick={() => updateCardOrder(key, -1)}
+                    disabled={index === 0}
+                  >
+                    ↑
+                  </button>
+                  <button
+                    type="button"
+                    aria-label={`${section.title} 뒤로 이동`}
+                    onClick={() => updateCardOrder(key, 1)}
+                    disabled={index === cardSettings.order.length - 1}
+                  >
+                    ↓
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+          <button type="button" onClick={() => setCardSettings(defaultCardSettings)}>
+            카드 설정 초기화
+          </button>
+        </section>
+      )}
       <div className="ranking-grid" aria-label="시장 순위">
-        {sections.map((section) => (
+        {orderedSections.map((section) => (
           <article className="ranking-card" key={section.key}>
             <h3>{section.title}</h3>
             <p>{section.description}</p>
@@ -273,7 +412,9 @@ function MarketDiscovery({ onSelectStock }) {
               <p className="empty-state">장 마감이거나 해당 순위 데이터가 없습니다.</p>
             ) : (
               <ol aria-label={section.title}>
-                {rankings.data[section.key].map((stock, index) => (
+                {rankings.data[section.key]
+                  .slice(0, cardSettings.itemCount)
+                  .map((stock, index) => (
                   <li key={stock.code}>
                     <button type="button" onClick={() => onSelectStock(stock.code)}>
                       <span className="ranking-position">{index + 1}</span>
@@ -288,7 +429,7 @@ function MarketDiscovery({ onSelectStock }) {
                       </span>
                     </button>
                   </li>
-                ))}
+                  ))}
               </ol>
             )}
           </article>

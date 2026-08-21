@@ -82,8 +82,9 @@ public class KiwoomController {
 
     @GetMapping("/market-rankings")
     @Operation(summary = "급등·급락·거래량 상위 종목 조회")
-    public Mono<MarketRankingsResponse> marketRankings() {
-        return kiwoomApiService.getMarketRankings();
+    public Mono<MarketRankingsResponse> marketRankings(
+            @RequestParam(defaultValue = "ALL") String market) {
+        return kiwoomApiService.getMarketRankings(market);
     }
 
     @GetMapping("/strategy-candidates")

@@ -17,6 +17,7 @@ const stock = {
 describe('MarketDiscovery', () => {
   beforeEach(() => {
     vi.resetAllMocks();
+    localStorage.clear();
     api.getMarketRankings.mockResolvedValue({
       gainers: [stock],
       losers: [{ ...stock, code: '000660', name: 'SK하이닉스', changeRate: -2.1 }],
@@ -104,5 +105,33 @@ describe('MarketDiscovery', () => {
 
     await waitFor(() => expect(api.getStrategyCandidates).toHaveBeenCalledWith(90));
     expect(await screen.findByText(/90거래일 동안의 박스권 횡보를 기준으로/)).toBeInTheDocument();
+  });
+
+  it('시장 카드 표시와 순서 및 시장 설정을 브라우저에 저장한다', async () => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const { container } = render(
+      <QueryClientProvider client={client}>
+        <MarketDiscovery onSelectStock={vi.fn()} />
+      </QueryClientProvider>
+    );
+
+    await screen.findByRole('heading', { name: '급등주' });
+    fireEvent.click(screen.getByRole('button', { name: '카드 설정' }));
+    fireEvent.click(screen.getByRole('checkbox', { name: '급락주' }));
+    fireEvent.click(screen.getByRole('button', { name: '거래량 상위 앞으로 이동' }));
+    fireEvent.click(screen.getByRole('button', { name: '거래량 상위 앞으로 이동' }));
+    fireEvent.change(screen.getByLabelText('시장'), { target: { value: 'KOSDAQ' } });
+    fireEvent.change(screen.getByLabelText('카드별 종목 수'), { target: { value: '5' } });
+
+    await waitFor(() => expect(api.getMarketRankings).toHaveBeenCalledWith('KOSDAQ'));
+    expect(screen.queryByRole('heading', { name: '급락주' })).not.toBeInTheDocument();
+    expect(
+      [...container.querySelectorAll('.ranking-card h3')].map((heading) => heading.textContent)
+    ).toEqual(['거래량 상위', '급등주']);
+    expect(JSON.parse(localStorage.getItem('kiwoom.marketDiscovery.cards'))).toMatchObject({
+      market: 'KOSDAQ',
+      itemCount: 5,
+      visible: ['gainers', 'mostTraded']
+    });
   });
 });

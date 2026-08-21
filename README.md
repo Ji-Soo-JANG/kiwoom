@@ -253,6 +253,14 @@ GET /api/kiwoom/stocks/search?q=ETF&market=ALL&productType=ETF
 GET /api/kiwoom/market-rankings
 ```
 
+종목 발견 화면의 `카드 설정`에서 급등·급락·거래량 카드의 표시 여부와 순서, 카드별
+5개/10개 표시, 전체/KOSPI/KOSDAQ 시장을 선택할 수 있습니다. 설정은 브라우저에 저장되어
+다음 실행에도 유지됩니다. 시장별 API 조회도 지원합니다.
+
+```http
+GET /api/kiwoom/market-rankings?market=KOSDAQ
+```
+
 ### 시장 데이터 로컬 저장
 
 종목 탐색 화면에서 `다음 20개 종목 수집`을 누르면 종목 마스터와 최근 일봉을 PostgreSQL에
