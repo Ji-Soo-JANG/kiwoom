@@ -152,7 +152,7 @@ public class LimitedTradingService {
         String reason = degradationReason(status);
         return reason == null
                 ? withCurrentHaltStatus(status)
-                : risks.activate("PERFORMANCE_DEGRADATION: " + reason)
+                : risks.activateAutomatically("PERFORMANCE_DEGRADATION: " + reason)
                         .map(
                                 risk ->
                                         new TradingPerformanceStatus(

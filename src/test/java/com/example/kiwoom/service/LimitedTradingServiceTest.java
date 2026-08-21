@@ -43,13 +43,13 @@ class LimitedTradingServiceTest {
         when(repository.addPerformance(request, new BigDecimal("0.01000000")))
                 .thenReturn(Mono.empty());
         when(repository.performance()).thenReturn(Mono.just(degraded));
-        when(risks.activate(contains("비용 후 평균 수익률 음수")))
+        when(risks.activateAutomatically(contains("비용 후 평균 수익률 음수")))
                 .thenReturn(Mono.just(risk(true, "PERFORMANCE_DEGRADATION")));
 
         var result = service.recordPerformance(request).block();
 
         assertThat(result.halted()).isTrue();
-        verify(risks).activate(contains("비용 후 평균 수익률 음수"));
+        verify(risks).activateAutomatically(contains("비용 후 평균 수익률 음수"));
     }
 
     private PaperRiskStatus risk(boolean halted, String reason) {

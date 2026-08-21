@@ -123,6 +123,13 @@ public class PaperRiskService {
                 .then(status());
     }
 
+    public Mono<PaperRiskStatus> activateAutomatically(String reason) {
+        return repository
+                .activateKillSwitch("AUTOMATIC: " + reason)
+                .then(cancelOpenOrders())
+                .then(status());
+    }
+
     public Mono<PaperRiskStatus> resume(KillSwitchResumeRequest request) {
         if (!RESUME_CONFIRMATION.equals(request.confirmation())) {
             return Mono.error(new TradingSafetyException("킬 스위치 수동 재개 확인 문구가 일치하지 않습니다."));
