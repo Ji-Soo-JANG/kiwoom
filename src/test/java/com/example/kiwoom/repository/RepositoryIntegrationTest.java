@@ -41,6 +41,7 @@ class RepositoryIntegrationTest {
     @Autowired private com.example.kiwoom.service.PaperOrderService paperOrderService;
     @Autowired private com.example.kiwoom.service.PaperRiskService paperRiskService;
     @Autowired private com.example.kiwoom.service.ObservationService observationService;
+    @Autowired private LimitedTradingRepository limitedTradingRepository;
 
     // --- MarketDataRepository tests ---
 
@@ -519,5 +520,34 @@ class RepositoryIntegrationTest {
         assertThat(report.missedSignals()).isEqualTo(1);
         assertThat(report.agreementRate()).isEqualTo(95.0);
         assertThat(report.averagePriceDeviationRate()).isEqualTo(1.0);
+    }
+
+    @Test
+    void limitedTradeCandidateAndPerformanceArePersisted() {
+        var request =
+                new TradeCandidateRequest(
+                        "signal-p2-1",
+                        "005930",
+                        "급등 후보",
+                        new BigDecimal("70000"),
+                        1,
+                        java.time.Instant.now().plusSeconds(3600));
+        var first = limitedTradingRepository.create(request).block();
+        var duplicate = limitedTradingRepository.create(request).block();
+        assertThat(first.id()).isEqualTo(duplicate.id());
+
+        limitedTradingRepository
+                .addPerformance(
+                        new PerformanceSampleRequest(
+                                null,
+                                "005930",
+                                new BigDecimal("70000"),
+                                new BigDecimal("70700"),
+                                new BigDecimal("0.02")),
+                        new BigDecimal("0.01"))
+                .block();
+        var performance = limitedTradingRepository.performance().block();
+        assertThat(performance.sampleCount()).isGreaterThanOrEqualTo(1);
+        assertThat(performance.averageSlippageRate()).isEqualByComparingTo("0.01000000");
     }
 }
