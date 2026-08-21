@@ -54,6 +54,8 @@ public class SecurityConfig {
                                                 "/actuator/**",
                                                 "/api/kiwoom/admin/**",
                                                 "/api/trading/**",
+                                                "/api/intraday/**",
+                                                "/api/observations/**",
                                                 "/swagger-ui/**",
                                                 "/swagger-ui.html",
                                                 "/v3/api-docs/**")

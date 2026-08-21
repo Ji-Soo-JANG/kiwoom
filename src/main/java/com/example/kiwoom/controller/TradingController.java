@@ -4,11 +4,13 @@ import com.example.kiwoom.dto.KillSwitchRequest;
 import com.example.kiwoom.dto.KillSwitchResumeRequest;
 import com.example.kiwoom.dto.OrderReconciliationReport;
 import com.example.kiwoom.dto.PaperAccountStatus;
+import com.example.kiwoom.dto.PaperBrokerVerificationReport;
 import com.example.kiwoom.dto.PaperOrderRequest;
 import com.example.kiwoom.dto.PaperPosition;
 import com.example.kiwoom.dto.PaperRiskStatus;
 import com.example.kiwoom.dto.TradingModeStatus;
 import com.example.kiwoom.dto.TradingOrder;
+import com.example.kiwoom.service.PaperBrokerVerificationService;
 import com.example.kiwoom.service.PaperOrderService;
 import com.example.kiwoom.service.PaperRiskService;
 import com.example.kiwoom.service.TradingModeService;
@@ -31,12 +33,23 @@ public class TradingController {
     private final TradingModeService modes;
     private final PaperOrderService orders;
     private final PaperRiskService risks;
+    private final PaperBrokerVerificationService verification;
 
     public TradingController(
-            TradingModeService modes, PaperOrderService orders, PaperRiskService risks) {
+            TradingModeService modes,
+            PaperOrderService orders,
+            PaperRiskService risks,
+            PaperBrokerVerificationService verification) {
         this.modes = modes;
         this.orders = orders;
         this.risks = risks;
+        this.verification = verification;
+    }
+
+    @PostMapping("/paper/verification")
+    @Operation(summary = "외부 주문 없이 부분체결·미체결·정정·취소·복구 시나리오 검증")
+    public PaperBrokerVerificationReport verifyPaperLifecycle() {
+        return verification.verify();
     }
 
     @GetMapping("/status")

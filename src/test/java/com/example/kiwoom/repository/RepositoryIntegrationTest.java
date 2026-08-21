@@ -40,6 +40,7 @@ class RepositoryIntegrationTest {
     @Autowired private WalkForwardRepository walkForwardRepository;
     @Autowired private com.example.kiwoom.service.PaperOrderService paperOrderService;
     @Autowired private com.example.kiwoom.service.PaperRiskService paperRiskService;
+    @Autowired private com.example.kiwoom.service.ObservationService observationService;
 
     // --- MarketDataRepository tests ---
 
@@ -493,5 +494,30 @@ class RepositoryIntegrationTest {
         assertThat(rule).isNotNull();
         assertThat(rule.threshold()).isNull();
         alertRepository.deleteRule("null-thresh-user", rule.id()).block();
+    }
+
+    @Test
+    void observationCompletesOnlyAfterTwentyDistinctTradingDays() {
+        var report = observationService.create(new ObservationRequest("P1 관찰", "v1")).block();
+        assertThat(report).isNotNull();
+        for (int day = 1; day <= 20; day++) {
+            report =
+                    observationService
+                            .addSample(
+                                    report.id(),
+                                    new ObservationSampleRequest(
+                                            LocalDate.of(2026, 7, day),
+                                            "005930",
+                                            true,
+                                            day != 3,
+                                            50_000L,
+                                            50_500L))
+                            .block();
+            assertThat(report.complete()).isEqualTo(day >= 20);
+        }
+        assertThat(report.observedTradingDays()).isEqualTo(20);
+        assertThat(report.missedSignals()).isEqualTo(1);
+        assertThat(report.agreementRate()).isEqualTo(95.0);
+        assertThat(report.averagePriceDeviationRate()).isEqualTo(1.0);
     }
 }
