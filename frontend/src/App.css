@@ -68,6 +68,11 @@ body {
 .ranking-card li button:hover {
   background: #f8f9fc;
 }
+.ranking-card li button:focus-visible {
+  outline: 2px solid #4f46e5;
+  outline-offset: -2px;
+  background: #f0f0ff;
+}
 .ranking-position {
   color: #98a2b3;
 }
@@ -182,6 +187,10 @@ body {
   background: #ecfdf3;
   border-color: #6ce9a6;
 }
+.strategy-candidate:focus-visible {
+  outline: 2px solid #4f46e5;
+  outline-offset: 2px;
+}
 .strategy-score {
   color: #4f46e5;
   font-weight: 800;
@@ -247,6 +256,11 @@ body {
   font: inherit;
   cursor: pointer;
   text-align: left;
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: inline-block;
 }
 .position-name-btn:hover {
   text-decoration: underline;
@@ -266,6 +280,11 @@ body {
 }
 .clickable-row:hover {
   background: #f8f9fc;
+}
+.clickable-row:focus-visible {
+  outline: 2px solid #4f46e5;
+  outline-offset: -2px;
+  background: #f0f0ff;
 }
 .clickable-position {
   cursor: pointer;
@@ -300,6 +319,11 @@ body {
   transition: box-shadow 0.15s;
 }
 .position-card:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+.position-card:focus-visible {
+  outline: 2px solid #4f46e5;
+  outline-offset: 2px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 .position-card-header {
@@ -804,6 +828,11 @@ input:focus-visible {
   transition: box-shadow 0.15s;
 }
 .watchlist-card:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+.watchlist-card:focus-visible {
+  outline: 2px solid #4f46e5;
+  outline-offset: 2px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 .watchlist-card-header {

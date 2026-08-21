@@ -43,7 +43,7 @@ function AccountPortfolio({ onSelectStock }) {
     refetchOnWindowFocus: false
   });
 
-  const positions = portfolio.data?.positions || [];
+  const positions = useMemo(() => portfolio.data?.positions ?? [], [portfolio.data]);
 
   const sortedPositions = useMemo(() => {
     let list = [...positions];
@@ -113,7 +113,7 @@ function AccountPortfolio({ onSelectStock }) {
         </button>
       </div>
 
-      <dl className="account-summary">
+      <dl className="account-summary" aria-label="계좌 요약">
         <div>
           <dt>추정자산</dt>
           <dd>{number(data.estimatedAssets)}원</dd>
@@ -205,23 +205,33 @@ function AccountPortfolio({ onSelectStock }) {
               <caption>키움 계좌 보유종목</caption>
               <thead>
                 <tr>
-                  <th>종목명</th>
-                  <th>종목코드</th>
-                  <th>보유수량</th>
-                  <th>평가금액</th>
-                  <th>비중</th>
-                  <th>손익</th>
-                  <th>수익률</th>
-                  <th>수익기여</th>
+                  <th scope="col">종목명</th>
+                  <th scope="col">종목코드</th>
+                  <th scope="col">보유수량</th>
+                  <th scope="col">평가금액</th>
+                  <th scope="col">비중</th>
+                  <th scope="col">손익</th>
+                  <th scope="col">수익률</th>
+                  <th scope="col">수익기여</th>
                 </tr>
               </thead>
               <tbody>
                 {sortedPositions.map((position) => (
-                  <tr key={position.code} onClick={() => onSelectStock(position.code)}>
+                  <tr
+                    key={position.code}
+                    className="clickable-row"
+                    tabIndex={0}
+                    role="button"
+                    aria-label={`${position.name} ${position.code} 클릭하면 차트로 이동합니다`}
+                    onClick={() => onSelectStock(position.code)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') onSelectStock(position.code);
+                    }}
+                  >
                     <td>
-                      <button type="button" className="position-name-btn">
+                      <span className="position-name-btn" aria-hidden="true">
                         {position.name}
-                      </button>
+                      </span>
                     </td>
                     <td className="position-code">{position.code}</td>
                     <td>{number(position.quantity)}주</td>

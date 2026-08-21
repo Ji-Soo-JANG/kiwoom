@@ -11,6 +11,7 @@
 - **E2E 테스트 갱신**: 수동 포트폴리오 테스트를 계좌 기반으로 교체, 검색→차트·시장순위→차트·계좌→차트 흐름, URL 동기화·새로고침 테스트 추가
 - **키움 응답 계약 테스트**: 계좌·순위·종목 목록 JSON 픽스처 추가, Mapper 파싱 계약 테스트 6건
 - **장애 원인 분리**: `DATABASE_ERROR` 오류 코드 추가, `DataAccessException` 전역 핸들러 추가, 순위 부분 실패(`rankingPartialFailures`)·계좌 실패(`accountFailures`) 별도 메트릭 추가
+- **접근성 보강**: 테이블 행 키보드 탐색(`tabIndex`, `role="button"`, `onKeyDown`), 포커스 표시(`focus-visible`), 스크린리더 레이블(`aria-label`, `aria-labelledby`, `scope="col"`), 긴 종목명 말줄임 처리
 
 ## 2026-08-20
 

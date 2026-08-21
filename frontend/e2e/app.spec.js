@@ -24,10 +24,8 @@ async function mockApi(page, overrides = {}) {
         state.watchlist.push({ code, groupName: '기본', note: '' });
       return json(route, { code, groupName: '기본', note: '' }, 201);
     }
-    if (key === 'GET /api/watchlist/005930')
-      return json(route, null, 204);
-    if (key === 'DELETE /api/watchlist/005930')
-      return json(route, null, 204);
+    if (key === 'GET /api/watchlist/005930') return json(route, null, 204);
+    if (key === 'DELETE /api/watchlist/005930') return json(route, null, 204);
     if (key === 'GET /api/kiwoom/account/portfolio')
       return json(route, {
         accountNumber: '123-***-**01',
@@ -69,7 +67,13 @@ async function mockApi(page, overrides = {}) {
       });
     if (key === 'GET /api/kiwoom/stocks/search')
       return json(route, [
-        { code: '005930', name: '삼성전자', market: 'KOSPI', productType: 'STOCK', productTypeLabel: '주식' }
+        {
+          code: '005930',
+          name: '삼성전자',
+          market: 'KOSPI',
+          productType: 'STOCK',
+          productTypeLabel: '주식'
+        }
       ]);
     if (key === 'GET /api/alerts/rules') return json(route, []);
     if (key === 'GET /api/alerts/events')
@@ -196,11 +200,7 @@ test('새로고침 후에도 종목이 유지된다', async ({ page }) => {
 test('키움 네트워크 오류를 사용자 메시지로 표시한다', async ({ page }) => {
   await mockApi(page, {
     'GET /api/kiwoom/stock-price/005930': (route) =>
-      json(
-        route,
-        { code: 'KIWOOM_UPSTREAM_UNAVAILABLE', message: 'upstream unavailable' },
-        503
-      ),
+      json(route, { code: 'KIWOOM_UPSTREAM_UNAVAILABLE', message: 'upstream unavailable' }, 503),
     'GET /api/kiwoom/stock-price/005930/daily': (route) => json(route, dailyPrices)
   });
   await page.goto('/');

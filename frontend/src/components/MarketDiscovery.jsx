@@ -264,7 +264,7 @@ function MarketDiscovery({ onSelectStock }) {
           마지막 갱신: {new Date(rankings.data.updatedAt).toLocaleString('ko-KR')}
         </p>
       )}
-      <div className="ranking-grid">
+      <div className="ranking-grid" aria-label="시장 순위">
         {sections.map((section) => (
           <article className="ranking-card" key={section.key}>
             <h3>{section.title}</h3>
@@ -272,7 +272,7 @@ function MarketDiscovery({ onSelectStock }) {
             {rankings.data[section.key].length === 0 ? (
               <p className="empty-state">장 마감이거나 해당 순위 데이터가 없습니다.</p>
             ) : (
-              <ol>
+              <ol aria-label={section.title}>
                 {rankings.data[section.key].map((stock, index) => (
                   <li key={stock.code}>
                     <button type="button" onClick={() => onSelectStock(stock.code)}>
