@@ -549,5 +549,26 @@ class RepositoryIntegrationTest {
         var performance = limitedTradingRepository.performance().block();
         assertThat(performance.sampleCount()).isGreaterThanOrEqualTo(1);
         assertThat(performance.averageSlippageRate()).isEqualByComparingTo("0.01000000");
+
+        long beforeEntry = performance.sampleCount();
+        var order =
+                new TradingOrder(
+                        991,
+                        "pipeline-order",
+                        TradingMode.PAPER,
+                        "005930",
+                        OrderSide.BUY,
+                        1,
+                        new BigDecimal("70000"),
+                        OrderStatus.FILLED,
+                        1,
+                        new BigDecimal("70700"),
+                        null,
+                        java.time.Instant.now(),
+                        java.time.Instant.now());
+        limitedTradingRepository.addEntryExecution(first, order, new BigDecimal("0.01")).block();
+        limitedTradingRepository.addEntryExecution(first, order, new BigDecimal("0.01")).block();
+        assertThat(limitedTradingRepository.performance().block().sampleCount())
+                .isEqualTo(beforeEntry + 1);
     }
 }

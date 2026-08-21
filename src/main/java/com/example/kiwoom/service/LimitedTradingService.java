@@ -83,13 +83,26 @@ public class LimitedTradingService {
                                                         candidate.referencePrice()))
                                         .flatMap(
                                                 order ->
-                                                        repository.linkOrder(
-                                                                candidate.id(), order.id()))
+                                                        recordEntry(candidate, order)
+                                                                .then(
+                                                                        repository.linkOrder(
+                                                                                candidate.id(),
+                                                                                order.id())))
                                         .onErrorResume(
                                                 error ->
                                                         repository
                                                                 .resetPending(candidate.id())
                                                                 .then(Mono.error(error))));
+    }
+
+    private Mono<Void> recordEntry(
+            LimitedTradeCandidate candidate, com.example.kiwoom.dto.TradingOrder order) {
+        if (order.averageFillPrice() == null) return Mono.empty();
+        BigDecimal slippage =
+                order.averageFillPrice()
+                        .subtract(candidate.referencePrice())
+                        .divide(candidate.referencePrice(), 8, RoundingMode.HALF_UP);
+        return repository.addEntryExecution(candidate, order, slippage);
     }
 
     public Mono<LimitedTradeCandidate> reject(long id) {

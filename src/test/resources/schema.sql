@@ -322,7 +322,9 @@ CREATE TABLE IF NOT EXISTS trading_performance_sample (
     code VARCHAR(6) NOT NULL,
     expected_price NUMERIC(20, 4) NOT NULL,
     actual_price NUMERIC(20, 4) NOT NULL,
-    net_return_rate NUMERIC(12, 8) NOT NULL,
+    net_return_rate NUMERIC(12, 8),
     slippage_rate NUMERIC(12, 8) NOT NULL,
+    source_key VARCHAR(120) NOT NULL UNIQUE,
+    sample_type VARCHAR(20) NOT NULL DEFAULT 'MANUAL',
     recorded_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

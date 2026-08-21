@@ -4,7 +4,10 @@ import com.example.kiwoom.dto.StrategyCandidate;
 import com.example.kiwoom.dto.StrategyScanResponse;
 import com.example.kiwoom.repository.MarketDataRepository;
 import com.example.kiwoom.repository.StrategySnapshotRepository;
+import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -18,12 +21,16 @@ public class StrategyScanService {
 
     private final MarketDataRepository repository;
     private final StrategySnapshotRepository snapshots;
+    private final LimitedTradingService limitedTrading;
     private final StrategyPatternDetector detector = new StrategyPatternDetector();
 
     public StrategyScanService(
-            MarketDataRepository repository, StrategySnapshotRepository snapshots) {
+            MarketDataRepository repository,
+            StrategySnapshotRepository snapshots,
+            LimitedTradingService limitedTrading) {
         this.repository = repository;
         this.snapshots = snapshots;
+        this.limitedTrading = limitedTrading;
     }
 
     public Mono<StrategyScanResponse> scan() {
@@ -77,15 +84,45 @@ public class StrategyScanService {
                                     .defaultIfEmpty(Optional.empty())
                                     .flatMap(
                                             dataAsOf ->
-                                                    snapshots.save(
-                                                            STRATEGY_VERSION,
-                                                            boxRangeDays,
-                                                            sorted.size(),
-                                                            scope,
-                                                            dataAsOf.orElse(null),
-                                                            sorted,
-                                                            displayed));
+                                                    snapshots
+                                                            .save(
+                                                                    STRATEGY_VERSION,
+                                                                    boxRangeDays,
+                                                                    sorted.size(),
+                                                                    scope,
+                                                                    dataAsOf.orElse(null),
+                                                                    sorted,
+                                                                    displayed)
+                                                            .flatMap(
+                                                                    response ->
+                                                                            asOf == null
+                                                                                    ? registerCandidates(
+                                                                                            response)
+                                                                                    : Mono.just(
+                                                                                            response)));
                         });
+    }
+
+    Mono<StrategyScanResponse> registerCandidates(StrategyScanResponse response) {
+        return reactor.core.publisher.Flux.fromIterable(response.candidates())
+                .filter(StrategyCandidate::qualified)
+                .filter(
+                        candidate ->
+                                candidate.currentPrice() > 0 && candidate.currentPrice() <= 100_000)
+                .concatMap(
+                        candidate ->
+                                limitedTrading.create(
+                                        new com.example.kiwoom.dto.TradeCandidateRequest(
+                                                "scan-"
+                                                        + response.scanId()
+                                                        + '-'
+                                                        + candidate.code(),
+                                                candidate.code(),
+                                                String.join(", ", candidate.matchedConditions()),
+                                                BigDecimal.valueOf(candidate.currentPrice()),
+                                                Math.max(1, 100_000 / candidate.currentPrice()),
+                                                Instant.now().plus(1, ChronoUnit.DAYS))))
+                .then(Mono.just(response));
     }
 
     public Mono<StrategyScanResponse> latestSnapshot() {

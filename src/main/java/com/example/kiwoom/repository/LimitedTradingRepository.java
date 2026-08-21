@@ -3,11 +3,13 @@ package com.example.kiwoom.repository;
 import com.example.kiwoom.dto.LimitedTradeCandidate;
 import com.example.kiwoom.dto.PerformanceSampleRequest;
 import com.example.kiwoom.dto.TradeCandidateRequest;
+import com.example.kiwoom.dto.TradingOrder;
 import com.example.kiwoom.dto.TradingPerformanceStatus;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.OffsetDateTime;
+import java.util.UUID;
 import org.springframework.r2dbc.core.DatabaseClient;
 import org.springframework.stereotype.Repository;
 import reactor.core.publisher.Flux;
@@ -98,18 +100,47 @@ public class LimitedTradingRepository {
                 database.sql(
                                 """
                 INSERT INTO trading_performance_sample(order_id, code, expected_price, actual_price,
-                    net_return_rate, slippage_rate) VALUES (:orderId, :code, :expected, :actual, :net, :slippage)
+                    net_return_rate, slippage_rate, source_key, sample_type)
+                VALUES (:orderId, :code, :expected, :actual, :net, :slippage, :source, 'MANUAL')
                 """)
                         .bind("code", request.code())
                         .bind("expected", request.expectedPrice())
                         .bind("actual", request.actualPrice())
                         .bind("net", request.netReturnRate())
-                        .bind("slippage", slippage);
+                        .bind("slippage", slippage)
+                        .bind("source", "manual-" + UUID.randomUUID());
         query =
                 request.orderId() == null
                         ? query.bindNull("orderId", Long.class)
                         : query.bind("orderId", request.orderId());
         return query.then();
+    }
+
+    public Mono<Void> addEntryExecution(
+            LimitedTradeCandidate candidate, TradingOrder order, BigDecimal slippage) {
+        String source = "entry-order-" + order.id();
+        return database.sql(
+                        "SELECT COUNT(*) count_value FROM trading_performance_sample WHERE source_key=:source")
+                .bind("source", source)
+                .map(row -> number(row.get("count_value")).longValue())
+                .one()
+                .flatMap(
+                        count -> {
+                            if (count > 0) return Mono.empty();
+                            return database.sql(
+                                            """
+                            INSERT INTO trading_performance_sample(order_id, code, expected_price,
+                                actual_price, net_return_rate, slippage_rate, source_key, sample_type)
+                            VALUES (:orderId, :code, :expected, :actual, NULL, :slippage, :source, 'ENTRY')
+                            """)
+                                    .bind("orderId", order.id())
+                                    .bind("code", order.code())
+                                    .bind("expected", candidate.referencePrice())
+                                    .bind("actual", order.averageFillPrice())
+                                    .bind("slippage", slippage)
+                                    .bind("source", source)
+                                    .then();
+                        });
     }
 
     public Mono<TradingPerformanceStatus> performance() {
