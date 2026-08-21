@@ -4,7 +4,8 @@ import {
   approveLimitedTrade,
   getLimitedTradeCandidates,
   getTradingPerformance,
-  rejectLimitedTrade
+  rejectLimitedTrade,
+  verifyPaperTradingLifecycle
 } from '../api/kiwoomApi';
 import { EmptyState, ErrorState, LoadingState } from './AsyncState';
 
@@ -21,6 +22,7 @@ export default function LimitedTradingPanel() {
   const refresh = () => queryClient.invalidateQueries({ queryKey: ['limited-trade-candidates'] });
   const approve = useMutation({ mutationFn: approveLimitedTrade, onSuccess: refresh });
   const reject = useMutation({ mutationFn: rejectLimitedTrade, onSuccess: refresh });
+  const verification = useMutation({ mutationFn: verifyPaperTradingLifecycle });
 
   if (candidates.isLoading || performance.isLoading) {
     return <LoadingState>제한 매매 상태를 불러오는 중입니다.</LoadingState>;
@@ -41,6 +43,21 @@ export default function LimitedTradingPanel() {
         {Number(status?.averageNetReturnRate ?? 0).toFixed(4)}
         {status?.halted && ` · 주문 중단: ${status.haltReason}`}
       </div>
+      <div className="button-group">
+        <button
+          type="button"
+          onClick={() => verification.mutate()}
+          disabled={verification.isPending}
+        >
+          {verification.isPending ? '검증 중...' : '로컬 주문 흐름 검증'}
+        </button>
+      </div>
+      {verification.data && (
+        <div className={verification.data.passed ? 'empty-state' : 'error'} role="status">
+          주문 흐름 검증: {verification.data.passed ? '통과' : '실패'} · 부분 체결, 미체결, 정정,
+          취소, 복구, 중복 체결 방지
+        </div>
+      )}
       {!candidates.data?.length ? (
         <EmptyState>승인을 기다리는 후보가 없습니다.</EmptyState>
       ) : (

@@ -25,6 +25,7 @@ describe('LimitedTradingPanel', () => {
       averageNetReturnRate: 0,
       halted: false
     });
+    api.verifyPaperTradingLifecycle.mockResolvedValue({ passed: true });
   });
 
   it('shows pending candidates and explicit paper approval', async () => {
@@ -37,5 +38,6 @@ describe('LimitedTradingPanel', () => {
     );
     expect(await screen.findByText('005930')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'PAPER 주문 승인' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '로컬 주문 흐름 검증' })).toBeInTheDocument();
   });
 });

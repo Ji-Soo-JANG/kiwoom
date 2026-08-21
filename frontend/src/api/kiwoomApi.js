@@ -174,6 +174,8 @@ export const approveLimitedTrade = (id) =>
 export const rejectLimitedTrade = (id) =>
   requestJson(`/api/trading/limited/candidates/${id}/reject`, { method: 'POST' });
 export const getTradingPerformance = () => requestJson('/api/trading/limited/performance');
+export const verifyPaperTradingLifecycle = () =>
+  requestJson('/api/trading/paper/verification', { method: 'POST' });
 
 export const getAlertRules = () => requestJson('/api/alerts/rules');
 export const createAlertRule = (code, conditionType, threshold) =>
