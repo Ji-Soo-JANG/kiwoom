@@ -260,6 +260,37 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/kiwoom/backtests/walk-forward": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["WalkForwardRequest"];
+                };
+            };
+            responses: {
+                200: components["responses"]["WalkForwardReport"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/kiwoom/admin/market-data": {
         parameters: {
             query?: never;
@@ -1135,6 +1166,59 @@ export interface components {
             /** Format: date-time */
             createdAt?: string;
         };
+        WalkForwardRequest: {
+            backtest: components["schemas"]["BacktestRequest"];
+            /** @default 240 */
+            trainingDays: number;
+            /** @default 60 */
+            validationDays: number;
+            /** @default 60 */
+            stepDays: number;
+        };
+        WalkForwardFold: {
+            foldNo?: number;
+            /** Format: date */
+            trainingStart?: string;
+            /** Format: date */
+            trainingEnd?: string;
+            /** Format: date */
+            validationStart?: string;
+            /** Format: date */
+            validationEnd?: string;
+            trainingTradeCount?: number;
+            trainingReturnRate?: number;
+            validationTradeCount?: number;
+            validationWinRate?: number;
+            validationExpectancy?: number;
+            validationReturnRate?: number;
+            validationMaxDrawdownRate?: number;
+            costDrag?: number;
+        };
+        WalkForwardReport: {
+            /** Format: int64 */
+            reportId?: number;
+            strategyVersion?: string;
+            code?: string;
+            name?: string;
+            /** Format: date */
+            startDate?: string;
+            /** Format: date */
+            endDate?: string;
+            trainingDays?: number;
+            validationDays?: number;
+            stepDays?: number;
+            foldCount?: number;
+            validationTradeCount?: number;
+            costAdjustedExpectancy?: number;
+            maxDrawdownRate?: number;
+            averageReturnRate?: number;
+            costDrag?: number;
+            passed?: boolean;
+            verdict?: string;
+            folds?: components["schemas"]["WalkForwardFold"][];
+            /** Format: date-time */
+            createdAt?: string;
+        };
         MarketDataSyncStatus: {
             /** Format: int64 */
             stockCount: number;
@@ -1387,6 +1471,15 @@ export interface components {
             };
             content: {
                 "application/json": components["schemas"]["BacktestResponse"];
+            };
+        };
+        /** @description OK */
+        WalkForwardReport: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["WalkForwardReport"];
             };
         };
         /** @description OK */

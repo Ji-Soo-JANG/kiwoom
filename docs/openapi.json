@@ -106,6 +106,21 @@
         }
       }
     },
+    "/api/kiwoom/backtests/walk-forward": {
+      "post": {
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/WalkForwardRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "$ref": "#/components/responses/WalkForwardReport" }
+        }
+      }
+    },
     "/api/kiwoom/admin/market-data": {
       "get": {
         "responses": {
@@ -498,6 +513,61 @@
           "trades": {
             "type": "array",
             "items": { "$ref": "#/components/schemas/BacktestTrade" }
+          },
+          "createdAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "WalkForwardRequest": {
+        "type": "object",
+        "required": ["backtest"],
+        "properties": {
+          "backtest": { "$ref": "#/components/schemas/BacktestRequest" },
+          "trainingDays": { "type": "integer", "minimum": 60, "default": 240 },
+          "validationDays": { "type": "integer", "minimum": 20, "default": 60 },
+          "stepDays": { "type": "integer", "minimum": 20, "default": 60 }
+        }
+      },
+      "WalkForwardFold": {
+        "type": "object",
+        "properties": {
+          "foldNo": { "type": "integer" },
+          "trainingStart": { "type": "string", "format": "date" },
+          "trainingEnd": { "type": "string", "format": "date" },
+          "validationStart": { "type": "string", "format": "date" },
+          "validationEnd": { "type": "string", "format": "date" },
+          "trainingTradeCount": { "type": "integer" },
+          "trainingReturnRate": { "type": "number" },
+          "validationTradeCount": { "type": "integer" },
+          "validationWinRate": { "type": "number" },
+          "validationExpectancy": { "type": "number" },
+          "validationReturnRate": { "type": "number" },
+          "validationMaxDrawdownRate": { "type": "number" },
+          "costDrag": { "type": "number" }
+        }
+      },
+      "WalkForwardReport": {
+        "type": "object",
+        "properties": {
+          "reportId": { "type": "integer", "format": "int64" },
+          "strategyVersion": { "type": "string" },
+          "code": { "type": "string" },
+          "name": { "type": "string" },
+          "startDate": { "type": "string", "format": "date" },
+          "endDate": { "type": "string", "format": "date" },
+          "trainingDays": { "type": "integer" },
+          "validationDays": { "type": "integer" },
+          "stepDays": { "type": "integer" },
+          "foldCount": { "type": "integer" },
+          "validationTradeCount": { "type": "integer" },
+          "costAdjustedExpectancy": { "type": "number" },
+          "maxDrawdownRate": { "type": "number" },
+          "averageReturnRate": { "type": "number" },
+          "costDrag": { "type": "number" },
+          "passed": { "type": "boolean" },
+          "verdict": { "type": "string" },
+          "folds": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/WalkForwardFold" }
           },
           "createdAt": { "type": "string", "format": "date-time" }
         }
@@ -935,6 +1005,14 @@
         "content": {
           "application/json": {
             "schema": { "$ref": "#/components/schemas/BacktestResponse" }
+          }
+        }
+      },
+      "WalkForwardReport": {
+        "description": "OK",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/WalkForwardReport" }
           }
         }
       },

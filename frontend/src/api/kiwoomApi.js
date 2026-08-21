@@ -118,6 +118,12 @@ export const runBacktest = (request) =>
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(request)
   });
+export const runWalkForward = (request) =>
+  requestJson('/api/kiwoom/backtests/walk-forward', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(request)
+  });
 export const getMarketDataStatus = () => requestJson('/api/kiwoom/admin/market-data');
 export const getMarketDataQuality = () => requestJson('/api/kiwoom/admin/market-data/quality');
 export const inspectMarketDataQuality = () =>

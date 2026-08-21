@@ -29,4 +29,17 @@ record BacktestConfig(
     private static double value(Double value, double fallback) {
         return value == null ? fallback : value;
     }
+
+    BacktestConfig withoutCosts() {
+        return new BacktestConfig(
+                initialCapital,
+                positionSizeRate,
+                0,
+                0,
+                0,
+                stopLossRate,
+                takeProfitRate,
+                maxHoldingDays,
+                boxRangeDays);
+    }
 }

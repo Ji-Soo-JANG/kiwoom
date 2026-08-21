@@ -9,10 +9,13 @@ import com.example.kiwoom.dto.MarketRankingsResponse;
 import com.example.kiwoom.dto.StockPriceResponse;
 import com.example.kiwoom.dto.StockSearchResult;
 import com.example.kiwoom.dto.StrategyScanResponse;
+import com.example.kiwoom.dto.WalkForwardReport;
+import com.example.kiwoom.dto.WalkForwardRequest;
 import com.example.kiwoom.service.BacktestService;
 import com.example.kiwoom.service.KiwoomApiService;
 import com.example.kiwoom.service.MarketDataCollectionService;
 import com.example.kiwoom.service.StrategyScanService;
+import com.example.kiwoom.service.WalkForwardService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -37,16 +40,19 @@ public class KiwoomController {
     private final MarketDataCollectionService marketDataCollectionService;
     private final StrategyScanService strategyScanService;
     private final BacktestService backtestService;
+    private final WalkForwardService walkForwardService;
 
     public KiwoomController(
             KiwoomApiService kiwoomApiService,
             MarketDataCollectionService marketDataCollectionService,
             StrategyScanService strategyScanService,
-            BacktestService backtestService) {
+            BacktestService backtestService,
+            WalkForwardService walkForwardService) {
         this.kiwoomApiService = kiwoomApiService;
         this.marketDataCollectionService = marketDataCollectionService;
         this.strategyScanService = strategyScanService;
         this.backtestService = backtestService;
+        this.walkForwardService = walkForwardService;
     }
 
     /**
@@ -116,6 +122,12 @@ public class KiwoomController {
     @Operation(summary = "수수료·세금·슬리피지를 반영한 단일 종목 이벤트 백테스트")
     public Mono<BacktestResponse> runBacktest(@Valid @RequestBody BacktestRequest request) {
         return backtestService.run(request);
+    }
+
+    @PostMapping("/backtests/walk-forward")
+    @Operation(summary = "시간순 학습·검증 구간 워크포워드 성과 보고서 생성")
+    public Mono<WalkForwardReport> runWalkForward(@Valid @RequestBody WalkForwardRequest request) {
+        return walkForwardService.run(request);
     }
 
     @GetMapping("/admin/market-data")

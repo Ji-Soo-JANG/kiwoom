@@ -6,7 +6,8 @@ import {
   getPortfolioProfitTrend,
   importPortfolioTrades,
   markAlertRead,
-  runBacktest
+  runBacktest,
+  runWalkForward
 } from './kiwoomApi';
 
 describe('kiwoomApi 오류 처리', () => {
@@ -66,6 +67,25 @@ describe('kiwoomApi 오류 처리', () => {
 
     expect(fetchMock).toHaveBeenCalledWith(
       '/api/kiwoom/backtests',
+      expect.objectContaining({ method: 'POST', body: JSON.stringify(request) })
+    );
+  });
+
+  it('워크포워드 설정을 JSON으로 전송한다', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(new Response(JSON.stringify({ foldCount: 2 }), { status: 200 }));
+    vi.stubGlobal('fetch', fetchMock);
+    const request = {
+      backtest: { code: '005930', startDate: '2024-01-01', endDate: '2026-01-01' },
+      trainingDays: 240,
+      validationDays: 60
+    };
+
+    await runWalkForward(request);
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/kiwoom/backtests/walk-forward',
       expect.objectContaining({ method: 'POST', body: JSON.stringify(request) })
     );
   });

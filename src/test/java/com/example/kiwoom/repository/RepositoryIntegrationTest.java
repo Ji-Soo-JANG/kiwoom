@@ -35,6 +35,7 @@ class RepositoryIntegrationTest {
 
     @Autowired private StrategySnapshotRepository strategySnapshotRepository;
     @Autowired private BacktestRepository backtestRepository;
+    @Autowired private WalkForwardRepository walkForwardRepository;
 
     // --- MarketDataRepository tests ---
 
@@ -240,6 +241,52 @@ class RepositoryIntegrationTest {
         assertThat(saved).isNotNull();
         assertThat(saved.runId()).isPositive();
         assertThat(saved.trades()).containsExactly(trade);
+    }
+
+    @Test
+    void walkForwardReport_persistsSummaryAndFolds() {
+        WalkForwardFold fold =
+                new WalkForwardFold(
+                        1,
+                        LocalDate.of(2025, 1, 1),
+                        LocalDate.of(2025, 12, 1),
+                        LocalDate.of(2025, 12, 2),
+                        LocalDate.of(2026, 2, 28),
+                        3,
+                        0.02,
+                        2,
+                        0.5,
+                        new BigDecimal("1000.0000"),
+                        0.01,
+                        -0.05,
+                        new BigDecimal("200.0000"));
+        WalkForwardReport report =
+                new WalkForwardReport(
+                        null,
+                        "test-v1",
+                        "005930",
+                        "삼성전자",
+                        LocalDate.of(2025, 1, 1),
+                        LocalDate.of(2026, 2, 28),
+                        240,
+                        60,
+                        60,
+                        1,
+                        2,
+                        new BigDecimal("1000.0000"),
+                        -0.05,
+                        0.01,
+                        new BigDecimal("200.0000"),
+                        false,
+                        "테스트",
+                        java.util.List.of(fold),
+                        java.time.Instant.now());
+
+        WalkForwardReport saved = walkForwardRepository.save(report).block();
+
+        assertThat(saved).isNotNull();
+        assertThat(saved.reportId()).isPositive();
+        assertThat(saved.folds()).containsExactly(fold);
     }
 
     // --- AlertRepository tests ---
