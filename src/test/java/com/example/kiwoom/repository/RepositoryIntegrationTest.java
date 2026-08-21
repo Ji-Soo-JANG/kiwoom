@@ -34,6 +34,7 @@ class RepositoryIntegrationTest {
     @Autowired private AlertRepository alertRepository;
 
     @Autowired private StrategySnapshotRepository strategySnapshotRepository;
+    @Autowired private BacktestRepository backtestRepository;
 
     // --- MarketDataRepository tests ---
 
@@ -195,6 +196,50 @@ class RepositoryIntegrationTest {
         assertThat(latest.boxRangeDays()).isEqualTo(60);
         assertThat(latest.dataAsOf()).isEqualTo(LocalDate.of(2026, 8, 21));
         assertThat(latest.candidates()).containsExactly(candidate);
+    }
+
+    @Test
+    void backtestResult_persistsRunAndTrades() {
+        BacktestTrade trade =
+                new BacktestTrade(
+                        LocalDate.of(2026, 1, 2),
+                        LocalDate.of(2026, 1, 10),
+                        new BigDecimal("100.0000"),
+                        new BigDecimal("110.0000"),
+                        100,
+                        new BigDecimal("1000.0000"),
+                        new BigDecimal("3.1500"),
+                        new BigDecimal("19.8000"),
+                        new BigDecimal("20.0000"),
+                        new BigDecimal("977.0500"),
+                        0.097705,
+                        "TAKE_PROFIT");
+        BacktestResponse result =
+                new BacktestResponse(
+                        null,
+                        "test-v1",
+                        "005930",
+                        "삼성전자",
+                        LocalDate.of(2026, 1, 1),
+                        LocalDate.of(2026, 2, 1),
+                        new BigDecimal("1000000.0000"),
+                        new BigDecimal("1000977.0500"),
+                        0.00015,
+                        0.0018,
+                        0.001,
+                        1,
+                        1,
+                        0.000977,
+                        -0.01,
+                        new BigDecimal("977.0500"),
+                        java.util.List.of(trade),
+                        java.time.Instant.now());
+
+        BacktestResponse saved = backtestRepository.save(result).block();
+
+        assertThat(saved).isNotNull();
+        assertThat(saved.runId()).isPositive();
+        assertThat(saved.trades()).containsExactly(trade);
     }
 
     // --- AlertRepository tests ---

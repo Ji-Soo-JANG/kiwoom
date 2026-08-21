@@ -5,7 +5,8 @@ import {
   getCurrentPrice,
   getPortfolioProfitTrend,
   importPortfolioTrades,
-  markAlertRead
+  markAlertRead,
+  runBacktest
 } from './kiwoomApi';
 
 describe('kiwoomApi 오류 처리', () => {
@@ -52,5 +53,20 @@ describe('kiwoomApi 오류 처리', () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(null, { status: 204 })));
 
     await expect(markAlertRead(4)).resolves.toBeNull();
+  });
+
+  it('백테스트 설정을 JSON으로 전송한다', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(new Response(JSON.stringify({ tradeCount: 0 }), { status: 200 }));
+    vi.stubGlobal('fetch', fetchMock);
+    const request = { code: '005930', startDate: '2025-01-01', endDate: '2026-01-01' };
+
+    await runBacktest(request);
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/kiwoom/backtests',
+      expect.objectContaining({ method: 'POST', body: JSON.stringify(request) })
+    );
   });
 });

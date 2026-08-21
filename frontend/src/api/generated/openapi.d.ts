@@ -229,6 +229,37 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/kiwoom/backtests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["BacktestRequest"];
+                };
+            };
+            responses: {
+                200: components["responses"]["Backtest"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/kiwoom/admin/market-data": {
         parameters: {
             query?: never;
@@ -1037,6 +1068,73 @@ export interface components {
             /** Format: date-time */
             updatedAt: string;
         };
+        BacktestRequest: {
+            code: string;
+            /** Format: date */
+            startDate: string;
+            /** Format: date */
+            endDate: string;
+            /** @default 10000000 */
+            initialCapital: number;
+            /** @default 0.2 */
+            positionSizeRate: number;
+            /** @default 0.00015 */
+            feeRate: number;
+            /** @default 0.0018 */
+            taxRate: number;
+            /** @default 0.001 */
+            slippageRate: number;
+            /** @default 0.08 */
+            stopLossRate: number;
+            /** @default 0.15 */
+            takeProfitRate: number;
+            /** @default 20 */
+            maxHoldingDays: number;
+            /** @default 60 */
+            boxRangeDays: number;
+        };
+        BacktestTrade: {
+            /** Format: date */
+            entryDate?: string;
+            /** Format: date */
+            exitDate?: string;
+            entryPrice?: number;
+            exitPrice?: number;
+            /** Format: int64 */
+            quantity?: number;
+            grossProfitLoss?: number;
+            fee?: number;
+            tax?: number;
+            slippageCost?: number;
+            netProfitLoss?: number;
+            returnRate?: number;
+            /** @enum {string} */
+            exitReason?: "STOP_LOSS" | "TAKE_PROFIT" | "MAX_HOLDING" | "END_OF_TEST";
+        };
+        BacktestResponse: {
+            /** Format: int64 */
+            runId?: number;
+            strategyVersion?: string;
+            code?: string;
+            name?: string;
+            /** Format: date */
+            startDate?: string;
+            /** Format: date */
+            endDate?: string;
+            initialCapital?: number;
+            finalCapital?: number;
+            feeRate?: number;
+            taxRate?: number;
+            slippageRate?: number;
+            tradeCount?: number;
+            winRate?: number;
+            totalReturnRate?: number;
+            maxDrawdownRate?: number;
+            expectancy?: number;
+            trades?: components["schemas"]["BacktestTrade"][];
+            /** Format: date-time */
+            createdAt?: string;
+        };
         MarketDataSyncStatus: {
             /** Format: int64 */
             stockCount: number;
@@ -1280,6 +1378,15 @@ export interface components {
             };
             content: {
                 "application/json": components["schemas"]["StrategyScanResponse"];
+            };
+        };
+        /** @description OK */
+        Backtest: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["BacktestResponse"];
             };
         };
         /** @description OK */
