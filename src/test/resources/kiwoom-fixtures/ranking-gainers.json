@@ -1,0 +1,8 @@
+{
+  "return_code": 0,
+  "return_msg": "",
+  "pred_pre_flu_rt_upper": [
+    {"stk_cd": "A035720_AL", "stk_nm": "카카오", "cur_prc": "+50000", "flu_rt": "+2.50", "trde_qty": "1234567"},
+    {"stk_cd": "A005930_AL", "stk_nm": "삼성전자", "cur_prc": "+75000", "flu_rt": "+1.85", "trde_qty": "987654"}
+  ]
+}
