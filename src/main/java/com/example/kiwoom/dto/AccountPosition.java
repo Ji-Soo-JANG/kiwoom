@@ -10,4 +10,6 @@ public record AccountPosition(
         long purchaseAmount,
         long evaluationAmount,
         long profitLoss,
-        double returnRate) {}
+        double returnRate,
+        double weight,
+        double profitContribution) {}

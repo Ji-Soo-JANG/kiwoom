@@ -186,6 +186,12 @@ public class KiwoomResponseMapper {
                 String code = normalizeRankingCode(firstText(item, "stk_cd", "stk_no"));
                 String name = firstText(item, "stk_nm", "stk_name");
                 if (!code.matches("\\d{6}") || name.isBlank()) continue;
+                long evalAmt = absoluteLong(firstText(item, "evlt_amt"));
+                long profitAmt = signedLong(firstText(item, "evltv_prft", "evlt_pl"));
+                long totalEval = absoluteLong(firstText(root, "tot_evlt_amt"));
+                long totalProfit = signedLong(firstText(root, "tot_evlt_pl"));
+                double weight = totalEval > 0 ? (evalAmt * 100.0 / totalEval) : 0;
+                double profitContrib = totalProfit != 0 ? (profitAmt * 100.0 / totalProfit) : 0;
                 positions.add(
                         new AccountPosition(
                                 code,
@@ -195,9 +201,11 @@ public class KiwoomResponseMapper {
                                 absoluteLong(firstText(item, "pur_pric", "avg_pric")),
                                 absoluteLong(firstText(item, "cur_prc")),
                                 absoluteLong(firstText(item, "pur_amt")),
-                                absoluteLong(firstText(item, "evlt_amt")),
-                                signedLong(firstText(item, "evltv_prft", "evlt_pl")),
-                                decimal(firstText(item, "prft_rt", "evltv_prft_rt"))));
+                                evalAmt,
+                                profitAmt,
+                                decimal(firstText(item, "prft_rt", "evltv_prft_rt")),
+                                Math.round(weight * 100.0) / 100.0,
+                                Math.round(profitContrib * 100.0) / 100.0));
             }
             return new AccountPortfolioResponse(
                     maskAccountNumber(accountNumber),
