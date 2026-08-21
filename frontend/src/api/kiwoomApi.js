@@ -164,6 +164,17 @@ export const resumePaperKillSwitch = (confirmation, reason) =>
     body: JSON.stringify({ confirmation, reason })
   });
 
+export const getLimitedTradeCandidates = () => requestJson('/api/trading/limited/candidates');
+export const approveLimitedTrade = (id) =>
+  requestJson(`/api/trading/limited/candidates/${id}/approve`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ confirmation: 'APPROVE_LIMITED_TRADE' })
+  });
+export const rejectLimitedTrade = (id) =>
+  requestJson(`/api/trading/limited/candidates/${id}/reject`, { method: 'POST' });
+export const getTradingPerformance = () => requestJson('/api/trading/limited/performance');
+
 export const getAlertRules = () => requestJson('/api/alerts/rules');
 export const createAlertRule = (code, conditionType, threshold) =>
   requestJson('/api/alerts/rules', {

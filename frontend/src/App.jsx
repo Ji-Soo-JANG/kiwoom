@@ -20,6 +20,7 @@ import AlertCenter from './components/AlertCenter';
 import MarketDiscovery from './components/MarketDiscovery';
 import StockComparison from './components/StockComparison';
 import SettingsPanel from './components/SettingsPanel';
+import LimitedTradingPanel from './components/LimitedTradingPanel';
 
 const StockDailyChart = lazy(() => import('./components/StockDailyChart'));
 
@@ -168,6 +169,7 @@ function App({ currentUser, onLogout }) {
         <NavLink to="/watchlist">관심 종목</NavLink>
         <NavLink to="/portfolio">포트폴리오</NavLink>
         <NavLink to="/alerts">알림</NavLink>
+        <NavLink to="/trading">매매 승인</NavLink>
         <NavLink to="/settings">설정</NavLink>
       </nav>
 
@@ -265,6 +267,7 @@ function App({ currentUser, onLogout }) {
         />
 
         <Route path="/alerts" element={<AlertCenter onError={handleError} />} />
+        <Route path="/trading" element={<LimitedTradingPanel />} />
         <Route path="/settings" element={<SettingsPanel />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

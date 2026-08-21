@@ -506,6 +506,20 @@
     },
     "/api/trading/paper/verification": {
       "post": { "responses": { "200": { "description": "Local verification report" } } }
+    },
+    "/api/trading/limited/candidates": {
+      "get": { "responses": { "200": { "description": "Candidates" } } },
+      "post": { "responses": { "201": { "description": "Candidate created" } } }
+    },
+    "/api/trading/limited/candidates/{id}/approve": {
+      "post": { "responses": { "200": { "description": "Approved PAPER order" } } }
+    },
+    "/api/trading/limited/candidates/{id}/reject": {
+      "post": { "responses": { "200": { "description": "Rejected" } } }
+    },
+    "/api/trading/limited/performance": {
+      "get": { "responses": { "200": { "description": "Performance status" } } },
+      "post": { "responses": { "200": { "description": "Performance recorded" } } }
     }
   },
   "components": {
