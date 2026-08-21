@@ -1,12 +1,16 @@
 package com.example.kiwoom.controller;
 
+import com.example.kiwoom.dto.KillSwitchRequest;
+import com.example.kiwoom.dto.KillSwitchResumeRequest;
 import com.example.kiwoom.dto.OrderReconciliationReport;
 import com.example.kiwoom.dto.PaperAccountStatus;
 import com.example.kiwoom.dto.PaperOrderRequest;
 import com.example.kiwoom.dto.PaperPosition;
+import com.example.kiwoom.dto.PaperRiskStatus;
 import com.example.kiwoom.dto.TradingModeStatus;
 import com.example.kiwoom.dto.TradingOrder;
 import com.example.kiwoom.service.PaperOrderService;
+import com.example.kiwoom.service.PaperRiskService;
 import com.example.kiwoom.service.TradingModeService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -26,10 +30,13 @@ import reactor.core.publisher.Mono;
 public class TradingController {
     private final TradingModeService modes;
     private final PaperOrderService orders;
+    private final PaperRiskService risks;
 
-    public TradingController(TradingModeService modes, PaperOrderService orders) {
+    public TradingController(
+            TradingModeService modes, PaperOrderService orders, PaperRiskService risks) {
         this.modes = modes;
         this.orders = orders;
+        this.risks = risks;
     }
 
     @GetMapping("/status")
@@ -68,5 +75,24 @@ public class TradingController {
     @Operation(summary = "PAPER 주문·체결·잔고·현금 대사")
     public Mono<OrderReconciliationReport> reconcile() {
         return orders.reconcile();
+    }
+
+    @GetMapping("/risk")
+    @Operation(summary = "PAPER 계좌 위험 한도와 킬 스위치 상태")
+    public Mono<PaperRiskStatus> risk() {
+        return risks.status();
+    }
+
+    @PostMapping("/kill-switch")
+    @Operation(summary = "킬 스위치 수동 활성화 및 진행 주문 취소")
+    public Mono<PaperRiskStatus> activateKillSwitch(@Valid @RequestBody KillSwitchRequest request) {
+        return risks.activate(request.reason());
+    }
+
+    @PostMapping("/kill-switch/resume")
+    @Operation(summary = "확인 문구를 사용한 킬 스위치 수동 재개")
+    public Mono<PaperRiskStatus> resumeKillSwitch(
+            @Valid @RequestBody KillSwitchResumeRequest request) {
+        return risks.resume(request);
     }
 }

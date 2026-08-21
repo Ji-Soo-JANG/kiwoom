@@ -29,11 +29,14 @@ public class PaperOrderService {
     private static final ZoneId SEOUL = ZoneId.of("Asia/Seoul");
     private final TradingModeService modes;
     private final PaperTradingRepository repository;
+    private final PaperRiskService risks;
     private final OrderStateMachine stateMachine = new OrderStateMachine();
 
-    public PaperOrderService(TradingModeService modes, PaperTradingRepository repository) {
+    public PaperOrderService(
+            TradingModeService modes, PaperTradingRepository repository, PaperRiskService risks) {
         this.modes = modes;
         this.repository = repository;
+        this.risks = risks;
     }
 
     public Mono<TradingOrder> place(PaperOrderRequest request) {
@@ -47,7 +50,19 @@ public class PaperOrderService {
                 .flatMap(
                         order ->
                                 order.status() == OrderStatus.CREATED
-                                        ? submitAndFill(order)
+                                        ? risks.validate(request)
+                                                .then(submitAndFill(order))
+                                                .onErrorResume(
+                                                        TradingSafetyException.class,
+                                                        error ->
+                                                                repository.rejectCreated(
+                                                                        order.id(),
+                                                                        error.getMessage()))
+                                        : Mono.just(order))
+                .flatMap(
+                        order ->
+                                order.status() == OrderStatus.FILLED
+                                        ? risks.status().thenReturn(order)
                                         : Mono.just(order));
     }
 

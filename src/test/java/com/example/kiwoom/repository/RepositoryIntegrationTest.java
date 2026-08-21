@@ -1,6 +1,7 @@
 package com.example.kiwoom.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.example.kiwoom.dto.*;
 import java.math.BigDecimal;
@@ -38,6 +39,7 @@ class RepositoryIntegrationTest {
     @Autowired private BacktestRepository backtestRepository;
     @Autowired private WalkForwardRepository walkForwardRepository;
     @Autowired private com.example.kiwoom.service.PaperOrderService paperOrderService;
+    @Autowired private com.example.kiwoom.service.PaperRiskService paperRiskService;
 
     // --- MarketDataRepository tests ---
 
@@ -318,6 +320,99 @@ class RepositoryIntegrationTest {
                 .isEqualTo(10L);
         assertThat(reconciliation).isNotNull();
         assertThat(reconciliation.consistent()).isTrue();
+    }
+
+    @Test
+    void paperRiskLimitsRejectOversizedOrderAndKillSwitchRequiresManualResume() {
+        var activated = paperRiskService.activate("통합 테스트").block();
+        TradingOrder blocked =
+                paperOrderService
+                        .place(
+                                new PaperOrderRequest(
+                                        "risk-test-kill-block",
+                                        "444440",
+                                        OrderSide.BUY,
+                                        1,
+                                        new BigDecimal("1000")))
+                        .block();
+
+        assertThat(activated).isNotNull();
+        assertThat(activated.killSwitchActive()).isTrue();
+        assertThat(blocked).isNotNull();
+        assertThat(blocked.status()).isEqualTo(OrderStatus.REJECTED);
+        assertThat(blocked.rejectionReason()).contains("킬 스위치");
+        assertThatThrownBy(
+                        () ->
+                                paperRiskService
+                                        .resume(new KillSwitchResumeRequest("wrong", "통합 테스트 재개"))
+                                        .block())
+                .isInstanceOf(com.example.kiwoom.error.TradingSafetyException.class);
+
+        var resumed =
+                paperRiskService
+                        .resume(
+                                new KillSwitchResumeRequest(
+                                        com.example.kiwoom.service.PaperRiskService
+                                                .RESUME_CONFIRMATION,
+                                        "통합 테스트 재개"))
+                        .block();
+        TradingOrder oversized =
+                paperOrderService
+                        .place(
+                                new PaperOrderRequest(
+                                        "risk-test-oversized",
+                                        "444441",
+                                        OrderSide.BUY,
+                                        2000,
+                                        new BigDecimal("1000")))
+                        .block();
+
+        assertThat(resumed).isNotNull();
+        assertThat(resumed.killSwitchActive()).isFalse();
+        assertThat(oversized).isNotNull();
+        assertThat(oversized.status()).isEqualTo(OrderStatus.REJECTED);
+        assertThat(oversized.rejectionReason()).contains("종목당 최대 비중");
+    }
+
+    @Test
+    void realizedPaperLossAutomaticallyActivatesKillSwitch() {
+        String code = "444442";
+        TradingOrder buy =
+                paperOrderService
+                        .place(
+                                new PaperOrderRequest(
+                                        "risk-loss-buy",
+                                        code,
+                                        OrderSide.BUY,
+                                        900,
+                                        new BigDecimal("1000")))
+                        .block();
+        TradingOrder sell =
+                paperOrderService
+                        .place(
+                                new PaperOrderRequest(
+                                        "risk-loss-sell",
+                                        code,
+                                        OrderSide.SELL,
+                                        900,
+                                        new BigDecimal("600")))
+                        .block();
+        var risk = paperRiskService.status().block();
+
+        assertThat(buy).isNotNull();
+        assertThat(buy.status()).isEqualTo(OrderStatus.FILLED);
+        assertThat(sell).isNotNull();
+        assertThat(sell.status()).isEqualTo(OrderStatus.FILLED);
+        assertThat(risk).isNotNull();
+        assertThat(risk.killSwitchActive()).isTrue();
+        assertThat(risk.killSwitchReason()).contains("일일 손실 한도");
+
+        paperRiskService
+                .resume(
+                        new KillSwitchResumeRequest(
+                                com.example.kiwoom.service.PaperRiskService.RESUME_CONFIRMATION,
+                                "다음 테스트를 위한 상태 복구"))
+                .block();
     }
 
     // --- AlertRepository tests ---

@@ -238,6 +238,81 @@ public class PaperTradingRepository {
                 .all();
     }
 
+    public Mono<Void> updateRiskSnapshot(BigDecimal equity, LocalDate tradingDay) {
+        return database.sql(
+                        """
+                UPDATE paper_account SET
+                    day_start_equity = CASE WHEN trading_day <> :tradingDay
+                        THEN :equity ELSE day_start_equity END,
+                    trading_day = :tradingDay,
+                    peak_equity = CASE WHEN peak_equity < :equity THEN :equity ELSE peak_equity END,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE id = 1
+                """)
+                .bind("tradingDay", tradingDay)
+                .bind("equity", equity)
+                .fetch()
+                .rowsUpdated()
+                .then();
+    }
+
+    public Mono<Void> activateKillSwitch(String reason) {
+        return database.sql(
+                        """
+                UPDATE paper_account SET kill_switch_active = TRUE,
+                    kill_switch_reason = :reason,
+                    kill_switch_activated_at = CURRENT_TIMESTAMP,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE id = 1
+                """)
+                .bind("reason", reason)
+                .fetch()
+                .rowsUpdated()
+                .then();
+    }
+
+    public Mono<Void> resumeKillSwitch(BigDecimal equity, LocalDate tradingDay) {
+        return database.sql(
+                        """
+                UPDATE paper_account SET kill_switch_active = FALSE,
+                    kill_switch_reason = NULL, kill_switch_activated_at = NULL,
+                    peak_equity = :equity, day_start_equity = :equity,
+                    trading_day = :tradingDay, updated_at = CURRENT_TIMESTAMP
+                WHERE id = 1
+                """)
+                .bind("equity", equity)
+                .bind("tradingDay", tradingDay)
+                .fetch()
+                .rowsUpdated()
+                .then();
+    }
+
+    @Transactional(transactionManager = "connectionFactoryTransactionManager")
+    public Mono<TradingOrder> rejectCreated(long id, String reason) {
+        return database.sql(
+                        """
+                UPDATE trading_order SET status = 'REJECTED', rejection_reason = :reason,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE id = :id AND status = 'CREATED'
+                """)
+                .bind("reason", reason)
+                .bind("id", id)
+                .fetch()
+                .rowsUpdated()
+                .flatMap(
+                        updated ->
+                                updated == 1
+                                        ? addEvent(
+                                                        id,
+                                                        OrderStatus.CREATED,
+                                                        OrderStatus.REJECTED,
+                                                        reason)
+                                                .then(findById(id))
+                                        : Mono.error(
+                                                new IllegalStateException(
+                                                        "거부 처리 전에 주문 상태가 변경되었습니다.")));
+    }
+
     private Mono<Void> applyPosition(TradingOrder order) {
         return findPosition(order.code())
                 .map(Optional::of)
