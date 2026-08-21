@@ -20,7 +20,7 @@ function formatFetchedAt(isoString) {
   return `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}:${d.getSeconds().toString().padStart(2, '0')}`;
 }
 
-function StockResultList({ stocks, searched = false, loading = false }) {
+function StockResultList({ stocks, searched = false, loading = false, onCompare }) {
   if (stocks.length === 0) {
     return searched && !loading ? (
       <p className="empty-state" role="status">
@@ -75,6 +75,11 @@ function StockResultList({ stocks, searched = false, loading = false }) {
               </span>
             </div>
           </div>
+          {onCompare && (
+            <button type="button" className="compare-add-button" onClick={() => onCompare(stock)}>
+              비교에 추가
+            </button>
+          )}
         </div>
       ))}
     </section>

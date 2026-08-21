@@ -55,6 +55,9 @@ describe('AccountPortfolio', () => {
     // 요약 영역에 총 매입금액 표시 확인
     expect(screen.getAllByText(/700,000원/).length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText(/7\.14%/).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByRole('heading', { name: '계좌 분석' })).toBeInTheDocument();
+    expect(screen.getByText('현금 추정액').nextSibling).toHaveTextContent('250,000원');
+    expect(screen.getByText(/키움 총 평가금액 차이/)).toBeInTheDocument();
 
     // 종목 클릭 시 onSelectStock 호출
     fireEvent.click(screen.getAllByText('삼성전자')[0]);

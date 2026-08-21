@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-function Watchlist({ codes, onSearch, onRemove, onUpdate }) {
+function Watchlist({ codes, onSearch, onRemove, onUpdate, onCompare }) {
   const [editingCode, setEditingCode] = useState(null);
   const [editGroupName, setEditGroupName] = useState('');
   const [editNote, setEditNote] = useState('');
@@ -95,6 +95,17 @@ function Watchlist({ codes, onSearch, onRemove, onUpdate }) {
                         </>
                       ) : (
                         <>
+                          <button
+                            type="button"
+                            className="watchlist-btn-edit"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onCompare(item);
+                            }}
+                            aria-label={`${item.name || item.code} 비교에 추가`}
+                          >
+                            비교
+                          </button>
                           <button
                             type="button"
                             className="watchlist-btn-edit"

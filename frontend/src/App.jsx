@@ -18,6 +18,8 @@ import Watchlist from './components/Watchlist';
 import AccountPortfolio from './components/AccountPortfolio';
 import AlertCenter from './components/AlertCenter';
 import MarketDiscovery from './components/MarketDiscovery';
+import StockComparison from './components/StockComparison';
+import SettingsPanel from './components/SettingsPanel';
 
 const StockDailyChart = lazy(() => import('./components/StockDailyChart'));
 
@@ -33,6 +35,7 @@ function App({ currentUser, onLogout }) {
 
   const [error, setError] = useState('');
   const [searched, setSearched] = useState(false);
+  const [comparisonItems, setComparisonItems] = useState([]);
 
   const watchlistQuery = useQuery({ queryKey: ['watchlist'], queryFn: getWatchlist });
   const watchlist = watchlistQuery.data ?? [];
@@ -128,6 +131,17 @@ function App({ currentUser, onLogout }) {
     }
   };
 
+  const addComparison = (stock) => {
+    setComparisonItems((items) => {
+      if (items.some((item) => item.code === stock.code)) return items;
+      if (items.length >= 5) {
+        setError('비교 종목은 최대 5개까지 담을 수 있습니다.');
+        return items;
+      }
+      return [...items, { code: stock.code, name: stock.name || stock.code }];
+    });
+  };
+
   return (
     <div className="container">
       <header className="app-header">
@@ -149,10 +163,12 @@ function App({ currentUser, onLogout }) {
           종목 검색
         </NavLink>
         <NavLink to="/chart">차트</NavLink>
+        <NavLink to="/compare">종목 비교</NavLink>
         <NavLink to="/discover">종목 발견</NavLink>
         <NavLink to="/watchlist">관심 종목</NavLink>
         <NavLink to="/portfolio">포트폴리오</NavLink>
         <NavLink to="/alerts">알림</NavLink>
+        <NavLink to="/settings">설정</NavLink>
       </nav>
 
       <Routes>
@@ -180,7 +196,12 @@ function App({ currentUser, onLogout }) {
                   <div className="loading-text">조회 중입니다...</div>
                 </div>
               )}
-              <StockResultList stocks={stocks} searched={searched} loading={loading} />
+              <StockResultList
+                stocks={stocks}
+                searched={searched}
+                loading={loading}
+                onCompare={addComparison}
+              />
 
               {stocks.length === 1 && (
                 <button type="button" onClick={addCurrentToWatchlist}>
@@ -192,6 +213,19 @@ function App({ currentUser, onLogout }) {
                 <StockDailyChart stockCode={stocks[0]?.code} />
               </Suspense>
             </>
+          }
+        />
+
+        <Route
+          path="/compare"
+          element={
+            <StockComparison
+              items={comparisonItems}
+              onRemove={(code) =>
+                setComparisonItems((items) => items.filter((item) => item.code !== code))
+              }
+              onClear={() => setComparisonItems([])}
+            />
           }
         />
 
@@ -214,6 +248,7 @@ function App({ currentUser, onLogout }) {
               onSearch={searchFromWatchlist}
               onRemove={deleteWatchlist}
               onUpdate={updateWatchlist}
+              onCompare={addComparison}
             />
           }
         />
@@ -230,6 +265,7 @@ function App({ currentUser, onLogout }) {
         />
 
         <Route path="/alerts" element={<AlertCenter onError={handleError} />} />
+        <Route path="/settings" element={<SettingsPanel />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
 

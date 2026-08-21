@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { getAccountPortfolio } from '../api/kiwoomApi';
@@ -31,6 +31,17 @@ const FILTER_OPTIONS = [
   { key: 'loss', label: '손실' }
 ];
 
+function classifyAsset(name = '') {
+  const upper = name.toUpperCase();
+  if (upper.includes('ETF') || /^(KODEX|TIGER|ACE|RISE|SOL|PLUS|KOSEF|HANARO)/.test(upper))
+    return 'ETF';
+  if (upper.includes('ETN')) return 'ETN';
+  if (name.includes('리츠')) return '리츠';
+  if (name.includes('스팩') || upper.includes('SPAC')) return '스팩';
+  if (/우[B-C]?$/.test(name)) return '우선주';
+  return '보통주';
+}
+
 function AccountPortfolio({ onSelectStock }) {
   const [sortKey, setSortKey] = useState('evaluationAmount');
   const [sortAsc, setSortAsc] = useState(false);
@@ -44,6 +55,36 @@ function AccountPortfolio({ onSelectStock }) {
   });
 
   const positions = useMemo(() => portfolio.data?.positions ?? [], [portfolio.data]);
+
+  useEffect(() => {
+    if (portfolio.data) localStorage.setItem('kiwoom.account.selected', 'primary');
+  }, [portfolio.data]);
+
+  const analysis = useMemo(() => {
+    const data = portfolio.data;
+    if (!data) return null;
+    const assetTypes = Object.entries(
+      positions.reduce((groups, position) => {
+        const type = classifyAsset(position.name);
+        groups[type] = (groups[type] ?? 0) + Number(position.evaluationAmount);
+        return groups;
+      }, {})
+    ).sort((a, b) => b[1] - a[1]);
+    const positionEvaluation = positions.reduce(
+      (sum, item) => sum + Number(item.evaluationAmount),
+      0
+    );
+    const positionProfit = positions.reduce((sum, item) => sum + Number(item.profitLoss), 0);
+    const cash = Math.max(Number(data.estimatedAssets) - Number(data.totalEvaluationAmount), 0);
+    return {
+      assetTypes,
+      cash,
+      cashRate: data.estimatedAssets > 0 ? (cash / Number(data.estimatedAssets)) * 100 : 0,
+      evaluationDifference: Number(data.totalEvaluationAmount) - positionEvaluation,
+      profitDifference: Number(data.totalProfitLoss) - positionProfit,
+      topWeight: Math.max(...positions.map((item) => Number(item.weight)), 0)
+    };
+  }, [portfolio.data, positions]);
 
   const sortedPositions = useMemo(() => {
     let list = [...positions];
@@ -144,6 +185,47 @@ function AccountPortfolio({ onSelectStock }) {
         <p className="empty-state">현재 보유 중인 국내주식이 없습니다.</p>
       ) : (
         <>
+          <section className="account-analysis" aria-labelledby="account-analysis-title">
+            <h3 id="account-analysis-title">계좌 분석</h3>
+            <div className="analysis-summary">
+              <div>
+                <span>현금 추정액</span>
+                <strong>{number(analysis.cash)}원</strong>
+                <small>{analysis.cashRate.toFixed(1)}%</small>
+              </div>
+              <div>
+                <span>최대 종목 비중</span>
+                <strong>{analysis.topWeight.toFixed(1)}%</strong>
+                <small>{analysis.topWeight >= 40 ? '집중도 높음' : '분산 범위'}</small>
+              </div>
+              <div>
+                <span>업종 편중</span>
+                <strong>미분류</strong>
+                <small>키움 잔고 API 업종 미제공</small>
+              </div>
+            </div>
+            <h4>자산 유형별 비중</h4>
+            <ul className="asset-type-list">
+              {analysis.assetTypes.map(([type, amount]) => (
+                <li key={type}>
+                  <span>{type}</span>
+                  <strong>
+                    {data.totalEvaluationAmount > 0
+                      ? ((amount / data.totalEvaluationAmount) * 100).toFixed(1)
+                      : '0.0'}
+                    %
+                  </strong>
+                  <small>{number(amount)}원</small>
+                </li>
+              ))}
+            </ul>
+            <p className="calculation-note">
+              현금은 추정자산−총 평가금액, 자산 유형은 종목명 기준입니다. 보유종목 합계와 키움 총
+              평가금액 차이 {number(analysis.evaluationDifference)}원, 손익 합계 차이{' '}
+              {number(analysis.profitDifference)}원입니다.
+            </p>
+          </section>
+
           {/* 보유 비중 파이 차트 */}
           {pieData.length > 0 && (
             <div style={{ width: '100%', height: 220, marginBottom: 16 }}>

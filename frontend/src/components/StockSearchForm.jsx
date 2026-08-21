@@ -1,12 +1,19 @@
-import { useDeferredValue, useState } from 'react';
+import { useDeferredValue, useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { searchStocks } from '../api/kiwoomApi';
 
 function StockSearchForm({ loading, onSingleSearch, onMultipleSearch }) {
   const [validationError, setValidationError] = useState('');
   const [singleCode, setSingleCode] = useState('');
-  const [market, setMarket] = useState('ALL');
-  const [productType, setProductType] = useState('ALL');
+  const savedFilters = (() => {
+    try {
+      return JSON.parse(localStorage.getItem('kiwoom.search.filters') || '{}');
+    } catch {
+      return {};
+    }
+  })();
+  const [market, setMarket] = useState(savedFilters.market || 'ALL');
+  const [productType, setProductType] = useState(savedFilters.productType || 'ALL');
   const [recent, setRecent] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem('kiwoom-recent-stocks') || '[]');
@@ -23,6 +30,10 @@ function StockSearchForm({ loading, onSingleSearch, onMultipleSearch }) {
   });
 
   const [multipleCodes, setMultipleCodes] = useState('');
+
+  useEffect(() => {
+    localStorage.setItem('kiwoom.search.filters', JSON.stringify({ market, productType }));
+  }, [market, productType]);
 
   const submitSingle = (event) => {
     event?.preventDefault();
