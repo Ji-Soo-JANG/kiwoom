@@ -4,6 +4,7 @@ import com.example.kiwoom.dto.DailyPriceResponse;
 import com.example.kiwoom.dto.MarketDataSyncStatus;
 import com.example.kiwoom.dto.MarketRankingItem;
 import com.example.kiwoom.dto.StockSearchResult;
+import com.example.kiwoom.dto.StoredDailyCandle;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
@@ -237,6 +238,13 @@ public class MarketDataRepository {
                         SELECT MAX(c.trade_date) FROM daily_candle c WHERE c.code = sm.code)
                 WHERE sm.active = TRUE
                   AND (SELECT COUNT(*) FROM daily_candle c WHERE c.code = sm.code) >= 90
+                  AND NOT EXISTS (
+                      SELECT 1
+                      FROM market_data_quality_issue issue
+                      WHERE issue.code = sm.code
+                        AND issue.severity = 'BLOCKING'
+                        AND issue.run_id = (SELECT MAX(id) FROM market_data_quality_run)
+                  )
                 ORDER BY sm.code
                 """)
                 .map(
@@ -281,6 +289,26 @@ public class MarketDataRepository {
                 .map(row -> Optional.ofNullable(row.get("latest_trade_date", LocalDate.class)))
                 .one()
                 .flatMap(Mono::justOrEmpty);
+    }
+
+    public Flux<StoredDailyCandle> findAllCandlesForQuality() {
+        return database.sql(
+                        """
+                SELECT code, trade_date, open_price, high_price, low_price, close_price, volume
+                FROM daily_candle
+                ORDER BY code, trade_date
+                """)
+                .map(
+                        row ->
+                                new StoredDailyCandle(
+                                        row.get("code", String.class),
+                                        row.get("trade_date", LocalDate.class),
+                                        number(row.get("open_price")),
+                                        number(row.get("high_price")),
+                                        number(row.get("low_price")),
+                                        number(row.get("close_price")),
+                                        number(row.get("volume"))))
+                .all();
     }
 
     private long number(Object value) {

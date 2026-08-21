@@ -110,6 +110,9 @@ export const getStrategyCandidates = (boxRangeDays = 60) =>
   requestJson(`/api/kiwoom/strategy-candidates?boxRangeDays=${encodeURIComponent(boxRangeDays)}`);
 export const getLatestStrategySnapshot = () => requestJson('/api/kiwoom/strategy-scans/latest');
 export const getMarketDataStatus = () => requestJson('/api/kiwoom/admin/market-data');
+export const getMarketDataQuality = () => requestJson('/api/kiwoom/admin/market-data/quality');
+export const inspectMarketDataQuality = () =>
+  requestJson('/api/kiwoom/admin/market-data/quality/inspect', { method: 'POST' });
 export const synchronizeMarketData = (limit = 20) =>
   requestJson(`/api/kiwoom/admin/market-data/sync?limit=${encodeURIComponent(limit)}`, {
     method: 'POST'

@@ -58,6 +58,24 @@ class KiwoomApplicationTest {
 
     @Test
     @WithMockUser(username = "admin", roles = "ADMIN")
+    void inspectsStoredMarketDataQualityWithoutExternalApi() {
+        webTestClient
+                .post()
+                .uri("/api/kiwoom/admin/market-data/quality/inspect")
+                .exchange()
+                .expectStatus()
+                .isOk()
+                .expectBody()
+                .jsonPath("$.policyVersion")
+                .isEqualTo("adjusted-price-request-quality-v1")
+                .jsonPath("$.blockingIssueCount")
+                .isNumber()
+                .jsonPath("$.warningIssueCount")
+                .isNumber();
+    }
+
+    @Test
+    @WithMockUser(username = "admin", roles = "ADMIN")
     void scansStoredMarketDataWithoutCallingKiwoom() {
         webTestClient
                 .get()

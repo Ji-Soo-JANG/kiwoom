@@ -254,6 +254,60 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/kiwoom/admin/market-data/quality": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                200: components["responses"]["MarketDataQuality"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/kiwoom/admin/market-data/quality/inspect": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                200: components["responses"]["MarketDataQuality"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/kiwoom/admin/market-data/sync": {
         parameters: {
             query?: never;
@@ -1002,6 +1056,31 @@ export interface components {
             /** Format: date-time */
             checkedAt: string;
         };
+        MarketDataQualityIssue: {
+            code: string;
+            /** Format: date */
+            tradeDate?: string | null;
+            issueType: string;
+            /** @enum {string} */
+            severity: "BLOCKING" | "WARNING";
+            detail: string;
+        };
+        MarketDataQualityReport: {
+            /** Format: int64 */
+            runId: number;
+            policyVersion: string;
+            /** Format: int32 */
+            stockCount: number;
+            /** Format: int64 */
+            candleCount: number;
+            /** Format: int32 */
+            blockingIssueCount: number;
+            /** Format: int32 */
+            warningIssueCount: number;
+            issueSample: components["schemas"]["MarketDataQualityIssue"][];
+            /** Format: date-time */
+            checkedAt: string;
+        };
         AccountPosition: {
             code: string;
             name: string;
@@ -1208,6 +1287,15 @@ export interface components {
             };
             content: {
                 "application/json": components["schemas"]["MarketDataSyncStatus"];
+            };
+        };
+        /** @description OK */
+        MarketDataQuality: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["MarketDataQualityReport"];
             };
         };
         /** @description OK */

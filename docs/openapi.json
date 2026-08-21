@@ -91,6 +91,20 @@
         }
       }
     },
+    "/api/kiwoom/admin/market-data/quality": {
+      "get": {
+        "responses": {
+          "200": { "$ref": "#/components/responses/MarketDataQuality" }
+        }
+      }
+    },
+    "/api/kiwoom/admin/market-data/quality/inspect": {
+      "post": {
+        "responses": {
+          "200": { "$ref": "#/components/responses/MarketDataQuality" }
+        }
+      }
+    },
     "/api/kiwoom/admin/market-data/sync": {
       "post": {
         "parameters": [
@@ -425,6 +439,43 @@
           "succeededInLastRun": { "type": "integer", "format": "int32" },
           "failedInLastRun": { "type": "integer", "format": "int32" },
           "running": { "type": "boolean" },
+          "checkedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "MarketDataQualityIssue": {
+        "type": "object",
+        "required": ["code", "issueType", "severity", "detail"],
+        "properties": {
+          "code": { "type": "string" },
+          "tradeDate": { "type": "string", "format": "date", "nullable": true },
+          "issueType": { "type": "string" },
+          "severity": { "type": "string", "enum": ["BLOCKING", "WARNING"] },
+          "detail": { "type": "string" }
+        }
+      },
+      "MarketDataQualityReport": {
+        "type": "object",
+        "required": [
+          "runId",
+          "policyVersion",
+          "stockCount",
+          "candleCount",
+          "blockingIssueCount",
+          "warningIssueCount",
+          "issueSample",
+          "checkedAt"
+        ],
+        "properties": {
+          "runId": { "type": "integer", "format": "int64" },
+          "policyVersion": { "type": "string" },
+          "stockCount": { "type": "integer", "format": "int32" },
+          "candleCount": { "type": "integer", "format": "int64" },
+          "blockingIssueCount": { "type": "integer", "format": "int32" },
+          "warningIssueCount": { "type": "integer", "format": "int32" },
+          "issueSample": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/MarketDataQualityIssue" }
+          },
           "checkedAt": { "type": "string", "format": "date-time" }
         }
       },
@@ -798,6 +849,14 @@
         "content": {
           "application/json": {
             "schema": { "$ref": "#/components/schemas/MarketDataSyncStatus" }
+          }
+        }
+      },
+      "MarketDataQuality": {
+        "description": "OK",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/MarketDataQualityReport" }
           }
         }
       },
