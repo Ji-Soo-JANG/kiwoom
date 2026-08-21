@@ -2,7 +2,11 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import {
   approveLimitedTrade,
+  approvePaperExit,
   getLimitedTradeCandidates,
+  getPaperTradeCycles,
+  getPaperTradeResults,
+  getTradePerformanceSummary,
   getTradingPerformance,
   rejectLimitedTrade,
   verifyPaperTradingLifecycle
@@ -19,15 +23,41 @@ export default function LimitedTradingPanel() {
     queryKey: ['trading-performance'],
     queryFn: getTradingPerformance
   });
-  const refresh = () => queryClient.invalidateQueries({ queryKey: ['limited-trade-candidates'] });
+  const cycles = useQuery({ queryKey: ['paper-trade-cycles'], queryFn: getPaperTradeCycles });
+  const results = useQuery({ queryKey: ['paper-trade-results'], queryFn: getPaperTradeResults });
+  const summary = useQuery({
+    queryKey: ['trade-performance-summary'],
+    queryFn: getTradePerformanceSummary
+  });
+  const refresh = () => {
+    queryClient.invalidateQueries({ queryKey: ['limited-trade-candidates'] });
+    queryClient.invalidateQueries({ queryKey: ['paper-trade-cycles'] });
+    queryClient.invalidateQueries({ queryKey: ['paper-trade-results'] });
+    queryClient.invalidateQueries({ queryKey: ['trade-performance-summary'] });
+  };
   const approve = useMutation({ mutationFn: approveLimitedTrade, onSuccess: refresh });
   const reject = useMutation({ mutationFn: rejectLimitedTrade, onSuccess: refresh });
+  const exit = useMutation({ mutationFn: approvePaperExit, onSuccess: refresh });
   const verification = useMutation({ mutationFn: verifyPaperTradingLifecycle });
 
-  if (candidates.isLoading || performance.isLoading) {
+  if (
+    candidates.isLoading ||
+    performance.isLoading ||
+    cycles.isLoading ||
+    results.isLoading ||
+    summary.isLoading
+  ) {
     return <LoadingState>제한 매매 상태를 불러오는 중입니다.</LoadingState>;
   }
-  const error = candidates.error || performance.error || approve.error || reject.error;
+  const error =
+    candidates.error ||
+    performance.error ||
+    cycles.error ||
+    results.error ||
+    summary.error ||
+    approve.error ||
+    reject.error ||
+    exit.error;
   if (error) return <ErrorState>{error.message}</ErrorState>;
 
   const status = performance.data;
@@ -83,6 +113,57 @@ export default function LimitedTradingPanel() {
           ))}
         </ul>
       )}
+      <h3>보유 중</h3>
+      <TradeCycles items={cycles.data?.filter((item) => item.status === 'HOLDING')} />
+      <h3>청산 승인 대기</h3>
+      <TradeCycles
+        items={cycles.data?.filter((item) => item.status === 'EXIT_PENDING')}
+        onExit={(id) => exit.mutate(id)}
+      />
+      <h3>완료 거래</h3>
+      {!results.data?.length ? (
+        <EmptyState>완료된 PAPER 거래가 없습니다.</EmptyState>
+      ) : (
+        <ul className="result-list">
+          {results.data.map((item) => (
+            <li key={item.cycleId}>
+              #{item.cycleId} · {item.exitReason} · 순손익 {Number(item.netPnl).toLocaleString()}원
+              · 순수익률 {(Number(item.netReturnRate) * 100).toFixed(2)}%
+            </li>
+          ))}
+        </ul>
+      )}
+      <div className="empty-state" role="status">
+        완료 {summary.data?.completedTrades ?? 0}건 · 승률{' '}
+        {((summary.data?.winRate ?? 0) * 100).toFixed(1)}% · 손익비{' '}
+        {Number(summary.data?.payoffRatio ?? 0).toFixed(2)} · Profit Factor{' '}
+        {Number(summary.data?.profitFactor ?? 0).toFixed(2)} · 연속 손실{' '}
+        {summary.data?.consecutiveLosses ?? 0}회 · 최대 낙폭{' '}
+        {((summary.data?.maximumDrawdownRate ?? 0) * 100).toFixed(2)}%
+      </div>
     </section>
+  );
+}
+
+function TradeCycles({ items = [], onExit }) {
+  if (!items.length) return <EmptyState>해당 상태의 PAPER 포지션이 없습니다.</EmptyState>;
+  return (
+    <ul className="result-list">
+      {items.map((item) => (
+        <li key={item.id}>
+          <strong>{item.code}</strong> · {item.quantity}주 · 진입가{' '}
+          {Number(item.entryPrice).toLocaleString()}원
+          <div>
+            손절 {Number(item.stopLossPrice).toLocaleString()}원 · 익절{' '}
+            {Number(item.takeProfitPrice).toLocaleString()}원 · 최대 {item.maxHoldingDays}일
+          </div>
+          {onExit && (
+            <button type="button" onClick={() => onExit(item.id)}>
+              PAPER 청산 승인
+            </button>
+          )}
+        </li>
+      ))}
+    </ul>
   );
 }

@@ -25,6 +25,9 @@ describe('LimitedTradingPanel', () => {
       averageNetReturnRate: 0,
       halted: false
     });
+    api.getPaperTradeCycles.mockResolvedValue([]);
+    api.getPaperTradeResults.mockResolvedValue([]);
+    api.getTradePerformanceSummary.mockResolvedValue({ completedTrades: 0 });
     api.verifyPaperTradingLifecycle.mockResolvedValue({ passed: true });
   });
 

@@ -174,6 +174,16 @@ export const approveLimitedTrade = (id) =>
 export const rejectLimitedTrade = (id) =>
   requestJson(`/api/trading/limited/candidates/${id}/reject`, { method: 'POST' });
 export const getTradingPerformance = () => requestJson('/api/trading/limited/performance');
+export const getPaperTradeCycles = () => requestJson('/api/trading/limited/cycles');
+export const getPaperTradeResults = () => requestJson('/api/trading/limited/results');
+export const getTradePerformanceSummary = () =>
+  requestJson('/api/trading/limited/performance/summary');
+export const approvePaperExit = (id) =>
+  requestJson(`/api/trading/limited/cycles/${id}/exit/approve`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ confirmation: 'APPROVE_PAPER_EXIT' })
+  });
 export const verifyPaperTradingLifecycle = () =>
   requestJson('/api/trading/paper/verification', { method: 'POST' });
 
