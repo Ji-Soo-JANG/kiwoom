@@ -39,6 +39,29 @@ class KiwoomApplicationTest {
     void contextLoads() {}
 
     @Test
+    void rejectsUnauthenticatedTradingSafetyRequest() {
+        webTestClient.get().uri("/api/trading/status").exchange().expectStatus().isUnauthorized();
+    }
+
+    @Test
+    @WithMockUser(username = "admin", roles = "ADMIN")
+    void returnsFailClosedTradingModeStatus() {
+        webTestClient
+                .get()
+                .uri("/api/trading/status")
+                .exchange()
+                .expectStatus()
+                .isOk()
+                .expectBody()
+                .jsonPath("$.requestedMode")
+                .isEqualTo("SIGNAL_ONLY")
+                .jsonPath("$.effectiveMode")
+                .isEqualTo("SIGNAL_ONLY")
+                .jsonPath("$.externalOrderSubmissionAvailable")
+                .isEqualTo(false);
+    }
+
+    @Test
     @WithMockUser(username = "admin", roles = "ADMIN")
     void returnsMarketDataStorageStatus() {
         webTestClient

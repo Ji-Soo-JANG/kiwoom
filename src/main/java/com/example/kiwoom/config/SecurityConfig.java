@@ -53,6 +53,7 @@ public class SecurityConfig {
                                         .pathMatchers(
                                                 "/actuator/**",
                                                 "/api/kiwoom/admin/**",
+                                                "/api/trading/**",
                                                 "/swagger-ui/**",
                                                 "/swagger-ui.html",
                                                 "/v3/api-docs/**")

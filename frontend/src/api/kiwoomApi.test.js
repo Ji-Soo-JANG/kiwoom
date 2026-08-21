@@ -7,7 +7,9 @@ import {
   importPortfolioTrades,
   markAlertRead,
   runBacktest,
-  runWalkForward
+  runWalkForward,
+  placePaperOrder,
+  resumePaperKillSwitch
 } from './kiwoomApi';
 
 describe('kiwoomApi 오류 처리', () => {
@@ -88,5 +90,30 @@ describe('kiwoomApi 오류 처리', () => {
       '/api/kiwoom/backtests/walk-forward',
       expect.objectContaining({ method: 'POST', body: JSON.stringify(request) })
     );
+  });
+
+  it('PAPER 주문과 킬 스위치 수동 재개 요청을 JSON으로 전송한다', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockImplementation(() =>
+        Promise.resolve(new Response(JSON.stringify({ status: 'FILLED' }), { status: 200 }))
+      );
+    vi.stubGlobal('fetch', fetchMock);
+    const order = {
+      decisionId: 'test-buy-1',
+      code: '005930',
+      side: 'BUY',
+      quantity: 1,
+      price: 70000
+    };
+
+    await placePaperOrder(order);
+    await resumePaperKillSwitch('RESUME_PAPER_TRADING', '테스트 재개');
+
+    expect(fetchMock.mock.calls[0][1]).toMatchObject({
+      method: 'POST',
+      body: JSON.stringify(order)
+    });
+    expect(fetchMock.mock.calls[1][1].body).toContain('RESUME_PAPER_TRADING');
   });
 });

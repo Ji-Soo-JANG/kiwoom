@@ -99,6 +99,21 @@ volume까지 삭제하는 `docker compose down -v`는 초기화가 필요한 경
 목표가·기술지표 앱 알림의 데이터 모델과 API 계획은 [`docs/alert-design.md`](docs/alert-design.md)를 따릅니다.
 로컬 빌드 산출물과 템플릿 엔진 결정은 [`docs/build-decisions.md`](docs/build-decisions.md)를 따릅니다.
 IntelliJ, Docker와 Vite 개발 서버 실행은 [`docs/local-development.md`](docs/local-development.md)를 따릅니다.
+자동매매 실행 모드, PAPER 주문, 위험 한도와 킬 스위치는 [`docs/trading-safety.md`](docs/trading-safety.md)를 따릅니다.
+
+자동매매 관련 기본 환경 설정은 다음과 같습니다.
+
+```dotenv
+TRADING_MODE=SIGNAL_ONLY
+PAPER_INITIAL_CASH=10000000
+TRADING_MAX_POSITION_RATE=0.10
+TRADING_MAX_GROSS_EXPOSURE_RATE=0.50
+TRADING_MAX_DAILY_LOSS_RATE=0.02
+TRADING_MAX_DRAWDOWN_RATE=0.10
+TRADING_MAX_OPEN_POSITIONS=5
+```
+
+현재 버전은 키움 실주문 어댑터가 없어 `LIVE`를 요청해도 실주문을 전송하지 않습니다.
 
 로컬 개발 환경을 한 번에 시작하려면 다음 명령을 사용합니다.
 

@@ -482,6 +482,354 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/trading/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["TradingModeStatus"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/trading/orders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["TradingOrder"][];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["PaperOrderRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["TradingOrder"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/trading/orders/{id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["TradingOrder"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/trading/paper/account": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["PaperAccountStatus"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/trading/paper/positions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["PaperPosition"][];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/trading/reconcile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["OrderReconciliationReport"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/trading/risk": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["PaperRiskStatus"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/trading/kill-switch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["KillSwitchRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["PaperRiskStatus"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/trading/kill-switch/resume": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["KillSwitchResumeRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["PaperRiskStatus"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/watchlist": {
         parameters: {
             query?: never;
@@ -1016,6 +1364,102 @@ export interface components {
     schemas: {
         AuthUser: {
             username: string;
+        };
+        TradingModeStatus: {
+            /** @enum {string} */
+            requestedMode?: "SIGNAL_ONLY" | "PAPER" | "LIVE";
+            /** @enum {string} */
+            effectiveMode?: "SIGNAL_ONLY" | "PAPER" | "LIVE";
+            liveArmed?: boolean;
+            externalOrderSubmissionAvailable?: boolean;
+            blockers?: string[];
+        };
+        PaperOrderRequest: {
+            decisionId: string;
+            code: string;
+            /** @enum {string} */
+            side: "BUY" | "SELL";
+            /** Format: int64 */
+            quantity: number;
+            price: number;
+        };
+        TradingOrder: {
+            /** Format: int64 */
+            id?: number;
+            decisionId?: string;
+            /** @enum {string} */
+            mode?: "SIGNAL_ONLY" | "PAPER" | "LIVE";
+            code?: string;
+            /** @enum {string} */
+            side?: "BUY" | "SELL";
+            /** Format: int64 */
+            requestedQuantity?: number;
+            requestedPrice?: number;
+            /** @enum {string} */
+            status?: "CREATED" | "SUBMITTED" | "ACKNOWLEDGED" | "PARTIALLY_FILLED" | "FILLED" | "CANCELED" | "REJECTED";
+            /** Format: int64 */
+            filledQuantity?: number;
+            averageFillPrice?: number | null;
+            rejectionReason?: string | null;
+            /** Format: date-time */
+            createdAt?: string;
+            /** Format: date-time */
+            updatedAt?: string;
+        };
+        PaperAccountStatus: {
+            initialCash?: number;
+            cash?: number;
+            peakEquity?: number;
+            /** Format: date */
+            tradingDay?: string;
+            dayStartEquity?: number;
+            killSwitchActive?: boolean;
+            killSwitchReason?: string | null;
+            /** Format: date-time */
+            killSwitchActivatedAt?: string | null;
+        };
+        PaperPosition: {
+            code?: string;
+            /** Format: int64 */
+            quantity?: number;
+            averagePrice?: number;
+        };
+        OrderReconciliationReport: {
+            scope?: string;
+            /** Format: int64 */
+            orderCount?: number;
+            /** Format: int64 */
+            fillCount?: number;
+            storedCash?: number;
+            expectedCash?: number;
+            mismatches?: string[];
+            consistent?: boolean;
+            /** Format: date-time */
+            checkedAt?: string;
+        };
+        PaperRiskStatus: {
+            equity?: number;
+            cash?: number;
+            grossExposure?: number;
+            openPositionCount?: number;
+            dailyReturnRate?: number;
+            drawdownRate?: number;
+            maxPositionRate?: number;
+            maxGrossExposureRate?: number;
+            maxDailyLossRate?: number;
+            maxDrawdownRate?: number;
+            maxOpenPositions?: number;
+            killSwitchActive?: boolean;
+            killSwitchReason?: string | null;
+            /** Format: date-time */
+            checkedAt?: string;
+        };
+        KillSwitchRequest: {
+            reason: string;
+        };
+        KillSwitchResumeRequest: {
+            confirmation: string;
+            reason: string;
         };
         StockPriceResponse: {
             code: string;

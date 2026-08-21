@@ -136,6 +136,33 @@ export const getFullMarketDataStatus = () => requestJson('/api/kiwoom/admin/full
 export const synchronizeFullMarketData = () =>
   requestJson('/api/kiwoom/admin/full-market-data/sync', { method: 'POST' });
 export const getAccountPortfolio = () => requestJson('/api/kiwoom/account/portfolio');
+export const getTradingStatus = () => requestJson('/api/trading/status');
+export const getPaperOrders = () => requestJson('/api/trading/orders');
+export const placePaperOrder = (request) =>
+  requestJson('/api/trading/orders', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(request)
+  });
+export const cancelPaperOrder = (id) =>
+  requestJson(`/api/trading/orders/${id}/cancel`, { method: 'POST' });
+export const getPaperAccount = () => requestJson('/api/trading/paper/account');
+export const getPaperPositions = () => requestJson('/api/trading/paper/positions');
+export const reconcilePaperTrading = () =>
+  requestJson('/api/trading/reconcile', { method: 'POST' });
+export const getPaperRisk = () => requestJson('/api/trading/risk');
+export const activatePaperKillSwitch = (reason) =>
+  requestJson('/api/trading/kill-switch', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ reason })
+  });
+export const resumePaperKillSwitch = (confirmation, reason) =>
+  requestJson('/api/trading/kill-switch/resume', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ confirmation, reason })
+  });
 
 export const getAlertRules = () => requestJson('/api/alerts/rules');
 export const createAlertRule = (code, conditionType, threshold) =>
