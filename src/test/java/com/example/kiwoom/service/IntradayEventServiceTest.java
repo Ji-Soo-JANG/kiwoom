@@ -12,7 +12,8 @@ import reactor.core.publisher.Flux;
 
 class IntradayEventServiceTest {
     private final IntradayEventRepository repository = Mockito.mock(IntradayEventRepository.class);
-    private final IntradayEventService service = new IntradayEventService(repository);
+    private final PaperTradeCycleService tradeCycles = Mockito.mock(PaperTradeCycleService.class);
+    private final IntradayEventService service = new IntradayEventService(repository, tradeCycles);
 
     @Test
     void replayIsDeterministicAndMinuteBarsUseOhlcv() {

@@ -31,12 +31,17 @@ public class LimitedTradingService {
     private final LimitedTradingRepository repository;
     private final PaperOrderService orders;
     private final PaperRiskService risks;
+    private final PaperTradeCycleService tradeCycles;
 
     public LimitedTradingService(
-            LimitedTradingRepository repository, PaperOrderService orders, PaperRiskService risks) {
+            LimitedTradingRepository repository,
+            PaperOrderService orders,
+            PaperRiskService risks,
+            PaperTradeCycleService tradeCycles) {
         this.repository = repository;
         this.orders = orders;
         this.risks = risks;
+        this.tradeCycles = tradeCycles;
     }
 
     public Mono<LimitedTradeCandidate> create(TradeCandidateRequest request) {
@@ -84,6 +89,10 @@ public class LimitedTradingService {
                                         .flatMap(
                                                 order ->
                                                         recordEntry(candidate, order)
+                                                                .then(
+                                                                        tradeCycles.open(
+                                                                                candidate.id(),
+                                                                                order))
                                                                 .then(
                                                                         repository.linkOrder(
                                                                                 candidate.id(),

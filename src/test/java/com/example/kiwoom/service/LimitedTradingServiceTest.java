@@ -19,8 +19,9 @@ class LimitedTradingServiceTest {
     private final LimitedTradingRepository repository = mock(LimitedTradingRepository.class);
     private final PaperOrderService orders = mock(PaperOrderService.class);
     private final PaperRiskService risks = mock(PaperRiskService.class);
+    private final PaperTradeCycleService tradeCycles = mock(PaperTradeCycleService.class);
     private final LimitedTradingService service =
-            new LimitedTradingService(repository, orders, risks);
+            new LimitedTradingService(repository, orders, risks, tradeCycles);
 
     @Test
     void activatesKillSwitchWhenFiveSamplePerformanceIsNegative() {

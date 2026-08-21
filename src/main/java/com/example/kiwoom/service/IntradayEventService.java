@@ -4,6 +4,7 @@ import com.example.kiwoom.dto.IntradayBar;
 import com.example.kiwoom.dto.IntradayPriceEvent;
 import com.example.kiwoom.dto.IntradayReplay;
 import com.example.kiwoom.repository.IntradayEventRepository;
+import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.Instant;
@@ -19,16 +20,28 @@ import reactor.core.publisher.Mono;
 @Service
 public class IntradayEventService {
     private final IntradayEventRepository repository;
+    private final PaperTradeCycleService tradeCycles;
 
-    public IntradayEventService(IntradayEventRepository repository) {
+    public IntradayEventService(
+            IntradayEventRepository repository, PaperTradeCycleService tradeCycles) {
         this.repository = repository;
+        this.tradeCycles = tradeCycles;
     }
 
     public Mono<IntradayPriceEvent> record(IntradayPriceEvent event) {
         if (event.eventTime().isAfter(Instant.now().plusSeconds(30))) {
             return Mono.error(new IllegalArgumentException("미래 시각의 시세 이벤트는 저장할 수 없습니다."));
         }
-        return repository.save(event);
+        return repository
+                .save(event)
+                .flatMap(
+                        saved ->
+                                tradeCycles
+                                        .evaluate(
+                                                saved.code(),
+                                                BigDecimal.valueOf(saved.price()),
+                                                saved.eventTime())
+                                        .thenReturn(saved));
     }
 
     public Mono<IntradayReplay> replay(String code, Instant from, Instant to) {
