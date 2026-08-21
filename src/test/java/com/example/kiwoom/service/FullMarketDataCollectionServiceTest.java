@@ -69,6 +69,8 @@ class FullMarketDataCollectionServiceTest {
         when(kiwoom.getDailyPrices("000002", null, 500))
                 .thenReturn(Mono.just(List.of(candle("20260816"))));
         when(repository.saveStocks(any(Flux.class))).thenReturn(Mono.empty());
+        when(repository.saveStockMasterSnapshot(any(), any(LocalDate.class)))
+                .thenReturn(Mono.empty());
         when(repository.saveCandles(eq("000001"), any(Flux.class))).thenReturn(Mono.empty());
         when(repository.saveCandles(eq("000002"), any(Flux.class))).thenReturn(Mono.empty());
         when(repository.markSuccess(eq("000001"), any(LocalDate.class))).thenReturn(Mono.empty());
@@ -81,6 +83,7 @@ class FullMarketDataCollectionServiceTest {
         assertNotNull(result);
         assertEquals(2, result.processedInLastRun());
         verify(repository).saveStocks(any(Flux.class));
+        verify(repository).saveStockMasterSnapshot(any(), any(LocalDate.class));
         verify(repository).saveCandles(eq("000001"), any(Flux.class));
         verify(repository).saveCandles(eq("000002"), any(Flux.class));
         verify(repository, times(2)).markSuccess(anyString(), any(LocalDate.class));
@@ -98,6 +101,8 @@ class FullMarketDataCollectionServiceTest {
         when(kiwoom.getDailyPrices("000002", null, 500))
                 .thenReturn(Mono.just(List.of(candle("20260816"))));
         when(repository.saveStocks(any(Flux.class))).thenReturn(Mono.empty());
+        when(repository.saveStockMasterSnapshot(any(), any(LocalDate.class)))
+                .thenReturn(Mono.empty());
         when(repository.markFailure(eq("000001"), anyString())).thenReturn(Mono.empty());
         when(repository.saveCandles(eq("000002"), any(Flux.class))).thenReturn(Mono.empty());
         when(repository.markSuccess(eq("000002"), any(LocalDate.class))).thenReturn(Mono.empty());
@@ -123,6 +128,8 @@ class FullMarketDataCollectionServiceTest {
         when(kiwoom.getDailyPrices("000001", null, 500))
                 .thenReturn(Mono.just(List.of(candle("20260816"))));
         when(repository.saveStocks(any(Flux.class))).thenReturn(Mono.empty());
+        when(repository.saveStockMasterSnapshot(any(), any(LocalDate.class)))
+                .thenReturn(Mono.empty());
         when(repository.saveCandles(eq("000001"), any(Flux.class))).thenReturn(Mono.empty());
         when(repository.markSuccess(eq("000001"), any(LocalDate.class))).thenReturn(Mono.empty());
         when(repository.status(anyInt(), anyInt(), anyInt(), anyBoolean()))
@@ -137,6 +144,7 @@ class FullMarketDataCollectionServiceTest {
         verify(kiwoom).getStockCatalog();
         verify(repository, times(2)).saveCandles(eq("000001"), any(Flux.class));
         verify(repository, times(2)).markSuccess(eq("000001"), any(LocalDate.class));
+        verify(repository).saveStockMasterSnapshot(any(), any(LocalDate.class));
     }
 
     @Test

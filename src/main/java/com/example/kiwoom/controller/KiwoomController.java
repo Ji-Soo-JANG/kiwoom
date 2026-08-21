@@ -12,7 +12,9 @@ import com.example.kiwoom.service.MarketDataCollectionService;
 import com.example.kiwoom.service.StrategyScanService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.time.LocalDate;
 import java.util.List;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -90,8 +92,10 @@ public class KiwoomController {
     @GetMapping("/strategy-candidates")
     @Operation(summary = "급락·횡보·거래량·돌파·눌림목 전략 후보 조회")
     public Mono<StrategyScanResponse> strategyCandidates(
-            @RequestParam(defaultValue = "60") int boxRangeDays) {
-        return strategyScanService.scan(boxRangeDays);
+            @RequestParam(defaultValue = "60") int boxRangeDays,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+                    LocalDate asOf) {
+        return strategyScanService.scan(boxRangeDays, asOf);
     }
 
     @GetMapping("/strategy-scans/latest")

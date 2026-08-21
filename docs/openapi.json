@@ -70,6 +70,13 @@
             "in": "query",
             "required": false,
             "schema": { "type": "integer", "format": "int32", "default": 60 }
+          },
+          {
+            "name": "asOf",
+            "in": "query",
+            "required": false,
+            "description": "해당 날짜까지 확인된 종목 구성과 일봉만 사용하는 연구 기준일",
+            "schema": { "type": "string", "format": "date" }
           }
         ],
         "responses": {

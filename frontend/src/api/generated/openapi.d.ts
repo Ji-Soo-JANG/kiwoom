@@ -182,6 +182,8 @@ export interface paths {
             parameters: {
                 query?: {
                     boxRangeDays?: number;
+                    /** @description 해당 날짜까지 확인된 종목 구성과 일봉만 사용하는 연구 기준일 */
+                    asOf?: string;
                 };
                 header?: never;
                 path?: never;

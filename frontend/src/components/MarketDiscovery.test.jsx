@@ -103,7 +103,7 @@ describe('MarketDiscovery', () => {
     const slider = await screen.findByLabelText('박스권 기준 기간 60거래일');
     fireEvent.change(slider, { target: { value: '90' } });
 
-    await waitFor(() => expect(api.getStrategyCandidates).toHaveBeenCalledWith(90));
+    await waitFor(() => expect(api.getStrategyCandidates).toHaveBeenCalledWith(90, ''));
     expect(await screen.findByText(/90거래일 동안의 박스권 횡보를 기준으로/)).toBeInTheDocument();
   });
 

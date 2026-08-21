@@ -92,6 +92,7 @@ function MarketDiscovery({ onSelectStock }) {
   const [cardSettings, setCardSettings] = useState(loadCardSettings);
   const [showCardSettings, setShowCardSettings] = useState(false);
   const [boxRangeDays, setBoxRangeDays] = useState(60);
+  const [strategyAsOf, setStrategyAsOf] = useState('');
   const deferredBoxRangeDays = useDeferredValue(boxRangeDays);
   const refreshCooldown = useRefreshCooldown();
   const marketData = useQuery({ queryKey: ['market-data-status'], queryFn: getMarketDataStatus });
@@ -109,8 +110,8 @@ function MarketDiscovery({ onSelectStock }) {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['full-market-data-status'] })
   });
   const strategy = useQuery({
-    queryKey: ['strategy-candidates', deferredBoxRangeDays],
-    queryFn: () => getStrategyCandidates(deferredBoxRangeDays),
+    queryKey: ['strategy-candidates', deferredBoxRangeDays, strategyAsOf],
+    queryFn: () => getStrategyCandidates(deferredBoxRangeDays, strategyAsOf),
     staleTime: 5 * 60 * 1000,
     retry: false
   });
@@ -275,6 +276,13 @@ function MarketDiscovery({ onSelectStock }) {
               ? '기간 변경 중...'
               : `${deferredBoxRangeDays}거래일 동안의 박스권 횡보를 기준으로 분석합니다.`}
           </small>
+          <label htmlFor="strategy-as-of">연구 기준일 (비우면 최신)</label>
+          <input
+            id="strategy-as-of"
+            type="date"
+            value={strategyAsOf}
+            onChange={(event) => setStrategyAsOf(event.target.value)}
+          />
         </div>
         {strategy.isPending && <div className="loading-text">전략 조건을 분석하는 중...</div>}
         {strategy.error && (

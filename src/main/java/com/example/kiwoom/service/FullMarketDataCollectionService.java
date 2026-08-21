@@ -5,6 +5,7 @@ import com.example.kiwoom.dto.MarketDataSyncStatus;
 import com.example.kiwoom.dto.StockSearchResult;
 import com.example.kiwoom.repository.MarketDataRepository;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -38,6 +39,7 @@ import reactor.core.publisher.Mono;
  */
 @Component
 public class FullMarketDataCollectionService implements ApplicationRunner {
+    private static final ZoneId SEOUL = ZoneId.of("Asia/Seoul");
     private static final Logger log =
             LoggerFactory.getLogger(FullMarketDataCollectionService.class);
     private static final int DAILY_CANDLE_LIMIT = 500;
@@ -78,7 +80,7 @@ public class FullMarketDataCollectionService implements ApplicationRunner {
         AtomicInteger failed = new AtomicInteger();
         return loadCatalog()
                 .flatMap(this::saveCatalog)
-                .flatMapMany(Flux::fromIterable)
+                .flatMapMany(load -> Flux.fromIterable(load.stocks()))
                 .flatMap(
                         stock ->
                                 synchronizeStock(stock.code())
@@ -98,26 +100,32 @@ public class FullMarketDataCollectionService implements ApplicationRunner {
     }
 
     /** 최신 종목 목록을 키움에서 새로 받고, 실패하면 마지막으로 성공했던 목록으로 대체합니다. */
-    private Mono<List<StockSearchResult>> loadCatalog() {
+    private Mono<CatalogLoad> loadCatalog() {
         return kiwoom.refreshStockCatalog()
                 .flatMap(status -> kiwoom.getStockCatalog())
                 .doOnNext(items -> lastCatalog = List.copyOf(items))
+                .map(items -> new CatalogLoad(items, true))
                 .onErrorResume(
                         error -> {
                             log.warn(
                                     "full_market_data_catalog_refresh_failed fallbackToCached={} errorType={}",
                                     !lastCatalog.isEmpty(),
                                     error.getClass().getSimpleName());
-                            return Mono.just(lastCatalog);
+                            return Mono.just(new CatalogLoad(lastCatalog, false));
                         });
     }
 
-    private Mono<List<StockSearchResult>> saveCatalog(List<StockSearchResult> catalog) {
-        if (catalog.isEmpty()) {
+    private Mono<CatalogLoad> saveCatalog(CatalogLoad load) {
+        if (load.stocks().isEmpty()) {
             log.warn("full_market_data_sync_catalog_empty");
             return Mono.empty();
         }
-        return repository.saveStocks(Flux.fromIterable(catalog)).thenReturn(catalog);
+        Mono<Void> saveCurrent = repository.saveStocks(Flux.fromIterable(load.stocks()));
+        Mono<Void> saveSnapshot =
+                load.fresh()
+                        ? repository.saveStockMasterSnapshot(load.stocks(), LocalDate.now(SEOUL))
+                        : Mono.empty();
+        return saveCurrent.then(saveSnapshot).thenReturn(load);
     }
 
     private Mono<Boolean> synchronizeStock(String code) {
@@ -226,4 +234,6 @@ public class FullMarketDataCollectionService implements ApplicationRunner {
     }
 
     private record RunSummary(int processed, int succeeded, int failed) {}
+
+    private record CatalogLoad(List<StockSearchResult> stocks, boolean fresh) {}
 }

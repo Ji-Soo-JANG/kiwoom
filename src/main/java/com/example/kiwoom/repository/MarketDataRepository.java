@@ -12,6 +12,7 @@ import java.util.Optional;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.r2dbc.core.DatabaseClient;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -25,6 +26,36 @@ public class MarketDataRepository {
 
     public Mono<Void> saveStocks(Flux<StockSearchResult> stocks) {
         return stocks.concatMap(this::saveStock).then();
+    }
+
+    @Transactional(transactionManager = "connectionFactoryTransactionManager")
+    public Mono<Void> saveStockMasterSnapshot(
+            List<StockSearchResult> stocks, LocalDate snapshotDate) {
+        return database.sql("DELETE FROM stock_master_snapshot WHERE snapshot_date = :snapshotDate")
+                .bind("snapshotDate", snapshotDate)
+                .fetch()
+                .rowsUpdated()
+                .thenMany(
+                        Flux.fromIterable(stocks)
+                                .concatMap(stock -> saveSnapshotStock(stock, snapshotDate)))
+                .then();
+    }
+
+    private Mono<Void> saveSnapshotStock(StockSearchResult stock, LocalDate snapshotDate) {
+        return database.sql(
+                        """
+                INSERT INTO stock_master_snapshot(
+                    snapshot_date, code, name, market, product_type)
+                VALUES (:snapshotDate, :code, :name, :market, :productType)
+                """)
+                .bind("snapshotDate", snapshotDate)
+                .bind("code", stock.code())
+                .bind("name", stock.name())
+                .bind("market", stock.market())
+                .bind("productType", stock.productType().name())
+                .fetch()
+                .rowsUpdated()
+                .then();
     }
 
     private Mono<Void> saveStock(StockSearchResult stock) {
@@ -258,6 +289,53 @@ public class MarketDataRepository {
                 .all();
     }
 
+    public Flux<MarketRankingItem> findAnalyzableStocks(LocalDate asOf) {
+        return database.sql(
+                        """
+                SELECT snapshot.code, snapshot.name, latest.close_price, latest.volume
+                FROM stock_master_snapshot snapshot
+                JOIN daily_candle latest ON latest.code = snapshot.code
+                    AND latest.trade_date = (
+                        SELECT MAX(c.trade_date) FROM daily_candle c
+                        WHERE c.code = snapshot.code AND c.trade_date <= :asOf)
+                WHERE snapshot.snapshot_date = (
+                    SELECT MAX(s.snapshot_date) FROM stock_master_snapshot s
+                    WHERE s.snapshot_date <= :asOf)
+                  AND (SELECT COUNT(*) FROM daily_candle c
+                       WHERE c.code = snapshot.code AND c.trade_date <= :asOf) >= 90
+                  AND NOT EXISTS (
+                      SELECT 1 FROM market_data_quality_issue issue
+                      WHERE issue.code = snapshot.code AND issue.severity = 'BLOCKING'
+                        AND issue.run_id = (SELECT MAX(id) FROM market_data_quality_run)
+                  )
+                ORDER BY snapshot.code
+                """)
+                .bind("asOf", asOf)
+                .map(
+                        row ->
+                                new MarketRankingItem(
+                                        row.get("code", String.class),
+                                        row.get("name", String.class),
+                                        number(row.get("close_price")),
+                                        0,
+                                        number(row.get("volume"))))
+                .all();
+    }
+
+    public Flux<String> findStockCodesAt(LocalDate asOf) {
+        return database.sql(
+                        """
+                SELECT code FROM stock_master_snapshot
+                WHERE snapshot_date = (
+                    SELECT MAX(snapshot_date) FROM stock_master_snapshot
+                    WHERE snapshot_date <= :asOf)
+                ORDER BY code
+                """)
+                .bind("asOf", asOf)
+                .map(row -> row.get("code", String.class))
+                .all();
+    }
+
     public Flux<DailyPriceResponse> findDailyPrices(String code, int limit) {
         return database.sql(
                         """
@@ -284,8 +362,44 @@ public class MarketDataRepository {
                 .all();
     }
 
+    public Flux<DailyPriceResponse> findDailyPrices(String code, int limit, LocalDate asOf) {
+        return database.sql(
+                        """
+                SELECT trade_date, open_price, high_price, low_price, close_price, volume
+                FROM daily_candle
+                WHERE code = :code AND trade_date <= :asOf
+                ORDER BY trade_date DESC
+                LIMIT :limit
+                """)
+                .bind("code", code)
+                .bind("asOf", asOf)
+                .bind("limit", limit)
+                .map(
+                        row ->
+                                new DailyPriceResponse(
+                                        row.get("trade_date", LocalDate.class)
+                                                .format(
+                                                        java.time.format.DateTimeFormatter
+                                                                .BASIC_ISO_DATE),
+                                        number(row.get("open_price")),
+                                        number(row.get("high_price")),
+                                        number(row.get("low_price")),
+                                        number(row.get("close_price")),
+                                        number(row.get("volume"))))
+                .all();
+    }
+
     public Mono<LocalDate> findLatestTradeDate() {
         return database.sql("SELECT MAX(trade_date) AS latest_trade_date FROM daily_candle")
+                .map(row -> Optional.ofNullable(row.get("latest_trade_date", LocalDate.class)))
+                .one()
+                .flatMap(Mono::justOrEmpty);
+    }
+
+    public Mono<LocalDate> findLatestTradeDate(LocalDate asOf) {
+        return database.sql(
+                        "SELECT MAX(trade_date) AS latest_trade_date FROM daily_candle WHERE trade_date <= :asOf")
+                .bind("asOf", asOf)
                 .map(row -> Optional.ofNullable(row.get("latest_trade_date", LocalDate.class)))
                 .one()
                 .flatMap(Mono::justOrEmpty);

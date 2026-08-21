@@ -4,6 +4,7 @@ import com.example.kiwoom.dto.StrategyCandidate;
 import com.example.kiwoom.dto.StrategyScanResponse;
 import com.example.kiwoom.repository.MarketDataRepository;
 import com.example.kiwoom.repository.StrategySnapshotRepository;
+import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -33,12 +34,22 @@ public class StrategyScanService {
      * @param boxRangeDays 박스권 횡보 기준 기간(거래일). 프론트엔드의 날짜 바에서 조절합니다.
      */
     public Mono<StrategyScanResponse> scan(int boxRangeDays) {
-        return repository
-                .findAnalyzableStocks()
-                .flatMap(
+        return scan(boxRangeDays, null);
+    }
+
+    public Mono<StrategyScanResponse> scan(int boxRangeDays, LocalDate asOf) {
+        var stocks =
+                asOf == null
+                        ? repository.findAnalyzableStocks()
+                        : repository.findAnalyzableStocks(asOf);
+        String scope = asOf == null ? SCOPE : SCOPE + " (시점 기준 " + asOf + ")";
+
+        return stocks.flatMap(
                         stock ->
-                                repository
-                                        .findDailyPrices(stock.code(), 250)
+                                (asOf == null
+                                                ? repository.findDailyPrices(stock.code(), 250)
+                                                : repository.findDailyPrices(
+                                                        stock.code(), 250, asOf))
                                         .collectList()
                                         .map(
                                                 prices ->
@@ -57,8 +68,11 @@ public class StrategyScanService {
                                                             .thenComparing(StrategyCandidate::code))
                                             .toList();
                             List<StrategyCandidate> displayed = sorted.stream().limit(30).toList();
-                            return repository
-                                    .findLatestTradeDate()
+                            Mono<LocalDate> latestTradeDate =
+                                    asOf == null
+                                            ? repository.findLatestTradeDate()
+                                            : repository.findLatestTradeDate(asOf);
+                            return latestTradeDate
                                     .map(Optional::of)
                                     .defaultIfEmpty(Optional.empty())
                                     .flatMap(
@@ -67,7 +81,7 @@ public class StrategyScanService {
                                                             STRATEGY_VERSION,
                                                             boxRangeDays,
                                                             sorted.size(),
-                                                            SCOPE,
+                                                            scope,
                                                             dataAsOf.orElse(null),
                                                             sorted,
                                                             displayed));

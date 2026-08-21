@@ -64,6 +64,16 @@ CREATE TABLE IF NOT EXISTS stock_master (
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS stock_master_snapshot (
+    snapshot_date DATE NOT NULL,
+    code VARCHAR(6) NOT NULL,
+    name VARCHAR(200) NOT NULL,
+    market VARCHAR(20) NOT NULL,
+    product_type VARCHAR(30) NOT NULL,
+    captured_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (snapshot_date, code)
+);
+
 CREATE TABLE IF NOT EXISTS daily_candle (
     code VARCHAR(6) NOT NULL REFERENCES stock_master(code),
     trade_date DATE NOT NULL,

@@ -120,6 +120,32 @@ class RepositoryIntegrationTest {
     }
 
     @Test
+    void stockMasterSnapshot_usesLatestCatalogKnownAtRequestedDate() {
+        StockSearchResult first = new StockSearchResult("111111", "과거상장종목", "KOSPI");
+        StockSearchResult second = new StockSearchResult("222222", "신규상장종목", "KOSDAQ");
+
+        marketDataRepository
+                .saveStockMasterSnapshot(java.util.List.of(first), LocalDate.of(2026, 1, 2))
+                .block();
+        marketDataRepository
+                .saveStockMasterSnapshot(java.util.List.of(second), LocalDate.of(2026, 2, 2))
+                .block();
+
+        assertThat(
+                        marketDataRepository
+                                .findStockCodesAt(LocalDate.of(2026, 1, 31))
+                                .collectList()
+                                .block())
+                .containsExactly("111111");
+        assertThat(
+                        marketDataRepository
+                                .findStockCodesAt(LocalDate.of(2026, 2, 28))
+                                .collectList()
+                                .block())
+                .containsExactly("222222");
+    }
+
+    @Test
     void findAnalyzableStocks_returnsStocksWithEnoughData() {
         StockSearchResult stock = new StockSearchResult("333333", "분석종목", "KOSPI");
         marketDataRepository.saveStocks(Flux.just(stock)).block();
