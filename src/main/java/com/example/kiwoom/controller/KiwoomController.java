@@ -94,6 +94,12 @@ public class KiwoomController {
         return strategyScanService.scan(boxRangeDays);
     }
 
+    @GetMapping("/strategy-scans/latest")
+    @Operation(summary = "가장 최근에 저장된 전략 후보 스냅샷 조회")
+    public Mono<StrategyScanResponse> latestStrategySnapshot() {
+        return strategyScanService.latestSnapshot();
+    }
+
     @GetMapping("/admin/market-data")
     @Operation(summary = "저장된 종목·일봉 데이터 수집 상태 조회")
     public Mono<MarketDataSyncStatus> marketDataStatus() {

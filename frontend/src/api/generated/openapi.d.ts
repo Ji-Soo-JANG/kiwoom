@@ -200,6 +200,33 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/kiwoom/strategy-scans/latest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                200: components["responses"]["StrategyScan"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/kiwoom/admin/market-data": {
         parameters: {
             query?: never;
@@ -940,10 +967,17 @@ export interface components {
             matchedConditions: string[];
         };
         StrategyScanResponse: {
+            /** Format: int64 */
+            scanId: number;
+            strategyVersion: string;
+            /** Format: int32 */
+            boxRangeDays: number;
             candidates: components["schemas"]["StrategyCandidate"][];
             /** Format: int32 */
             scannedCount: number;
             scope: string;
+            /** Format: date */
+            dataAsOf?: string | null;
             /** Format: date-time */
             updatedAt: string;
         };

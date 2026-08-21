@@ -7,6 +7,7 @@ import com.example.kiwoom.dto.StockSearchResult;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.r2dbc.core.DatabaseClient;
 import org.springframework.stereotype.Repository;
@@ -273,6 +274,13 @@ public class MarketDataRepository {
                                         number(row.get("close_price")),
                                         number(row.get("volume"))))
                 .all();
+    }
+
+    public Mono<LocalDate> findLatestTradeDate() {
+        return database.sql("SELECT MAX(trade_date) AS latest_trade_date FROM daily_candle")
+                .map(row -> Optional.ofNullable(row.get("latest_trade_date", LocalDate.class)))
+                .one()
+                .flatMap(Mono::justOrEmpty);
     }
 
     private long number(Object value) {

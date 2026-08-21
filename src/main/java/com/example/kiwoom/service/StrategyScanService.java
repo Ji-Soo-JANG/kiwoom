@@ -3,18 +3,26 @@ package com.example.kiwoom.service;
 import com.example.kiwoom.dto.StrategyCandidate;
 import com.example.kiwoom.dto.StrategyScanResponse;
 import com.example.kiwoom.repository.MarketDataRepository;
-import java.time.Instant;
+import com.example.kiwoom.repository.StrategySnapshotRepository;
 import java.util.Comparator;
+import java.util.List;
+import java.util.Optional;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
 @Service
 public class StrategyScanService {
+    public static final String STRATEGY_VERSION = "drop-base-breakout-pullback-v1";
+    private static final String SCOPE = "로컬 DB에 90개 이상 일봉이 저장된 전체 종목";
+
     private final MarketDataRepository repository;
+    private final StrategySnapshotRepository snapshots;
     private final StrategyPatternDetector detector = new StrategyPatternDetector();
 
-    public StrategyScanService(MarketDataRepository repository) {
+    public StrategyScanService(
+            MarketDataRepository repository, StrategySnapshotRepository snapshots) {
         this.repository = repository;
+        this.snapshots = snapshots;
     }
 
     public Mono<StrategyScanResponse> scan() {
@@ -38,18 +46,35 @@ public class StrategyScanService {
                                                                 stock, prices, boxRangeDays)),
                         8)
                 .collectList()
-                .map(
-                        candidates ->
-                                new StrategyScanResponse(
-                                        candidates.stream()
-                                                .sorted(
-                                                        Comparator.comparingInt(
-                                                                        StrategyCandidate::score)
-                                                                .reversed())
-                                                .limit(30)
-                                                .toList(),
-                                        candidates.size(),
-                                        "로컬 DB에 90개 이상 일봉이 저장된 전체 종목",
-                                        Instant.now()));
+                .flatMap(
+                        candidates -> {
+                            List<StrategyCandidate> sorted =
+                                    candidates.stream()
+                                            .sorted(
+                                                    Comparator.comparingInt(
+                                                                    StrategyCandidate::score)
+                                                            .reversed()
+                                                            .thenComparing(StrategyCandidate::code))
+                                            .toList();
+                            List<StrategyCandidate> displayed = sorted.stream().limit(30).toList();
+                            return repository
+                                    .findLatestTradeDate()
+                                    .map(Optional::of)
+                                    .defaultIfEmpty(Optional.empty())
+                                    .flatMap(
+                                            dataAsOf ->
+                                                    snapshots.save(
+                                                            STRATEGY_VERSION,
+                                                            boxRangeDays,
+                                                            sorted.size(),
+                                                            SCOPE,
+                                                            dataAsOf.orElse(null),
+                                                            sorted,
+                                                            displayed));
+                        });
+    }
+
+    public Mono<StrategyScanResponse> latestSnapshot() {
+        return snapshots.findLatest();
     }
 }

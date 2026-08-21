@@ -2,114 +2,948 @@
   "openapi": "3.0.1",
   "info": { "title": "Kiwoom Stock API", "version": "1.0" },
   "paths": {
-    "/api/auth/me": { "get": { "responses": { "200": { "$ref": "#/components/responses/AuthUser" } } } },
-    "/api/kiwoom/stock-price/{code}": { "get": { "responses": { "200": { "$ref": "#/components/responses/StockPrice" } } } },
-    "/api/kiwoom/stock-prices": { "get": { "responses": { "200": { "$ref": "#/components/responses/StockPrices" } } } },
-    "/api/kiwoom/stock-price/{code}/daily": { "get": { "parameters": [{ "name": "period", "in": "query", "required": false, "schema": { "type": "string", "default": "day", "enum": ["day", "week", "month", "year"] } }, { "name": "limit", "in": "query", "required": false, "schema": { "type": "integer", "format": "int32", "default": 120 } }], "responses": { "200": { "$ref": "#/components/responses/DailyPrices" } } } },
-    "/api/kiwoom/stocks/search": { "get": { "responses": { "200": { "$ref": "#/components/responses/StockSearchResults" } } } },
-    "/api/kiwoom/market-rankings": { "get": { "parameters": [{ "name": "market", "in": "query", "required": false, "schema": { "type": "string", "default": "ALL" } }], "responses": { "200": { "$ref": "#/components/responses/MarketRankings" } } } },
-    "/api/kiwoom/strategy-candidates": { "get": { "parameters": [{ "name": "boxRangeDays", "in": "query", "required": false, "schema": { "type": "integer", "format": "int32", "default": 60 } }], "responses": { "200": { "$ref": "#/components/responses/StrategyScan" } } } },
-    "/api/kiwoom/admin/market-data": { "get": { "responses": { "200": { "$ref": "#/components/responses/MarketDataStatus" } } } },
-    "/api/kiwoom/admin/market-data/sync": { "post": { "parameters": [{ "name": "limit", "in": "query", "required": false, "schema": { "type": "integer", "format": "int32", "default": 20 } }], "responses": { "200": { "$ref": "#/components/responses/MarketDataStatus" } } } },
-    "/api/kiwoom/admin/full-market-data": { "get": { "responses": { "200": { "$ref": "#/components/responses/MarketDataStatus" } } } },
-    "/api/kiwoom/admin/full-market-data/sync": { "post": { "responses": { "200": { "$ref": "#/components/responses/MarketDataStatus" } } } },
-    "/api/kiwoom/account/portfolio": { "get": { "responses": { "200": { "$ref": "#/components/responses/AccountPortfolio" } } } },
+    "/api/auth/me": {
+      "get": {
+        "responses": { "200": { "$ref": "#/components/responses/AuthUser" } }
+      }
+    },
+    "/api/kiwoom/stock-price/{code}": {
+      "get": {
+        "responses": { "200": { "$ref": "#/components/responses/StockPrice" } }
+      }
+    },
+    "/api/kiwoom/stock-prices": {
+      "get": {
+        "responses": { "200": { "$ref": "#/components/responses/StockPrices" } }
+      }
+    },
+    "/api/kiwoom/stock-price/{code}/daily": {
+      "get": {
+        "parameters": [
+          {
+            "name": "period",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "day",
+              "enum": ["day", "week", "month", "year"]
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer", "format": "int32", "default": 120 }
+          }
+        ],
+        "responses": { "200": { "$ref": "#/components/responses/DailyPrices" } }
+      }
+    },
+    "/api/kiwoom/stocks/search": {
+      "get": {
+        "responses": {
+          "200": { "$ref": "#/components/responses/StockSearchResults" }
+        }
+      }
+    },
+    "/api/kiwoom/market-rankings": {
+      "get": {
+        "parameters": [
+          {
+            "name": "market",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "default": "ALL" }
+          }
+        ],
+        "responses": {
+          "200": { "$ref": "#/components/responses/MarketRankings" }
+        }
+      }
+    },
+    "/api/kiwoom/strategy-candidates": {
+      "get": {
+        "parameters": [
+          {
+            "name": "boxRangeDays",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer", "format": "int32", "default": 60 }
+          }
+        ],
+        "responses": {
+          "200": { "$ref": "#/components/responses/StrategyScan" }
+        }
+      }
+    },
+    "/api/kiwoom/strategy-scans/latest": {
+      "get": {
+        "responses": {
+          "200": { "$ref": "#/components/responses/StrategyScan" }
+        }
+      }
+    },
+    "/api/kiwoom/admin/market-data": {
+      "get": {
+        "responses": {
+          "200": { "$ref": "#/components/responses/MarketDataStatus" }
+        }
+      }
+    },
+    "/api/kiwoom/admin/market-data/sync": {
+      "post": {
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer", "format": "int32", "default": 20 }
+          }
+        ],
+        "responses": {
+          "200": { "$ref": "#/components/responses/MarketDataStatus" }
+        }
+      }
+    },
+    "/api/kiwoom/admin/full-market-data": {
+      "get": {
+        "responses": {
+          "200": { "$ref": "#/components/responses/MarketDataStatus" }
+        }
+      }
+    },
+    "/api/kiwoom/admin/full-market-data/sync": {
+      "post": {
+        "responses": {
+          "200": { "$ref": "#/components/responses/MarketDataStatus" }
+        }
+      }
+    },
+    "/api/kiwoom/account/portfolio": {
+      "get": {
+        "responses": {
+          "200": { "$ref": "#/components/responses/AccountPortfolio" }
+        }
+      }
+    },
     "/api/watchlist": {
-      "get": { "responses": { "200": { "$ref": "#/components/responses/Watchlist" } } },
-      "post": { "requestBody": { "$ref": "#/components/requestBodies/WatchlistRequest" }, "responses": { "201": { "$ref": "#/components/responses/WatchlistItem" } } }
+      "get": {
+        "responses": { "200": { "$ref": "#/components/responses/Watchlist" } }
+      },
+      "post": {
+        "requestBody": {
+          "$ref": "#/components/requestBodies/WatchlistRequest"
+        },
+        "responses": {
+          "201": { "$ref": "#/components/responses/WatchlistItem" }
+        }
+      }
     },
     "/api/watchlist/{code}": {
-      "put": { "requestBody": { "$ref": "#/components/requestBodies/WatchlistRequest" }, "responses": { "200": { "$ref": "#/components/responses/WatchlistItem" } } },
+      "put": {
+        "requestBody": {
+          "$ref": "#/components/requestBodies/WatchlistRequest"
+        },
+        "responses": {
+          "200": { "$ref": "#/components/responses/WatchlistItem" }
+        }
+      },
       "delete": { "responses": { "204": { "description": "Deleted" } } }
     },
-    "/api/portfolio": { "get": { "responses": { "200": { "$ref": "#/components/responses/Portfolio" } } } },
+    "/api/portfolio": {
+      "get": {
+        "responses": { "200": { "$ref": "#/components/responses/Portfolio" } }
+      }
+    },
     "/api/portfolio/{code}": {
-      "put": { "requestBody": { "$ref": "#/components/requestBodies/PortfolioPosition" }, "responses": { "200": { "$ref": "#/components/responses/PortfolioPosition" } } },
+      "put": {
+        "requestBody": {
+          "$ref": "#/components/requestBodies/PortfolioPosition"
+        },
+        "responses": {
+          "200": { "$ref": "#/components/responses/PortfolioPosition" }
+        }
+      },
       "delete": { "responses": { "204": { "description": "Deleted" } } }
     },
-    "/api/portfolio/valuation": { "get": { "responses": { "200": { "$ref": "#/components/responses/PortfolioValuation" } } } },
-    "/api/portfolio/transactions": {
-      "get": { "responses": { "200": { "$ref": "#/components/responses/PortfolioTradePage" } } },
-      "post": { "requestBody": { "$ref": "#/components/requestBodies/PortfolioTradeRequest" }, "responses": { "201": { "$ref": "#/components/responses/PortfolioTrade" } } }
+    "/api/portfolio/valuation": {
+      "get": {
+        "responses": {
+          "200": { "$ref": "#/components/responses/PortfolioValuation" }
+        }
+      }
     },
-    "/api/portfolio/transactions/export": { "get": { "responses": { "200": { "description": "CSV export" } } } },
-    "/api/portfolio/transactions/import": { "post": { "responses": { "200": { "$ref": "#/components/responses/PortfolioTrades" } } } },
-    "/api/portfolio/transactions/profit-trend": { "get": { "responses": { "200": { "$ref": "#/components/responses/PortfolioProfitTrend" } } } },
-    "/api/kiwoom/admin/stock-catalog": { "get": { "responses": { "200": { "$ref": "#/components/responses/StockCatalogStatus" } } } },
-    "/api/kiwoom/admin/stock-catalog/refresh": { "post": { "responses": { "200": { "$ref": "#/components/responses/StockCatalogStatus" } } } },
+    "/api/portfolio/transactions": {
+      "get": {
+        "responses": {
+          "200": { "$ref": "#/components/responses/PortfolioTradePage" }
+        }
+      },
+      "post": {
+        "requestBody": {
+          "$ref": "#/components/requestBodies/PortfolioTradeRequest"
+        },
+        "responses": {
+          "201": { "$ref": "#/components/responses/PortfolioTrade" }
+        }
+      }
+    },
+    "/api/portfolio/transactions/export": {
+      "get": { "responses": { "200": { "description": "CSV export" } } }
+    },
+    "/api/portfolio/transactions/import": {
+      "post": {
+        "responses": {
+          "200": { "$ref": "#/components/responses/PortfolioTrades" }
+        }
+      }
+    },
+    "/api/portfolio/transactions/profit-trend": {
+      "get": {
+        "responses": {
+          "200": { "$ref": "#/components/responses/PortfolioProfitTrend" }
+        }
+      }
+    },
+    "/api/kiwoom/admin/stock-catalog": {
+      "get": {
+        "responses": {
+          "200": { "$ref": "#/components/responses/StockCatalogStatus" }
+        }
+      }
+    },
+    "/api/kiwoom/admin/stock-catalog/refresh": {
+      "post": {
+        "responses": {
+          "200": { "$ref": "#/components/responses/StockCatalogStatus" }
+        }
+      }
+    },
     "/api/alerts/rules": {
-      "get": { "responses": { "200": { "$ref": "#/components/responses/AlertRules" } } },
-      "post": { "requestBody": { "$ref": "#/components/requestBodies/AlertRuleRequest" }, "responses": { "201": { "$ref": "#/components/responses/AlertRule" } } }
+      "get": {
+        "responses": { "200": { "$ref": "#/components/responses/AlertRules" } }
+      },
+      "post": {
+        "requestBody": {
+          "$ref": "#/components/requestBodies/AlertRuleRequest"
+        },
+        "responses": { "201": { "$ref": "#/components/responses/AlertRule" } }
+      }
     },
     "/api/alerts/rules/{id}": {
-      "patch": { "requestBody": { "$ref": "#/components/requestBodies/AlertRuleUpdateRequest" }, "responses": { "200": { "$ref": "#/components/responses/AlertRule" } } },
+      "patch": {
+        "requestBody": {
+          "$ref": "#/components/requestBodies/AlertRuleUpdateRequest"
+        },
+        "responses": { "200": { "$ref": "#/components/responses/AlertRule" } }
+      },
       "delete": { "responses": { "204": { "description": "Deleted" } } }
     },
-    "/api/alerts/evaluate": { "post": { "responses": { "200": { "$ref": "#/components/responses/AlertEvents" } } } },
-    "/api/alerts/events": { "get": { "responses": { "200": { "$ref": "#/components/responses/AlertEventPage" } } } },
-    "/api/alerts/events/{id}/read": { "post": { "responses": { "204": { "description": "Marked as read" } } } }
+    "/api/alerts/evaluate": {
+      "post": {
+        "responses": { "200": { "$ref": "#/components/responses/AlertEvents" } }
+      }
+    },
+    "/api/alerts/events": {
+      "get": {
+        "responses": {
+          "200": { "$ref": "#/components/responses/AlertEventPage" }
+        }
+      }
+    },
+    "/api/alerts/events/{id}/read": {
+      "post": { "responses": { "204": { "description": "Marked as read" } } }
+    }
   },
   "components": {
     "schemas": {
-      "AuthUser": { "type": "object", "required": ["username"], "properties": { "username": { "type": "string" } } },
-      "StockPriceResponse": { "type": "object", "required": ["code", "currentPrice", "changeAmount", "changeRate"], "properties": { "code": { "type": "string" }, "currentPrice": { "type": "string" }, "changeAmount": { "type": "string" }, "changeRate": { "type": "string" } } },
-      "DailyPriceResponse": { "type": "object", "required": ["date", "openPrice", "highPrice", "lowPrice", "closePrice", "volume"], "properties": { "date": { "type": "string" }, "openPrice": { "type": "integer", "format": "int64" }, "highPrice": { "type": "integer", "format": "int64" }, "lowPrice": { "type": "integer", "format": "int64" }, "closePrice": { "type": "integer", "format": "int64" }, "volume": { "type": "integer", "format": "int64" }, "rsi": { "type": "number", "nullable": true }, "macd": { "type": "number", "nullable": true }, "signal": { "type": "number", "nullable": true } } },
-      "StockSearchResult": { "type": "object", "required": ["code", "name", "market", "productType", "productTypeLabel"], "properties": { "code": { "type": "string" }, "name": { "type": "string" }, "market": { "type": "string" }, "productType": { "type": "string", "enum": ["STOCK", "PREFERRED", "ETF", "ETN", "REIT", "SPAC"] }, "productTypeLabel": { "type": "string" } } },
-      "MarketRankingItem": { "type": "object", "required": ["code", "name", "currentPrice", "changeRate", "volume"], "properties": { "code": { "type": "string" }, "name": { "type": "string" }, "currentPrice": { "type": "integer", "format": "int64" }, "changeRate": { "type": "number", "format": "double" }, "volume": { "type": "integer", "format": "int64" } } },
-      "MarketRankingsResponse": { "type": "object", "required": ["gainers", "losers", "mostTraded", "updatedAt"], "properties": { "gainers": { "type": "array", "items": { "$ref": "#/components/schemas/MarketRankingItem" } }, "losers": { "type": "array", "items": { "$ref": "#/components/schemas/MarketRankingItem" } }, "mostTraded": { "type": "array", "items": { "$ref": "#/components/schemas/MarketRankingItem" } }, "updatedAt": { "type": "string", "format": "date-time" } } },
-      "StrategyCandidate": { "type": "object", "required": ["code", "name", "currentPrice", "score", "qualified", "drawdownRate", "boxRangeRate", "volumeSpikeCount", "breakoutRate", "pullbackRate", "matchedConditions"], "properties": { "code": { "type": "string" }, "name": { "type": "string" }, "currentPrice": { "type": "integer", "format": "int64" }, "score": { "type": "integer", "format": "int32" }, "qualified": { "type": "boolean" }, "drawdownRate": { "type": "number", "format": "double" }, "boxRangeRate": { "type": "number", "format": "double" }, "volumeSpikeCount": { "type": "integer", "format": "int32" }, "breakoutRate": { "type": "number", "format": "double" }, "pullbackRate": { "type": "number", "format": "double" }, "matchedConditions": { "type": "array", "items": { "type": "string" } } } },
-      "StrategyScanResponse": { "type": "object", "required": ["candidates", "scannedCount", "scope", "updatedAt"], "properties": { "candidates": { "type": "array", "items": { "$ref": "#/components/schemas/StrategyCandidate" } }, "scannedCount": { "type": "integer", "format": "int32" }, "scope": { "type": "string" }, "updatedAt": { "type": "string", "format": "date-time" } } },
-      "MarketDataSyncStatus": { "type": "object", "required": ["stockCount", "candleCount", "syncedStockCount", "failedStockCount", "processedInLastRun", "succeededInLastRun", "failedInLastRun", "running", "checkedAt"], "properties": { "stockCount": { "type": "integer", "format": "int64" }, "candleCount": { "type": "integer", "format": "int64" }, "syncedStockCount": { "type": "integer", "format": "int64" }, "failedStockCount": { "type": "integer", "format": "int64" }, "latestTradeDate": { "type": "string", "format": "date" }, "processedInLastRun": { "type": "integer", "format": "int32" }, "succeededInLastRun": { "type": "integer", "format": "int32" }, "failedInLastRun": { "type": "integer", "format": "int32" }, "running": { "type": "boolean" }, "checkedAt": { "type": "string", "format": "date-time" } } },
-      "AccountPosition": { "type": "object", "required": ["code", "name", "quantity", "availableQuantity", "averagePrice", "currentPrice", "purchaseAmount", "evaluationAmount", "profitLoss", "returnRate"], "properties": { "code": { "type": "string" }, "name": { "type": "string" }, "quantity": { "type": "integer", "format": "int64" }, "availableQuantity": { "type": "integer", "format": "int64" }, "averagePrice": { "type": "integer", "format": "int64" }, "currentPrice": { "type": "integer", "format": "int64" }, "purchaseAmount": { "type": "integer", "format": "int64" }, "evaluationAmount": { "type": "integer", "format": "int64" }, "profitLoss": { "type": "integer", "format": "int64" }, "returnRate": { "type": "number", "format": "double" } } },
-      "AccountPortfolioResponse": { "type": "object", "required": ["accountNumber", "totalPurchaseAmount", "totalEvaluationAmount", "totalProfitLoss", "totalReturnRate", "estimatedAssets", "positions", "updatedAt"], "properties": { "accountNumber": { "type": "string" }, "totalPurchaseAmount": { "type": "integer", "format": "int64" }, "totalEvaluationAmount": { "type": "integer", "format": "int64" }, "totalProfitLoss": { "type": "integer", "format": "int64" }, "totalReturnRate": { "type": "number", "format": "double" }, "estimatedAssets": { "type": "integer", "format": "int64" }, "positions": { "type": "array", "items": { "$ref": "#/components/schemas/AccountPosition" } }, "updatedAt": { "type": "string", "format": "date-time" } } },
-      "WatchlistRequest": { "type": "object", "required": ["code"], "properties": { "code": { "type": "string" }, "groupName": { "type": "string" }, "note": { "type": "string" } } },
-      "WatchlistItem": { "type": "object", "required": ["code", "groupName", "note"], "properties": { "code": { "type": "string" }, "groupName": { "type": "string" }, "note": { "type": "string" } } },
-      "StockCatalogStatus": { "type": "object", "required": ["stockCount"], "properties": { "refreshedAt": { "type": "string", "format": "date-time", "nullable": true }, "stockCount": { "type": "integer" } } },
-      "PortfolioProfitPoint": { "type": "object", "required": ["date", "realizedProfitLoss", "unrealizedProfitLoss", "totalProfitLoss"], "properties": { "date": { "type": "string", "format": "date" }, "realizedProfitLoss": { "type": "number" }, "unrealizedProfitLoss": { "type": "number" }, "totalProfitLoss": { "type": "number" } } },
-      "PortfolioPosition": { "type": "object", "required": ["code", "quantity", "averagePrice"], "properties": { "code": { "type": "string" }, "quantity": { "type": "number" }, "averagePrice": { "type": "number" } } },
-      "PortfolioValuation": { "allOf": [{ "$ref": "#/components/schemas/PortfolioPosition" }, { "type": "object", "required": ["currentPrice", "purchaseAmount", "evaluationAmount", "profitLoss", "returnRate"], "properties": { "currentPrice": { "type": "number" }, "purchaseAmount": { "type": "number" }, "evaluationAmount": { "type": "number" }, "profitLoss": { "type": "number" }, "returnRate": { "type": "number" } } }] },
+      "AuthUser": {
+        "type": "object",
+        "required": ["username"],
+        "properties": { "username": { "type": "string" } }
+      },
+      "StockPriceResponse": {
+        "type": "object",
+        "required": ["code", "currentPrice", "changeAmount", "changeRate"],
+        "properties": {
+          "code": { "type": "string" },
+          "currentPrice": { "type": "string" },
+          "changeAmount": { "type": "string" },
+          "changeRate": { "type": "string" }
+        }
+      },
+      "DailyPriceResponse": {
+        "type": "object",
+        "required": [
+          "date",
+          "openPrice",
+          "highPrice",
+          "lowPrice",
+          "closePrice",
+          "volume"
+        ],
+        "properties": {
+          "date": { "type": "string" },
+          "openPrice": { "type": "integer", "format": "int64" },
+          "highPrice": { "type": "integer", "format": "int64" },
+          "lowPrice": { "type": "integer", "format": "int64" },
+          "closePrice": { "type": "integer", "format": "int64" },
+          "volume": { "type": "integer", "format": "int64" },
+          "rsi": { "type": "number", "nullable": true },
+          "macd": { "type": "number", "nullable": true },
+          "signal": { "type": "number", "nullable": true }
+        }
+      },
+      "StockSearchResult": {
+        "type": "object",
+        "required": [
+          "code",
+          "name",
+          "market",
+          "productType",
+          "productTypeLabel"
+        ],
+        "properties": {
+          "code": { "type": "string" },
+          "name": { "type": "string" },
+          "market": { "type": "string" },
+          "productType": {
+            "type": "string",
+            "enum": ["STOCK", "PREFERRED", "ETF", "ETN", "REIT", "SPAC"]
+          },
+          "productTypeLabel": { "type": "string" }
+        }
+      },
+      "MarketRankingItem": {
+        "type": "object",
+        "required": ["code", "name", "currentPrice", "changeRate", "volume"],
+        "properties": {
+          "code": { "type": "string" },
+          "name": { "type": "string" },
+          "currentPrice": { "type": "integer", "format": "int64" },
+          "changeRate": { "type": "number", "format": "double" },
+          "volume": { "type": "integer", "format": "int64" }
+        }
+      },
+      "MarketRankingsResponse": {
+        "type": "object",
+        "required": ["gainers", "losers", "mostTraded", "updatedAt"],
+        "properties": {
+          "gainers": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/MarketRankingItem" }
+          },
+          "losers": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/MarketRankingItem" }
+          },
+          "mostTraded": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/MarketRankingItem" }
+          },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "StrategyCandidate": {
+        "type": "object",
+        "required": [
+          "code",
+          "name",
+          "currentPrice",
+          "score",
+          "qualified",
+          "drawdownRate",
+          "boxRangeRate",
+          "volumeSpikeCount",
+          "breakoutRate",
+          "pullbackRate",
+          "matchedConditions"
+        ],
+        "properties": {
+          "code": { "type": "string" },
+          "name": { "type": "string" },
+          "currentPrice": { "type": "integer", "format": "int64" },
+          "score": { "type": "integer", "format": "int32" },
+          "qualified": { "type": "boolean" },
+          "drawdownRate": { "type": "number", "format": "double" },
+          "boxRangeRate": { "type": "number", "format": "double" },
+          "volumeSpikeCount": { "type": "integer", "format": "int32" },
+          "breakoutRate": { "type": "number", "format": "double" },
+          "pullbackRate": { "type": "number", "format": "double" },
+          "matchedConditions": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      },
+      "StrategyScanResponse": {
+        "type": "object",
+        "required": [
+          "scanId",
+          "strategyVersion",
+          "boxRangeDays",
+          "candidates",
+          "scannedCount",
+          "scope",
+          "updatedAt"
+        ],
+        "properties": {
+          "scanId": { "type": "integer", "format": "int64" },
+          "strategyVersion": { "type": "string" },
+          "boxRangeDays": { "type": "integer", "format": "int32" },
+          "candidates": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/StrategyCandidate" }
+          },
+          "scannedCount": { "type": "integer", "format": "int32" },
+          "scope": { "type": "string" },
+          "dataAsOf": { "type": "string", "format": "date", "nullable": true },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "MarketDataSyncStatus": {
+        "type": "object",
+        "required": [
+          "stockCount",
+          "candleCount",
+          "syncedStockCount",
+          "failedStockCount",
+          "processedInLastRun",
+          "succeededInLastRun",
+          "failedInLastRun",
+          "running",
+          "checkedAt"
+        ],
+        "properties": {
+          "stockCount": { "type": "integer", "format": "int64" },
+          "candleCount": { "type": "integer", "format": "int64" },
+          "syncedStockCount": { "type": "integer", "format": "int64" },
+          "failedStockCount": { "type": "integer", "format": "int64" },
+          "latestTradeDate": { "type": "string", "format": "date" },
+          "processedInLastRun": { "type": "integer", "format": "int32" },
+          "succeededInLastRun": { "type": "integer", "format": "int32" },
+          "failedInLastRun": { "type": "integer", "format": "int32" },
+          "running": { "type": "boolean" },
+          "checkedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "AccountPosition": {
+        "type": "object",
+        "required": [
+          "code",
+          "name",
+          "quantity",
+          "availableQuantity",
+          "averagePrice",
+          "currentPrice",
+          "purchaseAmount",
+          "evaluationAmount",
+          "profitLoss",
+          "returnRate"
+        ],
+        "properties": {
+          "code": { "type": "string" },
+          "name": { "type": "string" },
+          "quantity": { "type": "integer", "format": "int64" },
+          "availableQuantity": { "type": "integer", "format": "int64" },
+          "averagePrice": { "type": "integer", "format": "int64" },
+          "currentPrice": { "type": "integer", "format": "int64" },
+          "purchaseAmount": { "type": "integer", "format": "int64" },
+          "evaluationAmount": { "type": "integer", "format": "int64" },
+          "profitLoss": { "type": "integer", "format": "int64" },
+          "returnRate": { "type": "number", "format": "double" }
+        }
+      },
+      "AccountPortfolioResponse": {
+        "type": "object",
+        "required": [
+          "accountNumber",
+          "totalPurchaseAmount",
+          "totalEvaluationAmount",
+          "totalProfitLoss",
+          "totalReturnRate",
+          "estimatedAssets",
+          "positions",
+          "updatedAt"
+        ],
+        "properties": {
+          "accountNumber": { "type": "string" },
+          "totalPurchaseAmount": { "type": "integer", "format": "int64" },
+          "totalEvaluationAmount": { "type": "integer", "format": "int64" },
+          "totalProfitLoss": { "type": "integer", "format": "int64" },
+          "totalReturnRate": { "type": "number", "format": "double" },
+          "estimatedAssets": { "type": "integer", "format": "int64" },
+          "positions": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/AccountPosition" }
+          },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "WatchlistRequest": {
+        "type": "object",
+        "required": ["code"],
+        "properties": {
+          "code": { "type": "string" },
+          "groupName": { "type": "string" },
+          "note": { "type": "string" }
+        }
+      },
+      "WatchlistItem": {
+        "type": "object",
+        "required": ["code", "groupName", "note"],
+        "properties": {
+          "code": { "type": "string" },
+          "groupName": { "type": "string" },
+          "note": { "type": "string" }
+        }
+      },
+      "StockCatalogStatus": {
+        "type": "object",
+        "required": ["stockCount"],
+        "properties": {
+          "refreshedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "stockCount": { "type": "integer" }
+        }
+      },
+      "PortfolioProfitPoint": {
+        "type": "object",
+        "required": [
+          "date",
+          "realizedProfitLoss",
+          "unrealizedProfitLoss",
+          "totalProfitLoss"
+        ],
+        "properties": {
+          "date": { "type": "string", "format": "date" },
+          "realizedProfitLoss": { "type": "number" },
+          "unrealizedProfitLoss": { "type": "number" },
+          "totalProfitLoss": { "type": "number" }
+        }
+      },
+      "PortfolioPosition": {
+        "type": "object",
+        "required": ["code", "quantity", "averagePrice"],
+        "properties": {
+          "code": { "type": "string" },
+          "quantity": { "type": "number" },
+          "averagePrice": { "type": "number" }
+        }
+      },
+      "PortfolioValuation": {
+        "allOf": [
+          { "$ref": "#/components/schemas/PortfolioPosition" },
+          {
+            "type": "object",
+            "required": [
+              "currentPrice",
+              "purchaseAmount",
+              "evaluationAmount",
+              "profitLoss",
+              "returnRate"
+            ],
+            "properties": {
+              "currentPrice": { "type": "number" },
+              "purchaseAmount": { "type": "number" },
+              "evaluationAmount": { "type": "number" },
+              "profitLoss": { "type": "number" },
+              "returnRate": { "type": "number" }
+            }
+          }
+        ]
+      },
       "TradeType": { "type": "string", "enum": ["BUY", "SELL"] },
-      "PortfolioTradeRequest": { "type": "object", "required": ["code", "type", "quantity", "price"], "properties": { "code": { "type": "string" }, "type": { "$ref": "#/components/schemas/TradeType" }, "quantity": { "type": "number" }, "price": { "type": "number" }, "fee": { "type": "number" }, "tax": { "type": "number" } } },
-      "PortfolioTrade": { "allOf": [{ "$ref": "#/components/schemas/PortfolioTradeRequest" }, { "type": "object", "required": ["id", "realizedProfitLoss", "tradedAt"], "properties": { "id": { "type": "integer", "format": "int64" }, "realizedProfitLoss": { "type": "number" }, "tradedAt": { "type": "string", "format": "date-time" } } }] },
-      "PortfolioTradePage": { "type": "object", "required": ["content", "page", "size", "totalElements", "totalPages"], "properties": { "content": { "type": "array", "items": { "$ref": "#/components/schemas/PortfolioTrade" } }, "page": { "type": "integer" }, "size": { "type": "integer" }, "totalElements": { "type": "integer", "format": "int64" }, "totalPages": { "type": "integer" } } },
-      "AlertConditionType": { "type": "string", "enum": ["PRICE_ABOVE", "PRICE_BELOW", "CHANGE_RATE_ABOVE", "CHANGE_RATE_BELOW", "RSI_ABOVE", "RSI_BELOW", "MACD_CROSS_UP", "MACD_CROSS_DOWN"] },
-      "AlertRuleRequest": { "type": "object", "required": ["code", "conditionType"], "properties": { "code": { "type": "string" }, "conditionType": { "$ref": "#/components/schemas/AlertConditionType" }, "threshold": { "type": "number", "nullable": true } } },
-      "AlertRuleUpdateRequest": { "type": "object", "properties": { "threshold": { "type": "number", "nullable": true }, "enabled": { "type": "boolean", "nullable": true } } },
-      "AlertRule": { "allOf": [{ "$ref": "#/components/schemas/AlertRuleRequest" }, { "type": "object", "required": ["id", "enabled", "lastState"], "properties": { "id": { "type": "integer", "format": "int64" }, "enabled": { "type": "boolean" }, "lastState": { "type": "boolean" } } }] },
-      "AlertEvent": { "type": "object", "required": ["id", "ruleId", "code", "conditionType", "observedValue", "triggeredAt"], "properties": { "id": { "type": "integer", "format": "int64" }, "ruleId": { "type": "integer", "format": "int64" }, "code": { "type": "string" }, "conditionType": { "$ref": "#/components/schemas/AlertConditionType" }, "observedValue": { "type": "number" }, "threshold": { "type": "number", "nullable": true }, "triggeredAt": { "type": "string", "format": "date-time" }, "readAt": { "type": "string", "format": "date-time", "nullable": true } } },
-      "AlertEventPage": { "type": "object", "required": ["content", "page", "size", "totalElements", "totalPages"], "properties": { "content": { "type": "array", "items": { "$ref": "#/components/schemas/AlertEvent" } }, "page": { "type": "integer" }, "size": { "type": "integer" }, "totalElements": { "type": "integer", "format": "int64" }, "totalPages": { "type": "integer" } } }
+      "PortfolioTradeRequest": {
+        "type": "object",
+        "required": ["code", "type", "quantity", "price"],
+        "properties": {
+          "code": { "type": "string" },
+          "type": { "$ref": "#/components/schemas/TradeType" },
+          "quantity": { "type": "number" },
+          "price": { "type": "number" },
+          "fee": { "type": "number" },
+          "tax": { "type": "number" }
+        }
+      },
+      "PortfolioTrade": {
+        "allOf": [
+          { "$ref": "#/components/schemas/PortfolioTradeRequest" },
+          {
+            "type": "object",
+            "required": ["id", "realizedProfitLoss", "tradedAt"],
+            "properties": {
+              "id": { "type": "integer", "format": "int64" },
+              "realizedProfitLoss": { "type": "number" },
+              "tradedAt": { "type": "string", "format": "date-time" }
+            }
+          }
+        ]
+      },
+      "PortfolioTradePage": {
+        "type": "object",
+        "required": ["content", "page", "size", "totalElements", "totalPages"],
+        "properties": {
+          "content": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/PortfolioTrade" }
+          },
+          "page": { "type": "integer" },
+          "size": { "type": "integer" },
+          "totalElements": { "type": "integer", "format": "int64" },
+          "totalPages": { "type": "integer" }
+        }
+      },
+      "AlertConditionType": {
+        "type": "string",
+        "enum": [
+          "PRICE_ABOVE",
+          "PRICE_BELOW",
+          "CHANGE_RATE_ABOVE",
+          "CHANGE_RATE_BELOW",
+          "RSI_ABOVE",
+          "RSI_BELOW",
+          "MACD_CROSS_UP",
+          "MACD_CROSS_DOWN"
+        ]
+      },
+      "AlertRuleRequest": {
+        "type": "object",
+        "required": ["code", "conditionType"],
+        "properties": {
+          "code": { "type": "string" },
+          "conditionType": {
+            "$ref": "#/components/schemas/AlertConditionType"
+          },
+          "threshold": { "type": "number", "nullable": true }
+        }
+      },
+      "AlertRuleUpdateRequest": {
+        "type": "object",
+        "properties": {
+          "threshold": { "type": "number", "nullable": true },
+          "enabled": { "type": "boolean", "nullable": true }
+        }
+      },
+      "AlertRule": {
+        "allOf": [
+          { "$ref": "#/components/schemas/AlertRuleRequest" },
+          {
+            "type": "object",
+            "required": ["id", "enabled", "lastState"],
+            "properties": {
+              "id": { "type": "integer", "format": "int64" },
+              "enabled": { "type": "boolean" },
+              "lastState": { "type": "boolean" }
+            }
+          }
+        ]
+      },
+      "AlertEvent": {
+        "type": "object",
+        "required": [
+          "id",
+          "ruleId",
+          "code",
+          "conditionType",
+          "observedValue",
+          "triggeredAt"
+        ],
+        "properties": {
+          "id": { "type": "integer", "format": "int64" },
+          "ruleId": { "type": "integer", "format": "int64" },
+          "code": { "type": "string" },
+          "conditionType": {
+            "$ref": "#/components/schemas/AlertConditionType"
+          },
+          "observedValue": { "type": "number" },
+          "threshold": { "type": "number", "nullable": true },
+          "triggeredAt": { "type": "string", "format": "date-time" },
+          "readAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        }
+      },
+      "AlertEventPage": {
+        "type": "object",
+        "required": ["content", "page", "size", "totalElements", "totalPages"],
+        "properties": {
+          "content": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/AlertEvent" }
+          },
+          "page": { "type": "integer" },
+          "size": { "type": "integer" },
+          "totalElements": { "type": "integer", "format": "int64" },
+          "totalPages": { "type": "integer" }
+        }
+      }
     },
     "requestBodies": {
-      "WatchlistRequest": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/WatchlistRequest" } } } },
-      "PortfolioPosition": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PortfolioPosition" } } } },
-      "PortfolioTradeRequest": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PortfolioTradeRequest" } } } },
-      "AlertRuleRequest": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AlertRuleRequest" } } } },
-      "AlertRuleUpdateRequest": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AlertRuleUpdateRequest" } } } }
+      "WatchlistRequest": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/WatchlistRequest" }
+          }
+        }
+      },
+      "PortfolioPosition": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/PortfolioPosition" }
+          }
+        }
+      },
+      "PortfolioTradeRequest": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/PortfolioTradeRequest" }
+          }
+        }
+      },
+      "AlertRuleRequest": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/AlertRuleRequest" }
+          }
+        }
+      },
+      "AlertRuleUpdateRequest": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/AlertRuleUpdateRequest" }
+          }
+        }
+      }
     },
     "responses": {
-      "AuthUser": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuthUser" } } } },
-      "StockPrice": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/StockPriceResponse" } } } },
-      "StockPrices": { "description": "OK", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/StockPriceResponse" } } } } },
-      "DailyPrices": { "description": "OK", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/DailyPriceResponse" } } } } },
-      "StockSearchResults": { "description": "OK", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/StockSearchResult" } } } } },
-      "MarketRankings": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MarketRankingsResponse" } } } },
-      "StrategyScan": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/StrategyScanResponse" } } } },
-      "MarketDataStatus": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MarketDataSyncStatus" } } } },
-      "AccountPortfolio": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AccountPortfolioResponse" } } } },
-      "Watchlist": { "description": "OK", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/WatchlistItem" } } } } },
-      "WatchlistItem": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/WatchlistItem" } } } },
-      "StockCatalogStatus": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/StockCatalogStatus" } } } },
-      "PortfolioProfitTrend": { "description": "OK", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/PortfolioProfitPoint" } } } } },
-      "Portfolio": { "description": "OK", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/PortfolioPosition" } } } } },
-      "PortfolioPosition": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PortfolioPosition" } } } },
-      "PortfolioValuation": { "description": "OK", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/PortfolioValuation" } } } } },
-      "PortfolioTrades": { "description": "OK", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/PortfolioTrade" } } } } },
-      "PortfolioTradePage": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PortfolioTradePage" } } } },
-      "PortfolioTrade": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PortfolioTrade" } } } },
-      "AlertRules": { "description": "OK", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/AlertRule" } } } } },
-      "AlertRule": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AlertRule" } } } },
-      "AlertEvents": { "description": "OK", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/AlertEvent" } } } } },
-      "AlertEventPage": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AlertEventPage" } } } }
+      "AuthUser": {
+        "description": "OK",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/AuthUser" }
+          }
+        }
+      },
+      "StockPrice": {
+        "description": "OK",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/StockPriceResponse" }
+          }
+        }
+      },
+      "StockPrices": {
+        "description": "OK",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "array",
+              "items": { "$ref": "#/components/schemas/StockPriceResponse" }
+            }
+          }
+        }
+      },
+      "DailyPrices": {
+        "description": "OK",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "array",
+              "items": { "$ref": "#/components/schemas/DailyPriceResponse" }
+            }
+          }
+        }
+      },
+      "StockSearchResults": {
+        "description": "OK",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "array",
+              "items": { "$ref": "#/components/schemas/StockSearchResult" }
+            }
+          }
+        }
+      },
+      "MarketRankings": {
+        "description": "OK",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/MarketRankingsResponse" }
+          }
+        }
+      },
+      "StrategyScan": {
+        "description": "OK",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/StrategyScanResponse" }
+          }
+        }
+      },
+      "MarketDataStatus": {
+        "description": "OK",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/MarketDataSyncStatus" }
+          }
+        }
+      },
+      "AccountPortfolio": {
+        "description": "OK",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/AccountPortfolioResponse"
+            }
+          }
+        }
+      },
+      "Watchlist": {
+        "description": "OK",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "array",
+              "items": { "$ref": "#/components/schemas/WatchlistItem" }
+            }
+          }
+        }
+      },
+      "WatchlistItem": {
+        "description": "OK",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/WatchlistItem" }
+          }
+        }
+      },
+      "StockCatalogStatus": {
+        "description": "OK",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/StockCatalogStatus" }
+          }
+        }
+      },
+      "PortfolioProfitTrend": {
+        "description": "OK",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "array",
+              "items": { "$ref": "#/components/schemas/PortfolioProfitPoint" }
+            }
+          }
+        }
+      },
+      "Portfolio": {
+        "description": "OK",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "array",
+              "items": { "$ref": "#/components/schemas/PortfolioPosition" }
+            }
+          }
+        }
+      },
+      "PortfolioPosition": {
+        "description": "OK",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/PortfolioPosition" }
+          }
+        }
+      },
+      "PortfolioValuation": {
+        "description": "OK",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "array",
+              "items": { "$ref": "#/components/schemas/PortfolioValuation" }
+            }
+          }
+        }
+      },
+      "PortfolioTrades": {
+        "description": "OK",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "array",
+              "items": { "$ref": "#/components/schemas/PortfolioTrade" }
+            }
+          }
+        }
+      },
+      "PortfolioTradePage": {
+        "description": "OK",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/PortfolioTradePage" }
+          }
+        }
+      },
+      "PortfolioTrade": {
+        "description": "OK",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/PortfolioTrade" }
+          }
+        }
+      },
+      "AlertRules": {
+        "description": "OK",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "array",
+              "items": { "$ref": "#/components/schemas/AlertRule" }
+            }
+          }
+        }
+      },
+      "AlertRule": {
+        "description": "OK",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/AlertRule" }
+          }
+        }
+      },
+      "AlertEvents": {
+        "description": "OK",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "array",
+              "items": { "$ref": "#/components/schemas/AlertEvent" }
+            }
+          }
+        }
+      },
+      "AlertEventPage": {
+        "description": "OK",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/AlertEventPage" }
+          }
+        }
+      }
     }
   }
 }

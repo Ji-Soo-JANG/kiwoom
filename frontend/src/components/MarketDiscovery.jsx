@@ -288,6 +288,13 @@ function MarketDiscovery({ onSelectStock }) {
               범위: {strategy.data.scope} · {strategy.data.scannedCount}개 분석 · 70점 이상 조건
               충족
             </p>
+            {strategy.data.strategyVersion && (
+              <p className="strategy-scope">
+                실행 #{strategy.data.scanId} · 전략 {strategy.data.strategyVersion} · 박스권{' '}
+                {strategy.data.boxRangeDays}일
+                {strategy.data.dataAsOf && ` · 데이터 기준 ${strategy.data.dataAsOf}`}
+              </p>
+            )}
             {strategy.data.candidates.length === 0 ? (
               <p className="empty-state">현재 후보군에는 분석 가능한 종목이 없습니다.</p>
             ) : (
@@ -412,9 +419,7 @@ function MarketDiscovery({ onSelectStock }) {
               <p className="empty-state">장 마감이거나 해당 순위 데이터가 없습니다.</p>
             ) : (
               <ol aria-label={section.title}>
-                {rankings.data[section.key]
-                  .slice(0, cardSettings.itemCount)
-                  .map((stock, index) => (
+                {rankings.data[section.key].slice(0, cardSettings.itemCount).map((stock, index) => (
                   <li key={stock.code}>
                     <button type="button" onClick={() => onSelectStock(stock.code)}>
                       <span className="ranking-position">{index + 1}</span>
@@ -429,7 +434,7 @@ function MarketDiscovery({ onSelectStock }) {
                       </span>
                     </button>
                   </li>
-                  ))}
+                ))}
               </ol>
             )}
           </article>

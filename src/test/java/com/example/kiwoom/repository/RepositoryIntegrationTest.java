@@ -33,6 +33,8 @@ class RepositoryIntegrationTest {
     @Autowired private MarketDataRepository marketDataRepository;
     @Autowired private AlertRepository alertRepository;
 
+    @Autowired private StrategySnapshotRepository strategySnapshotRepository;
+
     // --- MarketDataRepository tests ---
 
     @Test
@@ -129,6 +131,44 @@ class RepositoryIntegrationTest {
         }
         var analyzable = marketDataRepository.findAnalyzableStocks().collectList().block();
         assertThat(analyzable).isNotNull();
+    }
+
+    @Test
+    void strategySnapshot_roundTripsVersionInputsAndDecision() {
+        StrategyCandidate candidate =
+                new StrategyCandidate(
+                        "005930",
+                        "삼성전자",
+                        80000,
+                        85,
+                        true,
+                        -25.0,
+                        18.0,
+                        3,
+                        7.0,
+                        -4.0,
+                        java.util.List.of("과거 고점 대비 20% 이상 하락", "돌파선 위 눌림목"));
+
+        StrategyScanResponse saved =
+                strategySnapshotRepository
+                        .save(
+                                "test-strategy-v1",
+                                60,
+                                1,
+                                "테스트 범위",
+                                LocalDate.of(2026, 8, 21),
+                                java.util.List.of(candidate),
+                                java.util.List.of(candidate))
+                        .block();
+        StrategyScanResponse latest = strategySnapshotRepository.findLatest().block();
+
+        assertThat(saved).isNotNull();
+        assertThat(saved.scanId()).isPositive();
+        assertThat(latest).isNotNull();
+        assertThat(latest.strategyVersion()).isEqualTo("test-strategy-v1");
+        assertThat(latest.boxRangeDays()).isEqualTo(60);
+        assertThat(latest.dataAsOf()).isEqualTo(LocalDate.of(2026, 8, 21));
+        assertThat(latest.candidates()).containsExactly(candidate);
     }
 
     // --- AlertRepository tests ---

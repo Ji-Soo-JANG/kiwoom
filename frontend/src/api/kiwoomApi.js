@@ -108,6 +108,7 @@ export const getMarketRankings = (market = 'ALL') =>
 /** @param {number} [boxRangeDays] 박스권 횡보 기준 기간(거래일), 기본 60일 */
 export const getStrategyCandidates = (boxRangeDays = 60) =>
   requestJson(`/api/kiwoom/strategy-candidates?boxRangeDays=${encodeURIComponent(boxRangeDays)}`);
+export const getLatestStrategySnapshot = () => requestJson('/api/kiwoom/strategy-scans/latest');
 export const getMarketDataStatus = () => requestJson('/api/kiwoom/admin/market-data');
 export const synchronizeMarketData = (limit = 20) =>
   requestJson(`/api/kiwoom/admin/market-data/sync?limit=${encodeURIComponent(limit)}`, {
