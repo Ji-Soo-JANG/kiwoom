@@ -258,6 +258,33 @@ public class KiwoomApiService {
                 dailyPriceCache.size());
     }
 
+    /**
+     * 종목 검색을 수행합니다.
+     *
+     * <p>검색 매칭:
+     *
+     * <ul>
+     *   <li>종목코드에 키워드 포함
+     *   <li>종목명(공백/특수문자 제거 후)에 키워드 포함
+     *   <li>한글 초성에 키워드 포함
+     *   <li>상품유형 검색어(ETF, 리츠, 스팩 등) 매칭
+     * </ul>
+     *
+     * <p>정렬 우선순위 (점수 낮을수록 상위):
+     *
+     * <ol>
+     *   <li>종목코드 정확 일치 (0)
+     *   <li>종목명 정확 일치 (1)
+     *   <li>종목코드 접두사 일치 (2)
+     *   <li>종목명 접두사 또는 한글 초성 접두사 일치 (3)
+     *   <li>상품유형 키워드 매칭 (4)
+     *   <li>기타 포함 매칭 (5)
+     * </ol>
+     *
+     * @param query 검색 키워드 (종목명, 코드, 초성, 상품유형)
+     * @param market 시장 필터: ALL, KOSPI, KOSDAQ
+     * @param productType 상품유형 필터: ALL, STOCK, PREFERRED, ETF, ETN, REIT, SPAC
+     */
     public Mono<List<StockSearchResult>> searchStocks(
             String query, String market, String productType) {
         if (query == null || query.isBlank()) return Mono.just(List.of());
@@ -303,22 +330,9 @@ public class KiwoomApiService {
                                                         || item.productType()
                                                                 .matchesKeyword(keyword))
                                 .sorted(
-                                        Comparator.comparing(
+                                        Comparator.comparingInt(
                                                         (StockSearchResult item) ->
-                                                                !item.code().equals(keyword)
-                                                                        && !normalizeSearchText(
-                                                                                        item.name())
-                                                                                .equals(keyword))
-                                                .thenComparing(
-                                                        item ->
-                                                                !item.code().startsWith(keyword)
-                                                                        && !normalizeSearchText(
-                                                                                        item.name())
-                                                                                .startsWith(keyword)
-                                                                        && !koreanInitials(
-                                                                                        item.name())
-                                                                                .startsWith(
-                                                                                        keyword))
+                                                                searchScore(item, keyword))
                                                 .thenComparing(
                                                         item -> normalizeSearchText(item.name()))
                                                 .thenComparing(StockSearchResult::name))
@@ -345,6 +359,22 @@ public class KiwoomApiService {
             }
         }
         return result.toString();
+    }
+
+    /**
+     * 검색 결과의 정렬 점수를 계산합니다. 점수가 낮을수록 상위에 표시됩니다.
+     *
+     * <p>우선순위: 코드 정확일치(0) > 종목명 정확일치(1) > 코드 접두사(2) > 종목명 접두사/초성 접두사(3) > 상품유형 매칭(4) > 기타(5)
+     */
+    private int searchScore(StockSearchResult item, String keyword) {
+        String normalizedName = normalizeSearchText(item.name());
+        String initials = koreanInitials(item.name());
+        if (item.code().equals(keyword)) return 0;
+        if (normalizedName.equals(keyword)) return 1;
+        if (item.code().startsWith(keyword)) return 2;
+        if (normalizedName.startsWith(keyword) || initials.startsWith(keyword)) return 3;
+        if (item.productType().matchesKeyword(keyword)) return 4;
+        return 5;
     }
 
     public synchronized Mono<StockCatalogStatus> refreshStockCatalog() {

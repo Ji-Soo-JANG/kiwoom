@@ -7,7 +7,7 @@ public record StockSearchResult(
         StockProductType productType,
         String productTypeLabel) {
     public StockSearchResult(String code, String name, String market) {
-        this(code, name, market, StockProductType.classify(name));
+        this(code, name, market, StockProductType.classify(name, code));
     }
 
     private StockSearchResult(

@@ -507,6 +507,38 @@ class KiwoomApiServiceTest {
         assertTrue(error.getMessage().contains("토큰 응답 JSON 파싱 실패"));
     }
 
+    @Test
+    @DisplayName("검색 결과는 코드 정확일치 우선으로 정렬된다")
+    void searchResultsSortedByCodeExactMatchFirst() {
+        enqueueJson(
+                200,
+                """
+                {"return_code":0,"token":"access-token","expires_dt":"20991231235959"}
+                """);
+        enqueueJson(
+                200,
+                """
+                {"return_code":0,"list":[
+                  {"code":"005930","name":"삼성전자우"},
+                  {"code":"005935","name":"삼성전자"},
+                  {"code":"035720","name":"카카오"}
+                ]}
+                """);
+        enqueueJson(
+                200,
+                """
+                {"return_code":0,"list":[]}
+                """);
+
+        // "005935" 검색 시 코드 정확일치(005935)가 종목명 포함(삼성전자)보다 먼저
+        List<StockSearchResult> result = service.searchStocks("005935", "ALL").block();
+        assertEquals("005935", result.getFirst().code());
+
+        // "삼성" 검색 시 종목명 접두사 매칭
+        List<StockSearchResult> nameResult = service.searchStocks("삼성", "ALL").block();
+        assertTrue(nameResult.size() >= 2);
+    }
+
     private void enqueueJson(int status, String body) {
         server.enqueue(
                 new MockResponse()

@@ -96,6 +96,28 @@ class KiwoomResponseMapperTest {
     }
 
     @Test
+    void classifiesProductTypeByCodePattern() {
+        // ETN 코드 대역(50-59) 테스트
+        assertEquals(StockProductType.ETN, StockProductType.classify("코스피200", "500001"));
+        assertEquals(StockProductType.ETN, StockProductType.classify("S&P500 ETN", "530001"));
+        // 코드가 없으면 종목명만으로 분류
+        assertEquals(StockProductType.STOCK, StockProductType.classify("삼성전자", null));
+        assertEquals(StockProductType.STOCK, StockProductType.classify("삼성전자", ""));
+    }
+
+    @Test
+    void classifiesProductTypeByKeywordInName() {
+        // 상품유형 키워드 매칭
+        assertEquals(StockProductType.ETF, StockProductType.classify("TIGER 200"));
+        assertEquals(StockProductType.ETF, StockProductType.classify("ACE ETF"));
+        assertEquals(StockProductType.ETN, StockProductType.classify("삼성 ETN"));
+        assertEquals(StockProductType.REIT, StockProductType.classify("이리츠"));
+        assertEquals(StockProductType.REIT, StockProductType.classify("리츠비즈"));
+        assertEquals(StockProductType.SPAC, StockProductType.classify("하나스팩"));
+        assertEquals(StockProductType.SPAC, StockProductType.classify("KB기업인수목적"));
+    }
+
+    @Test
     void parsesMarketRankingItems() {
         String json =
                 """
