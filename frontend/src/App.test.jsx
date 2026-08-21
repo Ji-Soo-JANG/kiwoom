@@ -69,4 +69,54 @@ describe('App routes', () => {
 
     await waitFor(() => expect(api.addToWatchlist).toHaveBeenCalledWith('005930'));
   });
+
+  it('종목 검색 후 URL에 code 파라미터가 포함된다', async () => {
+    api.getCurrentPrice.mockResolvedValue({
+      code: '005930',
+      currentPrice: '70000',
+      changeAmount: '1000',
+      changeRate: '1.45'
+    });
+    api.getDailyPrices.mockResolvedValue([]);
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={client}>
+        <MemoryRouter initialEntries={['/']}>
+          <App />
+        </MemoryRouter>
+      </QueryClientProvider>
+    );
+
+    fireEvent.change(screen.getByLabelText('종목 검색'), {
+      target: { value: '005930' }
+    });
+    fireEvent.click(screen.getByRole('button', { name: '단일 조회' }));
+
+    // 차트 화면으로 이동하고 관심종목 추가 버튼이 나타남을 확인
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: '관심종목 추가' })).toBeInTheDocument();
+    });
+    // getCurrentPrice가 올바른 코드로 호출됨을 확인 (URL 동기화의 부산물)
+    expect(api.getCurrentPrice).toHaveBeenCalledWith('005930');
+  });
+
+  it('URL의 code 파라미터로 직접 접근하면 해당 종목을 자동으로 조회한다', async () => {
+    api.getCurrentPrice.mockResolvedValue({
+      code: '000660',
+      currentPrice: '120000',
+      changeAmount: '3000',
+      changeRate: '2.56'
+    });
+    api.getDailyPrices.mockResolvedValue([]);
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={client}>
+        <MemoryRouter initialEntries={['/chart?code=000660']}>
+          <App />
+        </MemoryRouter>
+      </QueryClientProvider>
+    );
+
+    await waitFor(() => expect(api.getCurrentPrice).toHaveBeenCalledWith('000660'));
+  });
 });

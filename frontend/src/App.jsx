@@ -1,5 +1,5 @@
-import { lazy, Suspense, useState } from 'react';
-import { Navigate, NavLink, Route, Routes, useNavigate } from 'react-router-dom';
+import { lazy, Suspense, useEffect, useState } from 'react';
+import { Navigate, NavLink, Route, Routes, useNavigate, useSearchParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import {
@@ -25,6 +25,7 @@ import './App.css';
 
 function App({ currentUser, onLogout }) {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const [stocks, setStocks] = useState([]);
 
@@ -90,7 +91,7 @@ function App({ currentUser, onLogout }) {
 
   const handleSingleSearch = async (code) => {
     initializeSearch();
-    navigate('/chart');
+    navigate(`/chart?code=${encodeURIComponent(code)}`, { replace: true });
 
     try {
       const stock = await getCurrentPrice(code);
@@ -103,9 +104,18 @@ function App({ currentUser, onLogout }) {
     }
   };
 
+  // URL의 code 파라미터에서 종목을 복원합니다.
+  useEffect(() => {
+    const codeFromUrl = searchParams.get('code');
+    if (codeFromUrl && stocks.length === 0 && !loading) {
+      handleSingleSearch(codeFromUrl);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   const handleMultipleSearch = async (codes) => {
     initializeSearch();
-    navigate('/chart');
+    const codeParam = codes.length === 1 ? codes[0] : codes.join(',');
+    navigate(`/chart?code=${encodeURIComponent(codeParam)}`, { replace: true });
 
     try {
       const data = await getMultiplePrices(codes);

@@ -34,11 +34,30 @@ function AccountPortfolio({ onSelectStock }) {
       </div>
 
       <dl className="account-summary">
-        <div><dt>추정자산</dt><dd>{number(data.estimatedAssets)}원</dd></div>
-        <div><dt>총 매입금액</dt><dd>{number(data.totalPurchaseAmount)}원</dd></div>
-        <div><dt>총 평가금액</dt><dd>{number(data.totalEvaluationAmount)}원</dd></div>
-        <div><dt>평가손익</dt><dd className={data.totalProfitLoss >= 0 ? 'price-up' : 'price-down'}>{number(data.totalProfitLoss)}원</dd></div>
-        <div><dt>수익률</dt><dd className={data.totalReturnRate >= 0 ? 'price-up' : 'price-down'}>{data.totalReturnRate.toFixed(2)}%</dd></div>
+        <div>
+          <dt>추정자산</dt>
+          <dd>{number(data.estimatedAssets)}원</dd>
+        </div>
+        <div>
+          <dt>총 매입금액</dt>
+          <dd>{number(data.totalPurchaseAmount)}원</dd>
+        </div>
+        <div>
+          <dt>총 평가금액</dt>
+          <dd>{number(data.totalEvaluationAmount)}원</dd>
+        </div>
+        <div>
+          <dt>평가손익</dt>
+          <dd className={data.totalProfitLoss >= 0 ? 'price-up' : 'price-down'}>
+            {number(data.totalProfitLoss)}원
+          </dd>
+        </div>
+        <div>
+          <dt>수익률</dt>
+          <dd className={data.totalReturnRate >= 0 ? 'price-up' : 'price-down'}>
+            {data.totalReturnRate.toFixed(2)}%
+          </dd>
+        </div>
       </dl>
 
       {data.positions.length === 0 ? (

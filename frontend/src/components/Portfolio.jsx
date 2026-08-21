@@ -125,8 +125,10 @@ function Portfolio({
                 }
               >
                 <strong>{position.name || position.code}</strong>
-                {position.name && <small className="position-code-tag">{position.code}</small>} ·{' '}
-                {formatNumber(position.quantity)}주 · 평균 {formatNumber(position.averagePrice)}원
+                {position.name && (
+                  <small className="position-code-tag">{position.code}</small>
+                )} · {formatNumber(position.quantity)}주 · 평균{' '}
+                {formatNumber(position.averagePrice)}원
               </span>
               <button
                 type="button"

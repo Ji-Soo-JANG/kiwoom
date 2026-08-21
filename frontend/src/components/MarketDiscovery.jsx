@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useDeferredValue } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -120,7 +120,6 @@ function MarketDiscovery({ onSelectStock }) {
               : '새로고침'}
         </button>
       </div>
-
       <section className="market-data-status" aria-labelledby="market-data-status-title">
         <div>
           <h3 id="market-data-status-title">시장 데이터 저장소</h3>
@@ -143,7 +142,6 @@ function MarketDiscovery({ onSelectStock }) {
           <p className="error">데이터 수집 실패: {synchronize.error.message}</p>
         )}
       </section>
-
       <section className="market-data-status" aria-labelledby="full-market-data-status-title">
         <div>
           <h3 id="full-market-data-status-title">전체 일봉 일괄 수집</h3>
@@ -186,7 +184,6 @@ function MarketDiscovery({ onSelectStock }) {
           <p className="error">전체 수집 실패: {startFullSync.error.message}</p>
         )}
       </section>
-
       <article className="strategy-results" aria-labelledby="strategy-results-title">
         <div className="strategy-heading">
           <div>
@@ -261,40 +258,38 @@ function MarketDiscovery({ onSelectStock }) {
         <p className="strategy-warning">
           일봉이 90개 이상 수집된 종목만 분석하며 결과는 매수 추천이 아닙니다.
         </p>
-      </article>        {rankings.data.updatedAt && (
-          <p className="info-text">
-            마지막 갱신: {new Date(rankings.data.updatedAt).toLocaleString('ko-KR')}
-          </p>
-        )}
-
-        <div className="ranking-grid">
+      </article>{' '}
+      {rankings.data.updatedAt && (
+        <p className="info-text">
+          마지막 갱신: {new Date(rankings.data.updatedAt).toLocaleString('ko-KR')}
+        </p>
+      )}
+      <div className="ranking-grid">
         {sections.map((section) => (
           <article className="ranking-card" key={section.key}>
             <h3>{section.title}</h3>
             <p>{section.description}</p>
             {rankings.data[section.key].length === 0 ? (
-              <p className="empty-state">
-                장 마감이거나 해당 순위 데이터가 없습니다.
-              </p>
+              <p className="empty-state">장 마감이거나 해당 순위 데이터가 없습니다.</p>
             ) : (
-            <ol>
-              {rankings.data[section.key].map((stock, index) => (
-                <li key={stock.code}>
-                  <button type="button" onClick={() => onSelectStock(stock.code)}>
-                    <span className="ranking-position">{index + 1}</span>
-                    <span className="ranking-name">
-                      <strong>{stock.name}</strong>
-                      <small>{stock.code}</small>
-                    </span>
-                    <span className={stock.changeRate >= 0 ? 'price-up' : 'price-down'}>
-                      {stock.changeRate > 0 ? '+' : ''}
-                      {stock.changeRate.toFixed(2)}%
-                      <small>{formatNumber(stock.currentPrice)}원</small>
-                    </span>
-                  </button>
-                </li>
-              )              )}
-            </ol>
+              <ol>
+                {rankings.data[section.key].map((stock, index) => (
+                  <li key={stock.code}>
+                    <button type="button" onClick={() => onSelectStock(stock.code)}>
+                      <span className="ranking-position">{index + 1}</span>
+                      <span className="ranking-name">
+                        <strong>{stock.name}</strong>
+                        <small>{stock.code}</small>
+                      </span>
+                      <span className={stock.changeRate >= 0 ? 'price-up' : 'price-down'}>
+                        {stock.changeRate > 0 ? '+' : ''}
+                        {stock.changeRate.toFixed(2)}%
+                        <small>{formatNumber(stock.currentPrice)}원</small>
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ol>
             )}
           </article>
         ))}
