@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.example.kiwoom.config.TradingProperties;
 import com.example.kiwoom.dto.TradingMode;
+import com.example.kiwoom.error.TradingSafetyException;
 import java.math.BigDecimal;
 import org.junit.jupiter.api.Test;
 
@@ -16,7 +17,7 @@ class TradingModeServiceTest {
 
         assertThat(service.status().effectiveMode()).isEqualTo(TradingMode.SIGNAL_ONLY);
         assertThatThrownBy(service::requireOrderCreationMode)
-                .isInstanceOf(IllegalStateException.class)
+                .isInstanceOf(TradingSafetyException.class)
                 .hasMessageContaining("SIGNAL_ONLY");
     }
 

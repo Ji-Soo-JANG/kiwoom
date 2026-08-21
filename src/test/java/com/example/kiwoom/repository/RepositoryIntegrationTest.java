@@ -25,6 +25,7 @@ import reactor.core.publisher.Flux;
             "spring.r2dbc.url=r2dbc:h2:mem:///kiwoom-repo-test;MODE=PostgreSQL;DB_CLOSE_DELAY=-1",
             "spring.datasource.url=jdbc:h2:mem:flyway-repo-test;MODE=PostgreSQL;DB_CLOSE_DELAY=-1",
             "spring.datasource.username=sa",
+            "app.trading.mode=PAPER",
             "spring.sql.init.mode=always",
             "spring.flyway.enabled=false"
         })
@@ -36,6 +37,7 @@ class RepositoryIntegrationTest {
     @Autowired private StrategySnapshotRepository strategySnapshotRepository;
     @Autowired private BacktestRepository backtestRepository;
     @Autowired private WalkForwardRepository walkForwardRepository;
+    @Autowired private com.example.kiwoom.service.PaperOrderService paperOrderService;
 
     // --- MarketDataRepository tests ---
 
@@ -287,6 +289,35 @@ class RepositoryIntegrationTest {
         assertThat(saved).isNotNull();
         assertThat(saved.reportId()).isPositive();
         assertThat(saved.folds()).containsExactly(fold);
+    }
+
+    @Test
+    void paperOrder_isIdempotentAndReconcilesOrderFillPositionAndCash() {
+        PaperOrderRequest request =
+                new PaperOrderRequest(
+                        "repository-test-buy-333333",
+                        "333333",
+                        OrderSide.BUY,
+                        10,
+                        new BigDecimal("1000.0000"));
+
+        TradingOrder first = paperOrderService.place(request).block();
+        TradingOrder duplicate = paperOrderService.place(request).block();
+        OrderReconciliationReport reconciliation = paperOrderService.reconcile().block();
+
+        assertThat(first).isNotNull();
+        assertThat(first.status()).isEqualTo(OrderStatus.FILLED);
+        assertThat(duplicate).isNotNull();
+        assertThat(duplicate.id()).isEqualTo(first.id());
+        assertThat(
+                        paperOrderService
+                                .positions()
+                                .filter(p -> p.code().equals("333333"))
+                                .blockFirst())
+                .extracting(PaperPosition::quantity)
+                .isEqualTo(10L);
+        assertThat(reconciliation).isNotNull();
+        assertThat(reconciliation.consistent()).isTrue();
     }
 
     // --- AlertRepository tests ---

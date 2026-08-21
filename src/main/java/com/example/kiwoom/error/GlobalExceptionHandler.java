@@ -52,6 +52,13 @@ public class GlobalExceptionHandler {
                 .body(response("RESOURCE_NOT_FOUND", error, exchange));
     }
 
+    @ExceptionHandler(TradingSafetyException.class)
+    public ResponseEntity<ApiErrorResponse> handleTradingSafety(
+            TradingSafetyException error, ServerWebExchange exchange) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(response("TRADING_SAFETY_BLOCKED", error, exchange));
+    }
+
     @ExceptionHandler(DataAccessException.class)
     public ResponseEntity<ApiErrorResponse> handleDatabaseError(
             DataAccessException error, ServerWebExchange exchange) {

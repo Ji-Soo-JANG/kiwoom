@@ -3,6 +3,7 @@ package com.example.kiwoom.service;
 import com.example.kiwoom.config.TradingProperties;
 import com.example.kiwoom.dto.TradingMode;
 import com.example.kiwoom.dto.TradingModeStatus;
+import com.example.kiwoom.error.TradingSafetyException;
 import java.util.ArrayList;
 import java.util.List;
 import org.springframework.stereotype.Service;
@@ -37,7 +38,7 @@ public class TradingModeService {
     public TradingMode requireOrderCreationMode() {
         TradingModeStatus status = status();
         if (status.effectiveMode() == TradingMode.SIGNAL_ONLY) {
-            throw new IllegalStateException(
+            throw new TradingSafetyException(
                     status.blockers().isEmpty()
                             ? "SIGNAL_ONLY 모드에서는 주문을 만들 수 없습니다."
                             : String.join(" ", status.blockers()));
