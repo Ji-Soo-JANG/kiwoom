@@ -32,16 +32,19 @@ public class LimitedTradingService {
     private final PaperOrderService orders;
     private final PaperRiskService risks;
     private final PaperTradeCycleService tradeCycles;
+    private final AutoTradingControlService autoTrading;
 
     public LimitedTradingService(
             LimitedTradingRepository repository,
             PaperOrderService orders,
             PaperRiskService risks,
-            PaperTradeCycleService tradeCycles) {
+            PaperTradeCycleService tradeCycles,
+            AutoTradingControlService autoTrading) {
         this.repository = repository;
         this.orders = orders;
         this.risks = risks;
         this.tradeCycles = tradeCycles;
+        this.autoTrading = autoTrading;
     }
 
     public Mono<LimitedTradeCandidate> create(TradeCandidateRequest request) {
@@ -60,7 +63,17 @@ public class LimitedTradingService {
                                         ? Mono.just(candidate)
                                         : Mono.error(
                                                 new TradingSafetyException(
-                                                        "같은 signalId에 서로 다른 후보를 저장할 수 없습니다.")));
+                                                        "같은 signalId에 서로 다른 후보를 저장할 수 없습니다.")))
+                .flatMap(
+                        candidate ->
+                                autoTrading
+                                        .paperEnabledFor(StrategyScanService.STRATEGY_VERSION)
+                                        .flatMap(
+                                                enabled ->
+                                                        enabled
+                                                                ? execute(candidate, "paper-auto")
+                                                                        .onErrorReturn(candidate)
+                                                                : Mono.just(candidate)));
     }
 
     public Flux<LimitedTradeCandidate> findAll() {
@@ -74,12 +87,16 @@ public class LimitedTradingService {
         return repository
                 .findById(id)
                 .switchIfEmpty(Mono.error(new ResourceNotFoundException("매매 후보를 찾을 수 없습니다.")))
-                .flatMap(this::validateCandidate)
-                .then(repository.approve(id, approvedBy))
+                .flatMap(candidate -> execute(candidate, approvedBy));
+    }
+
+    private Mono<LimitedTradeCandidate> execute(LimitedTradeCandidate pending, String approvedBy) {
+        return validateCandidate(pending)
+                .then(repository.approve(pending.id(), approvedBy))
                 .switchIfEmpty(Mono.error(new TradingSafetyException("만료되었거나 이미 처리된 후보입니다.")))
                 .flatMap(
                         candidate ->
-                                orders.place(
+                                orders.placeAutomatedPaper(
                                                 new PaperOrderRequest(
                                                         "approved-signal-" + candidate.signalId(),
                                                         candidate.code(),

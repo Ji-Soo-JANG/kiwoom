@@ -1,5 +1,7 @@
 package com.example.kiwoom.controller;
 
+import com.example.kiwoom.dto.AutoTradingControl;
+import com.example.kiwoom.dto.AutoTradingControlRequest;
 import com.example.kiwoom.dto.KillSwitchRequest;
 import com.example.kiwoom.dto.KillSwitchResumeRequest;
 import com.example.kiwoom.dto.OrderReconciliationReport;
@@ -10,6 +12,7 @@ import com.example.kiwoom.dto.PaperPosition;
 import com.example.kiwoom.dto.PaperRiskStatus;
 import com.example.kiwoom.dto.TradingModeStatus;
 import com.example.kiwoom.dto.TradingOrder;
+import com.example.kiwoom.service.AutoTradingControlService;
 import com.example.kiwoom.service.PaperBrokerVerificationService;
 import com.example.kiwoom.service.PaperOrderService;
 import com.example.kiwoom.service.PaperRiskService;
@@ -34,16 +37,19 @@ public class TradingController {
     private final PaperOrderService orders;
     private final PaperRiskService risks;
     private final PaperBrokerVerificationService verification;
+    private final AutoTradingControlService autoTrading;
 
     public TradingController(
             TradingModeService modes,
             PaperOrderService orders,
             PaperRiskService risks,
-            PaperBrokerVerificationService verification) {
+            PaperBrokerVerificationService verification,
+            AutoTradingControlService autoTrading) {
         this.modes = modes;
         this.orders = orders;
         this.risks = risks;
         this.verification = verification;
+        this.autoTrading = autoTrading;
     }
 
     @PostMapping("/paper/verification")
@@ -56,6 +62,20 @@ public class TradingController {
     @Operation(summary = "현재 자동매매 실행 모드와 실주문 차단 상태")
     public TradingModeStatus status() {
         return modes.status();
+    }
+
+    @GetMapping("/automation")
+    @Operation(summary = "모의·실투자 자동매매 ON/OFF와 선택 전략 조회")
+    public Mono<AutoTradingControl> automation() {
+        return autoTrading.get();
+    }
+
+    @PostMapping("/automation")
+    @Operation(summary = "모의·실투자 자동매매 설정 변경")
+    public Mono<AutoTradingControl> updateAutomation(
+            @Valid @RequestBody AutoTradingControlRequest request,
+            java.security.Principal principal) {
+        return autoTrading.update(request, principal.getName());
     }
 
     @PostMapping("/orders")

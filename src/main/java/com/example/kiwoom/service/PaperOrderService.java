@@ -44,6 +44,14 @@ public class PaperOrderService {
         if (mode != TradingMode.PAPER) {
             return Mono.error(new TradingSafetyException("외부 실주문 전송은 아직 사용할 수 없습니다."));
         }
+        return place(request, mode);
+    }
+
+    public Mono<TradingOrder> placeAutomatedPaper(PaperOrderRequest request) {
+        return place(request, TradingMode.PAPER);
+    }
+
+    private Mono<TradingOrder> place(PaperOrderRequest request, TradingMode mode) {
         return account()
                 .then(repository.createIdempotent(request, mode))
                 .flatMap(order -> validateIdempotentRequest(order, request))

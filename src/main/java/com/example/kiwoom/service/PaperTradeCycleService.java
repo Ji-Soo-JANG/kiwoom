@@ -26,14 +26,17 @@ public class PaperTradeCycleService {
     private final PaperTradeCycleRepository cycles;
     private final PaperTradingRepository trading;
     private final PaperOrderService orders;
+    private final AutoTradingControlService autoTrading;
 
     public PaperTradeCycleService(
             PaperTradeCycleRepository cycles,
             PaperTradingRepository trading,
-            PaperOrderService orders) {
+            PaperOrderService orders,
+            AutoTradingControlService autoTrading) {
         this.cycles = cycles;
         this.trading = trading;
         this.orders = orders;
+        this.autoTrading = autoTrading;
     }
 
     public Mono<PaperTradeCycle> open(long candidateId, TradingOrder order) {
@@ -61,10 +64,26 @@ public class PaperTradeCycleService {
                                         .map(
                                                 reason ->
                                                         cycles.requestExit(
-                                                                cycle.id(),
-                                                                reason,
-                                                                price,
-                                                                observedAt))
+                                                                        cycle.id(),
+                                                                        reason,
+                                                                        price,
+                                                                        observedAt)
+                                                                .flatMap(
+                                                                        pending ->
+                                                                                autoTrading
+                                                                                        .paperEnabledFor(
+                                                                                                AutoTradingControlService
+                                                                                                        .DEFAULT_STRATEGY)
+                                                                                        .flatMap(
+                                                                                                enabled ->
+                                                                                                        enabled
+                                                                                                                ? approveExit(
+                                                                                                                        pending
+                                                                                                                                .id(),
+                                                                                                                        EXIT_CONFIRMATION)
+                                                                                                                : Mono
+                                                                                                                        .just(
+                                                                                                                                pending))))
                                         .orElseGet(Mono::empty))
                 .then();
     }
@@ -90,7 +109,7 @@ public class PaperTradeCycleService {
                                                             ? Mono.error(
                                                                     new TradingSafetyException(
                                                                             "PAPER 보유 수량을 초과한 청산입니다."))
-                                                            : orders.place(
+                                                            : orders.placeAutomatedPaper(
                                                                     new PaperOrderRequest(
                                                                             "exit-cycle-"
                                                                                     + cycle.id(),
