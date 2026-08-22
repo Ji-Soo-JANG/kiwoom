@@ -110,7 +110,7 @@ class KiwoomApplicationTest {
                 .jsonPath("$.scannedCount")
                 .isEqualTo(0)
                 .jsonPath("$.scope")
-                .isEqualTo("로컬 DB에 90개 이상 일봉이 저장된 전체 종목");
+                .isEqualTo("로컬 DB에 저장된 현물 주식 일봉 대상");
     }
 
     @Test

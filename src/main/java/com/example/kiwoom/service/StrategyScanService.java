@@ -4,7 +4,7 @@ import com.example.kiwoom.dto.StrategyCandidate;
 import com.example.kiwoom.dto.StrategyScanResponse;
 import com.example.kiwoom.repository.MarketDataRepository;
 import com.example.kiwoom.repository.StrategySnapshotRepository;
-import com.example.kiwoom.service.strategy.DropBaseBreakoutPullbackStrategy;
+import com.example.kiwoom.service.strategy.MultiPeriodRecoveryPullbackStrategy;
 import com.example.kiwoom.service.strategy.StrategyRegistry;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -18,8 +18,8 @@ import reactor.core.publisher.Mono;
 
 @Service
 public class StrategyScanService {
-    public static final String STRATEGY_VERSION = DropBaseBreakoutPullbackStrategy.VERSION_KEY;
-    private static final String SCOPE = "로컬 DB에 90개 이상 일봉이 저장된 전체 종목";
+    public static final String STRATEGY_VERSION = MultiPeriodRecoveryPullbackStrategy.VERSION_KEY;
+    private static final String SCOPE = "로컬 DB에 저장된 현물 주식 일봉 대상";
 
     private final MarketDataRepository repository;
     private final StrategySnapshotRepository snapshots;
@@ -49,6 +49,12 @@ public class StrategyScanService {
     }
 
     public Mono<StrategyScanResponse> scan(int boxRangeDays, LocalDate asOf) {
+        return scan(STRATEGY_VERSION, boxRangeDays, asOf);
+    }
+
+    public Mono<StrategyScanResponse> scan(
+            String strategyVersion, int boxRangeDays, LocalDate asOf) {
+        var strategy = strategies.require(strategyVersion);
         var stocks =
                 asOf == null
                         ? repository.findAnalyzableStocks()
@@ -58,18 +64,18 @@ public class StrategyScanService {
         return stocks.flatMap(
                         stock ->
                                 (asOf == null
-                                                ? repository.findDailyPrices(stock.code(), 250)
+                                                ? repository.findDailyPrices(
+                                                        stock.code(),
+                                                        strategy.requiredHistoryDays())
                                                 : repository.findDailyPrices(
-                                                        stock.code(), 250, asOf))
+                                                        stock.code(),
+                                                        strategy.requiredHistoryDays(),
+                                                        asOf))
                                         .collectList()
                                         .map(
                                                 prices ->
-                                                        strategies
-                                                                .require(STRATEGY_VERSION)
-                                                                .analyze(
-                                                                        stock,
-                                                                        prices,
-                                                                        boxRangeDays)),
+                                                        strategy.analyze(
+                                                                stock, prices, boxRangeDays)),
                         8)
                 .collectList()
                 .flatMap(
@@ -94,7 +100,7 @@ public class StrategyScanService {
                                             dataAsOf ->
                                                     snapshots
                                                             .save(
-                                                                    STRATEGY_VERSION,
+                                                                    strategyVersion,
                                                                     boxRangeDays,
                                                                     sorted.size(),
                                                                     scope,

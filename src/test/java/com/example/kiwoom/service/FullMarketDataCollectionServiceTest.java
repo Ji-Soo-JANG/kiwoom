@@ -64,9 +64,9 @@ class FullMarketDataCollectionServiceTest {
         StockSearchResult second = stock("000002", "나");
         when(kiwoom.refreshStockCatalog()).thenReturn(Mono.just(catalogStatus(2)));
         when(kiwoom.getStockCatalog()).thenReturn(Mono.just(List.of(first, second)));
-        when(kiwoom.getDailyPrices("000001", null, 500))
+        when(kiwoom.getDailyPrices("000001", null, 1500))
                 .thenReturn(Mono.just(List.of(candle("20260814"), candle("20260816"))));
-        when(kiwoom.getDailyPrices("000002", null, 500))
+        when(kiwoom.getDailyPrices("000002", null, 1500))
                 .thenReturn(Mono.just(List.of(candle("20260816"))));
         when(repository.saveStocks(any(Flux.class))).thenReturn(Mono.empty());
         when(repository.saveStockMasterSnapshot(any(), any(LocalDate.class)))
@@ -96,9 +96,9 @@ class FullMarketDataCollectionServiceTest {
         StockSearchResult second = stock("000002", "나");
         when(kiwoom.refreshStockCatalog()).thenReturn(Mono.just(catalogStatus(2)));
         when(kiwoom.getStockCatalog()).thenReturn(Mono.just(List.of(first, second)));
-        when(kiwoom.getDailyPrices("000001", null, 500))
+        when(kiwoom.getDailyPrices("000001", null, 1500))
                 .thenReturn(Mono.error(new RuntimeException("키움 조회 실패")));
-        when(kiwoom.getDailyPrices("000002", null, 500))
+        when(kiwoom.getDailyPrices("000002", null, 1500))
                 .thenReturn(Mono.just(List.of(candle("20260816"))));
         when(repository.saveStocks(any(Flux.class))).thenReturn(Mono.empty());
         when(repository.saveStockMasterSnapshot(any(), any(LocalDate.class)))
@@ -125,7 +125,7 @@ class FullMarketDataCollectionServiceTest {
                 .thenReturn(Mono.just(catalogStatus(1)))
                 .thenReturn(Mono.error(new RuntimeException("인증 실패")));
         when(kiwoom.getStockCatalog()).thenReturn(Mono.just(List.of(first)));
-        when(kiwoom.getDailyPrices("000001", null, 500))
+        when(kiwoom.getDailyPrices("000001", null, 1500))
                 .thenReturn(Mono.just(List.of(candle("20260816"))));
         when(repository.saveStocks(any(Flux.class))).thenReturn(Mono.empty());
         when(repository.saveStockMasterSnapshot(any(), any(LocalDate.class)))

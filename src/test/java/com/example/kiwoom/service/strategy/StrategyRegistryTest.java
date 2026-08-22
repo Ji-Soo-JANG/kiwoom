@@ -10,8 +10,17 @@ import org.junit.jupiter.api.Test;
 class StrategyRegistryTest {
     @Test
     void resolvesVersionedStrategyAndRejectsUnknownVersion() {
-        var registry = new StrategyRegistry(List.of(new DropBaseBreakoutPullbackStrategy()));
+        var registry =
+                new StrategyRegistry(
+                        List.of(
+                                new DropBaseBreakoutPullbackStrategy(),
+                                new MultiPeriodRecoveryPullbackStrategy()));
         assertThat(registry.require(DropBaseBreakoutPullbackStrategy.VERSION_KEY)).isNotNull();
+        assertThat(registry.require(MultiPeriodRecoveryPullbackStrategy.VERSION_KEY)).isNotNull();
+        assertThat(
+                        registry.require(MultiPeriodRecoveryPullbackStrategy.VERSION_KEY)
+                                .requiredHistoryDays())
+                .isEqualTo(1500);
         assertThatThrownBy(() -> registry.require("unknown-v1"))
                 .isInstanceOf(ResourceNotFoundException.class);
     }

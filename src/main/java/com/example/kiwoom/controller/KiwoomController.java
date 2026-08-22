@@ -106,10 +106,12 @@ public class KiwoomController {
     @GetMapping("/strategy-candidates")
     @Operation(summary = "급락·횡보·거래량·돌파·눌림목 전략 후보 조회")
     public Mono<StrategyScanResponse> strategyCandidates(
+            @RequestParam(defaultValue = StrategyScanService.STRATEGY_VERSION)
+                    String strategyVersion,
             @RequestParam(defaultValue = "60") int boxRangeDays,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
                     LocalDate asOf) {
-        return strategyScanService.scan(boxRangeDays, asOf);
+        return strategyScanService.scan(strategyVersion, boxRangeDays, asOf);
     }
 
     @GetMapping("/strategy-scans/latest")

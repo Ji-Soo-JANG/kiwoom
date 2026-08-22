@@ -42,7 +42,10 @@ public class FullMarketDataCollectionService implements ApplicationRunner {
     private static final ZoneId SEOUL = ZoneId.of("Asia/Seoul");
     private static final Logger log =
             LoggerFactory.getLogger(FullMarketDataCollectionService.class);
-    private static final int DAILY_CANDLE_LIMIT = 500;
+
+    /** 장기 박스권 전략과 동일하게 약 6년치 거래일을 초기 적재한다. 이후 실행은 같은 키를 갱신한다. */
+    static final int DAILY_CANDLE_LIMIT = 1500;
+
     private static final int PROGRESS_LOG_INTERVAL = 100;
 
     private final KiwoomApiService kiwoom;
