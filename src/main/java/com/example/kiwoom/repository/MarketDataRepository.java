@@ -269,6 +269,7 @@ public class MarketDataRepository {
                         SELECT MAX(c.trade_date) FROM daily_candle c WHERE c.code = sm.code)
                 WHERE sm.active = TRUE
                   AND (SELECT COUNT(*) FROM daily_candle c WHERE c.code = sm.code) >= 90
+                  AND latest.trade_date = (SELECT MAX(c.trade_date) FROM daily_candle c)
                   AND NOT EXISTS (
                       SELECT 1
                       FROM market_data_quality_issue issue
@@ -303,6 +304,8 @@ public class MarketDataRepository {
                     WHERE s.snapshot_date <= :asOf)
                   AND (SELECT COUNT(*) FROM daily_candle c
                        WHERE c.code = snapshot.code AND c.trade_date <= :asOf) >= 90
+                  AND latest.trade_date = (
+                      SELECT MAX(c.trade_date) FROM daily_candle c WHERE c.trade_date <= :asOf)
                   AND NOT EXISTS (
                       SELECT 1 FROM market_data_quality_issue issue
                       WHERE issue.code = snapshot.code AND issue.severity = 'BLOCKING'
