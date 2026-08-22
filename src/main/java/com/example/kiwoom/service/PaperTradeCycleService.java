@@ -71,9 +71,7 @@ public class PaperTradeCycleService {
                                                                 .flatMap(
                                                                         pending ->
                                                                                 autoTrading
-                                                                                        .paperEnabledFor(
-                                                                                                AutoTradingControlService
-                                                                                                        .DEFAULT_STRATEGY)
+                                                                                        .paperEnabled()
                                                                                         .flatMap(
                                                                                                 enabled ->
                                                                                                         enabled

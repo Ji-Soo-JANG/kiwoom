@@ -12,7 +12,7 @@ import reactor.core.publisher.Mono;
 @Service
 public class AutoTradingControlService {
     public static final String LIVE_CONFIRMATION = "ENABLE_BLOCKED_LIVE_AUTOMATION";
-    public static final String DEFAULT_STRATEGY = "drop-base-breakout-pullback-v1";
+    public static final String DEFAULT_STRATEGY = StrategyScanService.STRATEGY_VERSION;
     private static final List<String> LIVE_BLOCKERS = List.of("실주문 브로커 어댑터가 연결되지 않아 주문 전송은 차단됩니다.");
     private final AutoTradingControlRepository repository;
     private final StrategyRegistry strategies;
@@ -29,6 +29,11 @@ public class AutoTradingControlService {
 
     public Mono<Boolean> paperEnabledFor(String strategy) {
         return repository.get().map(c -> c.paperEnabled() && c.paperStrategy().equals(strategy));
+    }
+
+    /** 보유 포지션의 청산은 진입 후 전략 선택이 바뀌어도 PAPER 자동매매가 켜져 있으면 계속 수행한다. */
+    public Mono<Boolean> paperEnabled() {
+        return repository.get().map(AutoTradingControlRepository.StoredControl::paperEnabled);
     }
 
     public Mono<AutoTradingControl> update(AutoTradingControlRequest request, String user) {
