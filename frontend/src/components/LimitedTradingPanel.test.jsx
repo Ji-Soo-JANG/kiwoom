@@ -9,6 +9,14 @@ vi.mock('../api/kiwoomApi');
 
 describe('LimitedTradingPanel', () => {
   beforeEach(() => {
+    api.getAutoTradingControl.mockResolvedValue({
+      paperEnabled: false,
+      paperStrategy: 'drop-base-breakout-pullback-v1',
+      liveEnabled: false,
+      liveStrategy: 'drop-base-breakout-pullback-v1',
+      availableStrategies: ['drop-base-breakout-pullback-v1'],
+      liveBlockers: []
+    });
     api.getLimitedTradeCandidates.mockResolvedValue([
       {
         id: 1,
@@ -31,7 +39,7 @@ describe('LimitedTradingPanel', () => {
     api.verifyPaperTradingLifecycle.mockResolvedValue({ passed: true });
   });
 
-  it('shows pending candidates and explicit paper approval', async () => {
+  it('shows automatic trading controls and candidates', async () => {
     render(
       <QueryClientProvider
         client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
@@ -40,7 +48,8 @@ describe('LimitedTradingPanel', () => {
       </QueryClientProvider>
     );
     expect(await screen.findByText('005930')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'PAPER 주문 승인' })).toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: '모의투자 자동매매' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '자동매매 설정 저장' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '로컬 주문 흐름 검증' })).toBeInTheDocument();
   });
 });

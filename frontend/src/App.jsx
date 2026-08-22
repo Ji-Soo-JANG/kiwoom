@@ -169,7 +169,7 @@ function App({ currentUser, onLogout }) {
         <NavLink to="/watchlist">관심 종목</NavLink>
         <NavLink to="/portfolio">포트폴리오</NavLink>
         <NavLink to="/alerts">알림</NavLink>
-        <NavLink to="/trading">매매 승인</NavLink>
+        <NavLink to="/trading">자동매매</NavLink>
         <NavLink to="/settings">설정</NavLink>
       </nav>
 

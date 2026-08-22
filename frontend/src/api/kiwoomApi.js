@@ -137,6 +137,13 @@ export const synchronizeFullMarketData = () =>
   requestJson('/api/kiwoom/admin/full-market-data/sync', { method: 'POST' });
 export const getAccountPortfolio = () => requestJson('/api/kiwoom/account/portfolio');
 export const getTradingStatus = () => requestJson('/api/trading/status');
+export const getAutoTradingControl = () => requestJson('/api/trading/automation');
+export const updateAutoTradingControl = (request) =>
+  requestJson('/api/trading/automation', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(request)
+  });
 export const getPaperOrders = () => requestJson('/api/trading/orders');
 export const placePaperOrder = (request) =>
   requestJson('/api/trading/orders', {

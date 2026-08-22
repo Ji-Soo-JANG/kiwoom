@@ -1,20 +1,22 @@
+import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import {
-  approveLimitedTrade,
-  approvePaperExit,
+  getAutoTradingControl,
   getLimitedTradeCandidates,
   getPaperTradeCycles,
   getPaperTradeResults,
   getTradePerformanceSummary,
   getTradingPerformance,
-  rejectLimitedTrade,
+  updateAutoTradingControl,
   verifyPaperTradingLifecycle
 } from '../api/kiwoomApi';
 import { EmptyState, ErrorState, LoadingState } from './AsyncState';
 
 export default function LimitedTradingPanel() {
   const queryClient = useQueryClient();
+  const [controlForm, setControlForm] = useState(null);
+  const control = useQuery({ queryKey: ['auto-trading-control'], queryFn: getAutoTradingControl });
   const candidates = useQuery({
     queryKey: ['limited-trade-candidates'],
     queryFn: getLimitedTradeCandidates
@@ -35,12 +37,20 @@ export default function LimitedTradingPanel() {
     queryClient.invalidateQueries({ queryKey: ['paper-trade-results'] });
     queryClient.invalidateQueries({ queryKey: ['trade-performance-summary'] });
   };
-  const approve = useMutation({ mutationFn: approveLimitedTrade, onSuccess: refresh });
-  const reject = useMutation({ mutationFn: rejectLimitedTrade, onSuccess: refresh });
-  const exit = useMutation({ mutationFn: approvePaperExit, onSuccess: refresh });
+  const saveControl = useMutation({
+    mutationFn: updateAutoTradingControl,
+    onSuccess: (data) => {
+      queryClient.setQueryData(['auto-trading-control'], data);
+      setControlForm(data);
+      refresh();
+    }
+  });
   const verification = useMutation({ mutationFn: verifyPaperTradingLifecycle });
 
+  const currentControl = controlForm ?? control.data;
+
   if (
+    control.isLoading ||
     candidates.isLoading ||
     performance.isLoading ||
     cycles.isLoading ||
@@ -50,23 +60,82 @@ export default function LimitedTradingPanel() {
     return <LoadingState>제한 매매 상태를 불러오는 중입니다.</LoadingState>;
   }
   const error =
+    control.error ||
     candidates.error ||
     performance.error ||
     cycles.error ||
     results.error ||
     summary.error ||
-    approve.error ||
-    reject.error ||
-    exit.error;
+    saveControl.error;
   if (error) return <ErrorState>{error.message}</ErrorState>;
 
   const status = performance.data;
   return (
     <section aria-labelledby="limited-trading-title">
-      <h2 id="limited-trading-title">제한 매매 승인</h2>
+      <h2 id="limited-trading-title">자동매매 제어</h2>
       <p className="subtitle">
-        실제 주문이 아닌 PAPER 주문만 승인합니다. 주문당 10만원, 한 종목, 하루 2회로 제한됩니다.
+        PAPER는 신호 발생부터 청산까지 자동 처리합니다. 실투자는 어댑터가 없어 ON 상태에서도 주문이
+        전송되지 않습니다.
       </p>
+      {currentControl && (
+        <form
+          onSubmit={(event) => {
+            event.preventDefault();
+            saveControl.mutate({
+              paperEnabled: currentControl.paperEnabled,
+              paperStrategy: currentControl.paperStrategy,
+              liveEnabled: currentControl.liveEnabled,
+              liveStrategy: currentControl.liveStrategy,
+              liveConfirmation: currentControl.liveEnabled ? 'ENABLE_BLOCKED_LIVE_AUTOMATION' : ''
+            });
+          }}
+        >
+          <label>
+            <input
+              type="checkbox"
+              checked={currentControl.paperEnabled}
+              onChange={(e) =>
+                setControlForm({ ...currentControl, paperEnabled: e.target.checked })
+              }
+            />
+            모의투자 자동매매
+          </label>
+          <select
+            aria-label="모의투자 전략"
+            value={currentControl.paperStrategy}
+            onChange={(e) => setControlForm({ ...currentControl, paperStrategy: e.target.value })}
+          >
+            {currentControl.availableStrategies.map((strategy) => (
+              <option key={strategy}>{strategy}</option>
+            ))}
+          </select>
+          <label>
+            <input
+              type="checkbox"
+              checked={currentControl.liveEnabled}
+              onChange={(e) => setControlForm({ ...currentControl, liveEnabled: e.target.checked })}
+            />
+            실투자 자동매매 요청
+          </label>
+          <select
+            aria-label="실투자 전략"
+            value={currentControl.liveStrategy}
+            onChange={(e) => setControlForm({ ...currentControl, liveStrategy: e.target.value })}
+          >
+            {currentControl.availableStrategies.map((strategy) => (
+              <option key={strategy}>{strategy}</option>
+            ))}
+          </select>
+          <button type="submit" disabled={saveControl.isPending}>
+            {saveControl.isPending ? '저장 중...' : '자동매매 설정 저장'}
+          </button>
+        </form>
+      )}
+      {control.data?.liveEnabled && (
+        <div className="error" role="status">
+          실투자 주문 차단: {control.data.liveBlockers.join(' ')}
+        </div>
+      )}
       <div className={status?.halted ? 'error' : 'empty-state'} role="status">
         표본 {status?.sampleCount ?? 0}건 · 평균 슬리피지{' '}
         {Number(status?.averageSlippageRate ?? 0).toFixed(4)} · 평균 순수익률{' '}
@@ -89,7 +158,7 @@ export default function LimitedTradingPanel() {
         </div>
       )}
       {!candidates.data?.length ? (
-        <EmptyState>승인을 기다리는 후보가 없습니다.</EmptyState>
+        <EmptyState>발견된 전략 후보가 없습니다.</EmptyState>
       ) : (
         <ul className="result-list" aria-label="매매 후보 목록">
           {candidates.data.map((candidate) => (
@@ -99,27 +168,14 @@ export default function LimitedTradingPanel() {
                 기준가 {Number(candidate.referencePrice).toLocaleString()}원 ·{' '}
                 {candidate.suggestedQuantity}주 · {candidate.status}
               </div>
-              {candidate.status === 'PENDING' && (
-                <div className="button-group">
-                  <button type="button" onClick={() => approve.mutate(candidate.id)}>
-                    PAPER 주문 승인
-                  </button>
-                  <button type="button" onClick={() => reject.mutate(candidate.id)}>
-                    거절
-                  </button>
-                </div>
-              )}
             </li>
           ))}
         </ul>
       )}
       <h3>보유 중</h3>
       <TradeCycles items={cycles.data?.filter((item) => item.status === 'HOLDING')} />
-      <h3>청산 승인 대기</h3>
-      <TradeCycles
-        items={cycles.data?.filter((item) => item.status === 'EXIT_PENDING')}
-        onExit={(id) => exit.mutate(id)}
-      />
+      <h3>청산 조건 감지</h3>
+      <TradeCycles items={cycles.data?.filter((item) => item.status === 'EXIT_PENDING')} />
       <h3>완료 거래</h3>
       {!results.data?.length ? (
         <EmptyState>완료된 PAPER 거래가 없습니다.</EmptyState>
@@ -145,7 +201,7 @@ export default function LimitedTradingPanel() {
   );
 }
 
-function TradeCycles({ items = [], onExit }) {
+function TradeCycles({ items = [] }) {
   if (!items.length) return <EmptyState>해당 상태의 PAPER 포지션이 없습니다.</EmptyState>;
   return (
     <ul className="result-list">
@@ -157,11 +213,6 @@ function TradeCycles({ items = [], onExit }) {
             손절 {Number(item.stopLossPrice).toLocaleString()}원 · 익절{' '}
             {Number(item.takeProfitPrice).toLocaleString()}원 · 최대 {item.maxHoldingDays}일
           </div>
-          {onExit && (
-            <button type="button" onClick={() => onExit(item.id)}>
-              PAPER 청산 승인
-            </button>
-          )}
         </li>
       ))}
     </ul>
