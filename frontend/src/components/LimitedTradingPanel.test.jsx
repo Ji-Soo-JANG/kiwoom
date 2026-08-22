@@ -65,7 +65,10 @@ describe('LimitedTradingPanel', () => {
       </QueryClientProvider>
     );
     expect(await screen.findByText('005930')).toBeInTheDocument();
-    expect(screen.getByRole('checkbox', { name: '모의투자 자동매매' })).toBeInTheDocument();
+    expect(screen.getByRole('switch', { name: '모의투자 자동매매' })).toHaveAttribute(
+      'aria-checked',
+      'false'
+    );
     expect(screen.getByRole('button', { name: '자동매매 설정 저장' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '로컬 주문 흐름 검증' })).toBeInTheDocument();
   });

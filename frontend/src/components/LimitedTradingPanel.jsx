@@ -90,6 +90,7 @@ export default function LimitedTradingPanel() {
       </p>
       {currentControl && (
         <form
+          className="automation-control-form"
           onSubmit={(event) => {
             event.preventDefault();
             saveControl.mutate({
@@ -101,16 +102,13 @@ export default function LimitedTradingPanel() {
             });
           }}
         >
-          <label>
-            <input
-              type="checkbox"
-              checked={currentControl.paperEnabled}
-              onChange={(e) =>
-                setControlForm({ ...currentControl, paperEnabled: e.target.checked })
-              }
-            />
-            모의투자 자동매매
-          </label>
+          <ToggleSwitch
+            label="모의투자 자동매매"
+            enabled={currentControl.paperEnabled}
+            onToggle={() =>
+              setControlForm({ ...currentControl, paperEnabled: !currentControl.paperEnabled })
+            }
+          />
           <select
             aria-label="모의투자 전략"
             value={currentControl.paperStrategy}
@@ -120,14 +118,13 @@ export default function LimitedTradingPanel() {
               <option key={strategy}>{strategy}</option>
             ))}
           </select>
-          <label>
-            <input
-              type="checkbox"
-              checked={currentControl.liveEnabled}
-              onChange={(e) => setControlForm({ ...currentControl, liveEnabled: e.target.checked })}
-            />
-            실투자 자동매매 요청
-          </label>
+          <ToggleSwitch
+            label="실투자 자동매매 요청"
+            enabled={currentControl.liveEnabled}
+            onToggle={() =>
+              setControlForm({ ...currentControl, liveEnabled: !currentControl.liveEnabled })
+            }
+          />
           <select
             aria-label="실투자 전략"
             value={currentControl.liveStrategy}
@@ -230,6 +227,27 @@ export default function LimitedTradingPanel() {
         {((summary.data?.maximumDrawdownRate ?? 0) * 100).toFixed(2)}%
       </div>
     </section>
+  );
+}
+
+function ToggleSwitch({ label, enabled, onToggle }) {
+  return (
+    <div className="automation-toggle-row">
+      <span>{label}</span>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={enabled}
+        aria-label={label}
+        className={`automation-toggle ${enabled ? 'is-on' : 'is-off'}`}
+        onClick={onToggle}
+      >
+        <span className="automation-toggle-track" aria-hidden="true">
+          <span className="automation-toggle-thumb" />
+        </span>
+        <span className="automation-toggle-state">{enabled ? 'ON' : 'OFF'}</span>
+      </button>
+    </div>
   );
 }
 
