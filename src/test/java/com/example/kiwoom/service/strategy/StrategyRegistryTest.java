@@ -14,13 +14,15 @@ class StrategyRegistryTest {
                 new StrategyRegistry(
                         List.of(
                                 new DropBaseBreakoutPullbackStrategy(),
-                                new MultiPeriodRecoveryPullbackStrategy()));
+                                new MultiPeriodRecoveryPullbackStrategy(),
+                                new CurrentRecoveryPullbackStrategy()));
         assertThat(registry.require(DropBaseBreakoutPullbackStrategy.VERSION_KEY)).isNotNull();
         assertThat(registry.require(MultiPeriodRecoveryPullbackStrategy.VERSION_KEY)).isNotNull();
         assertThat(
                         registry.require(MultiPeriodRecoveryPullbackStrategy.VERSION_KEY)
                                 .requiredHistoryDays())
                 .isEqualTo(1500);
+        assertThat(registry.require(CurrentRecoveryPullbackStrategy.VERSION_KEY)).isNotNull();
         assertThatThrownBy(() -> registry.require("unknown-v1"))
                 .isInstanceOf(ResourceNotFoundException.class);
     }

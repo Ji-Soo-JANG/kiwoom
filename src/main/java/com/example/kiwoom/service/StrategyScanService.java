@@ -4,7 +4,7 @@ import com.example.kiwoom.dto.StrategyCandidate;
 import com.example.kiwoom.dto.StrategyScanResponse;
 import com.example.kiwoom.repository.MarketDataRepository;
 import com.example.kiwoom.repository.StrategySnapshotRepository;
-import com.example.kiwoom.service.strategy.MultiPeriodRecoveryPullbackStrategy;
+import com.example.kiwoom.service.strategy.CurrentRecoveryPullbackStrategy;
 import com.example.kiwoom.service.strategy.StrategyRegistry;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -18,7 +18,7 @@ import reactor.core.publisher.Mono;
 
 @Service
 public class StrategyScanService {
-    public static final String STRATEGY_VERSION = MultiPeriodRecoveryPullbackStrategy.VERSION_KEY;
+    public static final String STRATEGY_VERSION = CurrentRecoveryPullbackStrategy.VERSION_KEY;
     private static final String SCOPE = "로컬 DB에 저장된 현물 주식 일봉 대상";
 
     private final MarketDataRepository repository;
