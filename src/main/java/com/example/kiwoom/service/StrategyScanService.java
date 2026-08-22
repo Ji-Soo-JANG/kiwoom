@@ -4,6 +4,8 @@ import com.example.kiwoom.dto.StrategyCandidate;
 import com.example.kiwoom.dto.StrategyScanResponse;
 import com.example.kiwoom.repository.MarketDataRepository;
 import com.example.kiwoom.repository.StrategySnapshotRepository;
+import com.example.kiwoom.service.strategy.DropBaseBreakoutPullbackStrategy;
+import com.example.kiwoom.service.strategy.StrategyRegistry;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -16,21 +18,23 @@ import reactor.core.publisher.Mono;
 
 @Service
 public class StrategyScanService {
-    public static final String STRATEGY_VERSION = "drop-base-breakout-pullback-v1";
+    public static final String STRATEGY_VERSION = DropBaseBreakoutPullbackStrategy.VERSION_KEY;
     private static final String SCOPE = "로컬 DB에 90개 이상 일봉이 저장된 전체 종목";
 
     private final MarketDataRepository repository;
     private final StrategySnapshotRepository snapshots;
     private final LimitedTradingService limitedTrading;
-    private final StrategyPatternDetector detector = new StrategyPatternDetector();
+    private final StrategyRegistry strategies;
 
     public StrategyScanService(
             MarketDataRepository repository,
             StrategySnapshotRepository snapshots,
-            LimitedTradingService limitedTrading) {
+            LimitedTradingService limitedTrading,
+            StrategyRegistry strategies) {
         this.repository = repository;
         this.snapshots = snapshots;
         this.limitedTrading = limitedTrading;
+        this.strategies = strategies;
     }
 
     public Mono<StrategyScanResponse> scan() {
@@ -60,8 +64,12 @@ public class StrategyScanService {
                                         .collectList()
                                         .map(
                                                 prices ->
-                                                        detector.analyze(
-                                                                stock, prices, boxRangeDays)),
+                                                        strategies
+                                                                .require(STRATEGY_VERSION)
+                                                                .analyze(
+                                                                        stock,
+                                                                        prices,
+                                                                        boxRangeDays)),
                         8)
                 .collectList()
                 .flatMap(

@@ -12,6 +12,8 @@ import com.example.kiwoom.dto.StrategyScanResponse;
 import com.example.kiwoom.dto.TradeCandidateRequest;
 import com.example.kiwoom.repository.MarketDataRepository;
 import com.example.kiwoom.repository.StrategySnapshotRepository;
+import com.example.kiwoom.service.strategy.DropBaseBreakoutPullbackStrategy;
+import com.example.kiwoom.service.strategy.StrategyRegistry;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
@@ -44,7 +46,8 @@ class StrategyScanPipelineTest {
                 new StrategyScanService(
                         mock(MarketDataRepository.class),
                         mock(StrategySnapshotRepository.class),
-                        limited);
+                        limited,
+                        new StrategyRegistry(List.of(new DropBaseBreakoutPullbackStrategy())));
         var candidate =
                 new StrategyCandidate(
                         "005930",

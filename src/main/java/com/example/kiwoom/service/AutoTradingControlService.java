@@ -4,6 +4,7 @@ import com.example.kiwoom.dto.AutoTradingControl;
 import com.example.kiwoom.dto.AutoTradingControlRequest;
 import com.example.kiwoom.error.TradingSafetyException;
 import com.example.kiwoom.repository.AutoTradingControlRepository;
+import com.example.kiwoom.service.strategy.StrategyRegistry;
 import java.util.List;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
@@ -12,12 +13,14 @@ import reactor.core.publisher.Mono;
 public class AutoTradingControlService {
     public static final String LIVE_CONFIRMATION = "ENABLE_BLOCKED_LIVE_AUTOMATION";
     public static final String DEFAULT_STRATEGY = "drop-base-breakout-pullback-v1";
-    private static final List<String> STRATEGIES = List.of(DEFAULT_STRATEGY);
     private static final List<String> LIVE_BLOCKERS = List.of("실주문 브로커 어댑터가 연결되지 않아 주문 전송은 차단됩니다.");
     private final AutoTradingControlRepository repository;
+    private final StrategyRegistry strategies;
 
-    public AutoTradingControlService(AutoTradingControlRepository repository) {
+    public AutoTradingControlService(
+            AutoTradingControlRepository repository, StrategyRegistry strategies) {
         this.repository = repository;
+        this.strategies = strategies;
     }
 
     public Mono<AutoTradingControl> get() {
@@ -45,7 +48,7 @@ public class AutoTradingControlService {
     }
 
     private void validateStrategy(String strategy) {
-        if (!STRATEGIES.contains(strategy))
+        if (!strategies.versionKeys().contains(strategy))
             throw new TradingSafetyException("지원하지 않는 전략입니다: " + strategy);
     }
 
@@ -56,7 +59,7 @@ public class AutoTradingControlService {
                 c.liveEnabled(),
                 c.liveStrategy(),
                 false,
-                STRATEGIES,
+                strategies.versionKeys(),
                 c.liveEnabled() ? LIVE_BLOCKERS : List.of(),
                 c.updatedBy(),
                 c.updatedAt());
