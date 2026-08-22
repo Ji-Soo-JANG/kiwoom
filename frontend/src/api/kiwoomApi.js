@@ -105,10 +105,11 @@ export const searchStocks = (query, market = 'ALL', productType = 'ALL') =>
   );
 export const getMarketRankings = (market = 'ALL') =>
   requestJson(`/api/kiwoom/market-rankings?market=${encodeURIComponent(market)}`);
-/** @param {number} [boxRangeDays] 박스권 횡보 기준 기간(거래일), 기본 60일 */
-export const getStrategyCandidates = (boxRangeDays = 60, asOf = '') => {
+/** DB 일봉 기반 전략 후보를 버전별로 조회한다. */
+export const getStrategyCandidates = (boxRangeDays = 60, asOf = '', strategyVersion = '') => {
   const params = new URLSearchParams({ boxRangeDays: String(boxRangeDays) });
   if (asOf) params.set('asOf', asOf);
+  if (strategyVersion) params.set('strategyVersion', strategyVersion);
   return requestJson(`/api/kiwoom/strategy-candidates?${params}`);
 };
 export const getLatestStrategySnapshot = () => requestJson('/api/kiwoom/strategy-scans/latest');

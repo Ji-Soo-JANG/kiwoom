@@ -69,6 +69,13 @@ describe('MarketDiscovery', () => {
       checkedAt: '2026-08-16T03:00:00Z'
     });
     api.synchronizeFullMarketData.mockResolvedValue({});
+    api.getTradingStrategies.mockResolvedValue([
+      {
+        versionKey: 'drop-multi-base-current-pullback-v3',
+        name: '급락-연속박스-최근회복-현재눌림',
+        description: '현재 진행 중인 패턴만 탐지'
+      }
+    ]);
   });
 
   it('여러 순위 목록을 동시에 출력하고 클릭한 종목을 전달한다', async () => {
@@ -92,7 +99,7 @@ describe('MarketDiscovery', () => {
     expect(onSelectStock).toHaveBeenCalledWith('005930');
   });
 
-  it('박스권 기간 바를 조절하면 새 기간으로 조건 검색을 다시 요청한다', async () => {
+  it('현재 패턴 전략과 장기 박스권 기간을 선택해 조건 검색한다', async () => {
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     render(
       <QueryClientProvider client={client}>
@@ -100,11 +107,20 @@ describe('MarketDiscovery', () => {
       </QueryClientProvider>
     );
 
-    const slider = await screen.findByLabelText('박스권 기준 기간 60거래일');
-    fireEvent.change(slider, { target: { value: '90' } });
+    expect(await screen.findByLabelText('발견 전략')).toHaveValue(
+      'drop-multi-base-current-pullback-v3'
+    );
+    const period = screen.getByLabelText('박스권 기준 기간 60거래일');
+    fireEvent.change(period, { target: { value: '240' } });
 
-    await waitFor(() => expect(api.getStrategyCandidates).toHaveBeenCalledWith(90, ''));
-    expect(await screen.findByText(/90거래일 동안의 박스권 횡보를 기준으로/)).toBeInTheDocument();
+    await waitFor(() =>
+      expect(api.getStrategyCandidates).toHaveBeenCalledWith(
+        240,
+        '',
+        'drop-multi-base-current-pullback-v3'
+      )
+    );
+    expect(await screen.findByText(/60~1,200거래일 구간을 함께 비교/)).toBeInTheDocument();
   });
 
   it('시장 카드 표시와 순서 및 시장 설정을 브라우저에 저장한다', async () => {

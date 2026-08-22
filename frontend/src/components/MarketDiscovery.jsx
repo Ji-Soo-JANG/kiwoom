@@ -6,6 +6,7 @@ import {
   getMarketDataStatus,
   getMarketRankings,
   getStrategyCandidates,
+  getTradingStrategies,
   synchronizeFullMarketData,
   synchronizeMarketData
 } from '../api/kiwoomApi';
@@ -15,6 +16,8 @@ import {
  * REFRESH_COOLDOWN_MS 이후에야 다시 새로고침할 수 있습니다.
  */
 const REFRESH_COOLDOWN_MS = 30_000;
+const CURRENT_PATTERN_STRATEGY = 'drop-multi-base-current-pullback-v3';
+const BASE_WINDOWS = [60, 120, 240, 480, 720, 1200];
 
 function useRefreshCooldown() {
   const [cooldownEnd, setCooldownEnd] = useState(0);
@@ -92,6 +95,7 @@ function MarketDiscovery({ onSelectStock }) {
   const [cardSettings, setCardSettings] = useState(loadCardSettings);
   const [showCardSettings, setShowCardSettings] = useState(false);
   const [boxRangeDays, setBoxRangeDays] = useState(60);
+  const [strategyVersion, setStrategyVersion] = useState(CURRENT_PATTERN_STRATEGY);
   const [strategyAsOf, setStrategyAsOf] = useState('');
   const deferredBoxRangeDays = useDeferredValue(boxRangeDays);
   const refreshCooldown = useRefreshCooldown();
@@ -109,9 +113,19 @@ function MarketDiscovery({ onSelectStock }) {
     mutationFn: () => synchronizeFullMarketData(),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['full-market-data-status'] })
   });
+  const strategyCatalog = useQuery({
+    queryKey: ['trading-strategies'],
+    queryFn: getTradingStrategies
+  });
   const strategy = useQuery({
-    queryKey: ['strategy-candidates', deferredBoxRangeDays, strategyAsOf],
-    queryFn: () => getStrategyCandidates(deferredBoxRangeDays, strategyAsOf),
+    queryKey: [
+      'strategy-candidates',
+      strategyVersion,
+      deferredBoxRangeDays,
+      strategyAsOf
+    ],
+    queryFn: () =>
+      getStrategyCandidates(deferredBoxRangeDays, strategyAsOf, strategyVersion),
     staleTime: 5 * 60 * 1000,
     retry: false
   });
@@ -250,31 +264,54 @@ function MarketDiscovery({ onSelectStock }) {
       <article className="strategy-results" aria-labelledby="strategy-results-title">
         <div className="strategy-heading">
           <div>
-            <h3 id="strategy-results-title">급락 후 횡보·돌파·눌림목 후보</h3>
-            <p>로컬 DB에 저장된 전체 종목의 최근 250개 일봉을 분석합니다.</p>
+            <h3 id="strategy-results-title">현재 급락·장기 박스권·회복 눌림 후보</h3>
+            <p>
+              DB에 저장된 최대 1,500개 일봉을 분석하며 과거에 끝난 패턴은 제외합니다.
+            </p>
           </div>
           <button type="button" onClick={() => strategy.refetch()} disabled={strategy.isFetching}>
             {strategy.isFetching ? '조건 검색 중...' : '조건 다시 검색'}
           </button>
         </div>
         <div className="box-range-control">
+          <label htmlFor="discovery-strategy">발견 전략</label>
+          <select
+            id="discovery-strategy"
+            value={strategyVersion}
+            onChange={(event) => setStrategyVersion(event.target.value)}
+          >
+            {(strategyCatalog.data ?? []).map((item) => (
+              <option key={item.versionKey} value={item.versionKey}>
+                {item.name} ({item.versionKey})
+              </option>
+            ))}
+            {!strategyCatalog.data?.some(
+              (item) => item.versionKey === CURRENT_PATTERN_STRATEGY
+            ) && (
+              <option value={CURRENT_PATTERN_STRATEGY}>
+                급락-연속박스-최근회복-현재눌림
+              </option>
+            )}
+          </select>
           <label htmlFor="box-range-days">
             박스권 기준 기간 <strong>{boxRangeDays}거래일</strong>
           </label>
-          <input
+          <select
             id="box-range-days"
-            type="range"
-            min="30"
-            max="120"
-            step="10"
             value={boxRangeDays}
             aria-describedby="box-range-days-help"
             onChange={(event) => setBoxRangeDays(Number(event.target.value))}
-          />
+          >
+            {BASE_WINDOWS.map((days) => (
+              <option key={days} value={days}>
+                {days}거래일
+              </option>
+            ))}
+          </select>
           <small id="box-range-days-help">
             {deferredBoxRangeDays !== boxRangeDays
               ? '기간 변경 중...'
-              : `${deferredBoxRangeDays}거래일 동안의 박스권 횡보를 기준으로 분석합니다.`}
+              : '선택 기간과 60~1,200거래일 구간을 함께 비교해 가장 적합한 박스권을 찾습니다.'}
           </small>
           <label htmlFor="strategy-as-of">연구 기준일 (비우면 최신)</label>
           <input
@@ -293,8 +330,8 @@ function MarketDiscovery({ onSelectStock }) {
         {strategy.data && (
           <>
             <p className="strategy-scope">
-              범위: {strategy.data.scope} · {strategy.data.scannedCount}개 분석 · 70점 이상 조건
-              충족
+              범위: {strategy.data.scope} · {strategy.data.scannedCount}개 분석 · 현재까지 모든
+              단계가 이어진 종목만 강조
             </p>
             {strategy.data.strategyVersion && (
               <p className="strategy-scope">
@@ -333,7 +370,7 @@ function MarketDiscovery({ onSelectStock }) {
           </>
         )}
         <p className="strategy-warning">
-          일봉이 90개 이상 수집된 종목만 분석하며 결과는 매수 추천이 아닙니다.
+          장기 구간은 충분한 일봉이 저장된 종목만 정확히 판정되며 결과는 매수 추천이 아닙니다.
         </p>
       </article>{' '}
       {rankings.data.updatedAt && (

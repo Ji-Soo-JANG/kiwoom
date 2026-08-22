@@ -192,6 +192,7 @@ body {
 }
 .box-range-control {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 12px;
   margin-top: 14px;
@@ -199,6 +200,19 @@ body {
   border-radius: 8px;
   background: #f8f9fc;
   font-size: 13px;
+}
+.box-range-control select,
+.box-range-control input[type='date'] {
+  min-height: 36px;
+  padding: 7px 9px;
+  border: 1px solid #d0d5dd;
+  border-radius: 5px;
+  background: #fff;
+  color: #344054;
+}
+.box-range-control select:first-of-type {
+  min-width: 280px;
+  flex: 1;
 }
 .box-range-control label {
   flex: 0 0 auto;
