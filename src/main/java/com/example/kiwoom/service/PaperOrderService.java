@@ -25,7 +25,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Service
-public class PaperOrderService {
+public class PaperOrderService implements com.example.kiwoom.service.broker.BrokerAdapter {
     private static final ZoneId SEOUL = ZoneId.of("Asia/Seoul");
     private final TradingModeService modes;
     private final PaperTradingRepository repository;
@@ -45,6 +45,16 @@ public class PaperOrderService {
             return Mono.error(new TradingSafetyException("외부 실주문 전송은 아직 사용할 수 없습니다."));
         }
         return place(request, mode);
+    }
+
+    @Override
+    public TradingMode mode() {
+        return TradingMode.PAPER;
+    }
+
+    @Override
+    public boolean externalSubmissionAvailable() {
+        return false;
     }
 
     public Mono<TradingOrder> placeAutomatedPaper(PaperOrderRequest request) {

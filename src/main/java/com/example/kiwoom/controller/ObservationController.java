@@ -37,4 +37,10 @@ public class ObservationController {
     public Mono<ObservationReport> report(@PathVariable long id) {
         return service.report(id);
     }
+
+    @GetMapping("/latest")
+    public Mono<ObservationReport> latest() {
+        return service.latestOrCreate(
+                com.example.kiwoom.service.StrategyScanService.STRATEGY_VERSION);
+    }
 }

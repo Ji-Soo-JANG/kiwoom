@@ -100,6 +100,15 @@ public class ObservationRepository {
                 .one();
     }
 
+    public Mono<ObservationReport> latest(String strategyVersion) {
+        return database.sql(
+                        "SELECT id FROM signal_observation WHERE strategy_version=:version ORDER BY id DESC LIMIT 1")
+                .bind("version", strategyVersion)
+                .map(row -> ((Number) row.get("id")).longValue())
+                .one()
+                .flatMap(this::report);
+    }
+
     private DatabaseClient.GenericExecuteSpec bindNullable(
             DatabaseClient.GenericExecuteSpec query, String name, Object value, Class<?> type) {
         return value == null ? query.bindNull(name, type) : query.bind(name, value);

@@ -26,4 +26,10 @@ public class ObservationService {
     public Mono<ObservationReport> report(long id) {
         return repository.report(id);
     }
+
+    public Mono<ObservationReport> latestOrCreate(String strategyVersion) {
+        return repository
+                .latest(strategyVersion)
+                .switchIfEmpty(create(new ObservationRequest("자동 장중 관찰", strategyVersion)));
+    }
 }
