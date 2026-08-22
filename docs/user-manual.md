@@ -145,20 +145,34 @@ PAPER가 OFF이면 후보만 기록하고 주문은 생성하지 않는다.
 
 ## 9. 거래일 자동 스케줄
 
+스윙 운용에서는 장 마감 때 보유 종목을 강제 매도하지 않습니다. 보유 상태는 DB에 남고 다음 거래일 서버 기동 후 다시 감시됩니다. 매도 체결 시 손익·비용·수익률·보유기간·청산 사유가 저장됩니다.
+
 IntelliJ 환경변수에 등록한다.
 
 ```text
 TRADING_SCHEDULER_ENABLED=true
 TRADING_SCHEDULER_BATCH_SIZE=100
-TRADING_SCHEDULER_CRON=0 40 15 * * MON-FRI
+TRADING_SCHEDULER_CRON=0 5 9 * * MON-FRI
+SWING_MONITOR_ENABLED=true
+SWING_MONITOR_CRON=0 */1 9-15 * * MON-FRI
+SWING_CLOSE_CRON=0 35 15 * * MON-FRI
 ```
 
-기본적으로 거래일 15:40에 다음 순서로 실행한다.
+기본적으로 거래일 09:05에 다음 순서로 실행한다.
 
 1. 시장 데이터 갱신
 2. 전략 스캔
 3. PAPER 자동 진입
 4. 관찰 표본 저장
+
+장중에는 1분마다 저장된 PAPER 보유 종목의 현재가를 확인해 손절·익절·최대 보유기간을 평가합니다. 15:35에는 주문·체결·잔고 정합성과 누적 완료 거래 성과를 로그에 남깁니다.
+
+Windows 작업 스케줄러에는 다음 두 스크립트를 등록합니다.
+
+- 평일 08:55 실행: `powershell.exe -ExecutionPolicy Bypass -File scripts\start-paper-swing.ps1`
+- 평일 15:40 실행: `powershell.exe -ExecutionPolicy Bypass -File scripts\stop-paper-swing.ps1`
+
+시작 스크립트는 PostgreSQL과 빌드된 Spring 서버만 백그라운드로 실행합니다. React 화면은 Spring 서버에 포함되어 있어 Vite를 별도로 실행하지 않습니다. 종료 스크립트는 서버를 종료한 뒤 PostgreSQL 컨테이너를 중지합니다. 휴장일 자동 판정은 애플리케이션 매매 스케줄에 적용되며, 정확한 공휴일은 `MARKET_HOLIDAYS`에 등록해야 합니다.
 
 주말과 등록된 휴장일에는 실행하지 않으며, 이전 실행이 끝나지 않았으면 중복 실행하지 않는다.
 
