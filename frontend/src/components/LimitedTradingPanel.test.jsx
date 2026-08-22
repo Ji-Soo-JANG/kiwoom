@@ -17,6 +17,14 @@ describe('LimitedTradingPanel', () => {
       availableStrategies: ['drop-base-breakout-pullback-v1'],
       liveBlockers: []
     });
+    api.getLatestObservation.mockResolvedValue({
+      observedTradingDays: 3,
+      minimumTradingDays: 20,
+      missedSignals: 1,
+      unexpectedSignals: 0,
+      agreementRate: 90,
+      averagePriceDeviationRate: 0.4
+    });
     api.getLimitedTradeCandidates.mockResolvedValue([
       {
         id: 1,

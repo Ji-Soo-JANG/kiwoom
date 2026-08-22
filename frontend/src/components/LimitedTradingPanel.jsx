@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   getAutoTradingControl,
   getLimitedTradeCandidates,
+  getLatestObservation,
   getPaperTradeCycles,
   getPaperTradeResults,
   getTradePerformanceSummary,
@@ -17,6 +18,7 @@ export default function LimitedTradingPanel() {
   const queryClient = useQueryClient();
   const [controlForm, setControlForm] = useState(null);
   const control = useQuery({ queryKey: ['auto-trading-control'], queryFn: getAutoTradingControl });
+  const observation = useQuery({ queryKey: ['latest-observation'], queryFn: getLatestObservation });
   const candidates = useQuery({
     queryKey: ['limited-trade-candidates'],
     queryFn: getLimitedTradeCandidates
@@ -51,6 +53,7 @@ export default function LimitedTradingPanel() {
 
   if (
     control.isLoading ||
+    observation.isLoading ||
     candidates.isLoading ||
     performance.isLoading ||
     cycles.isLoading ||
@@ -61,6 +64,7 @@ export default function LimitedTradingPanel() {
   }
   const error =
     control.error ||
+    observation.error ||
     candidates.error ||
     performance.error ||
     cycles.error ||
@@ -136,6 +140,14 @@ export default function LimitedTradingPanel() {
           실투자 주문 차단: {control.data.liveBlockers.join(' ')}
         </div>
       )}
+      <div className="empty-state" role="status">
+        장중 관찰 {observation.data?.observedTradingDays ?? 0}/
+        {observation.data?.minimumTradingDays ?? 20}거래일 · 누락 신호{' '}
+        {observation.data?.missedSignals ?? 0}건 · 예상 밖 신호{' '}
+        {observation.data?.unexpectedSignals ?? 0}건 · 일치율{' '}
+        {Number(observation.data?.agreementRate ?? 0).toFixed(1)}% · 가격 편차{' '}
+        {Number(observation.data?.averagePriceDeviationRate ?? 0).toFixed(2)}%
+      </div>
       <div className={status?.halted ? 'error' : 'empty-state'} role="status">
         표본 {status?.sampleCount ?? 0}건 · 평균 슬리피지{' '}
         {Number(status?.averageSlippageRate ?? 0).toFixed(4)} · 평균 순수익률{' '}

@@ -504,6 +504,9 @@
     "/api/observations/{id}": {
       "get": { "responses": { "200": { "description": "Observation report" } } }
     },
+    "/api/observations/latest": {
+      "get": { "responses": { "200": { "description": "Latest observation progress" } } }
+    },
     "/api/trading/paper/verification": {
       "post": { "responses": { "200": { "description": "Local verification report" } } }
     },
