@@ -9,6 +9,7 @@ import {
   getPaperTradeResults,
   getTradePerformanceSummary,
   getTradingPerformance,
+  getTradingStrategies,
   updateAutoTradingControl,
   verifyPaperTradingLifecycle
 } from '../api/kiwoomApi';
@@ -19,6 +20,10 @@ export default function LimitedTradingPanel() {
   const [controlForm, setControlForm] = useState(null);
   const control = useQuery({ queryKey: ['auto-trading-control'], queryFn: getAutoTradingControl });
   const observation = useQuery({ queryKey: ['latest-observation'], queryFn: getLatestObservation });
+  const strategyCatalog = useQuery({
+    queryKey: ['trading-strategies'],
+    queryFn: getTradingStrategies
+  });
   const candidates = useQuery({
     queryKey: ['limited-trade-candidates'],
     queryFn: getLimitedTradeCandidates
@@ -53,6 +58,7 @@ export default function LimitedTradingPanel() {
 
   if (
     control.isLoading ||
+    strategyCatalog.isLoading ||
     observation.isLoading ||
     candidates.isLoading ||
     performance.isLoading ||
@@ -64,6 +70,7 @@ export default function LimitedTradingPanel() {
   }
   const error =
     control.error ||
+    strategyCatalog.error ||
     observation.error ||
     candidates.error ||
     performance.error ||
@@ -140,6 +147,19 @@ export default function LimitedTradingPanel() {
           실투자 주문 차단: {control.data.liveBlockers.join(' ')}
         </div>
       )}
+      <h3>전략 목록</h3>
+      <ul className="result-list" aria-label="자동매매 전략 목록">
+        {strategyCatalog.data?.map((strategy) => (
+          <li key={strategy.versionKey}>
+            <strong>{strategy.name}</strong> · {strategy.versionKey} · {strategy.status}
+            <div>{strategy.description}</div>
+            <details>
+              <summary>파라미터 보기</summary>
+              <pre>{JSON.stringify(strategy.parameters, null, 2)}</pre>
+            </details>
+          </li>
+        ))}
+      </ul>
       <div className="empty-state" role="status">
         장중 관찰 {observation.data?.observedTradingDays ?? 0}/
         {observation.data?.minimumTradingDays ?? 20}거래일 · 누락 신호{' '}

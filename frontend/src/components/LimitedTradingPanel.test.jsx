@@ -25,6 +25,15 @@ describe('LimitedTradingPanel', () => {
       agreementRate: 90,
       averagePriceDeviationRate: 0.4
     });
+    api.getTradingStrategies.mockResolvedValue([
+      {
+        versionKey: 'drop-base-breakout-pullback-v1',
+        name: '급락-횡보-돌파-눌림',
+        status: 'PAPER_ENABLED',
+        description: '전략 설명',
+        parameters: { baseDays: 60 }
+      }
+    ]);
     api.getLimitedTradeCandidates.mockResolvedValue([
       {
         id: 1,

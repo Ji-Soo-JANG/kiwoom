@@ -138,6 +138,7 @@ export const synchronizeFullMarketData = () =>
 export const getAccountPortfolio = () => requestJson('/api/kiwoom/account/portfolio');
 export const getTradingStatus = () => requestJson('/api/trading/status');
 export const getAutoTradingControl = () => requestJson('/api/trading/automation');
+export const getTradingStrategies = () => requestJson('/api/trading/strategies');
 export const getLatestObservation = () => requestJson('/api/observations/latest');
 export const updateAutoTradingControl = (request) =>
   requestJson('/api/trading/automation', {

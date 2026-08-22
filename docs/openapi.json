@@ -539,6 +539,9 @@
     "/api/trading/automation": {
       "get": { "responses": { "200": { "description": "Automatic trading control" } } },
       "post": { "responses": { "200": { "description": "Automatic trading control updated" } } }
+    },
+    "/api/trading/strategies": {
+      "get": { "responses": { "200": { "description": "Versioned trading strategies" } } }
     }
   },
   "components": {
