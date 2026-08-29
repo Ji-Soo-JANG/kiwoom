@@ -92,6 +92,27 @@ export const searchStocks = (query, market = 'ALL', productType = 'ALL') =>
   );
 export const getMarketRankings = (market = 'ALL') =>
   requestJson(`/api/kiwoom/market-rankings?market=${encodeURIComponent(market)}`);
+export const getBoxEvaluationBatches = () => requestJson('/api/research/box-evaluations/batches');
+export const getNextBoxEvaluationItem = (batchId) =>
+  requestJson(`/api/research/box-evaluations/batches/${batchId}/next`);
+export const getBoxEvaluationItem = (itemId, reviewerId) =>
+  requestJson(
+    `/api/research/box-evaluations/items/${itemId}?reviewerId=${encodeURIComponent(reviewerId)}`
+  );
+export const getBoxEvaluationCandles = (itemId) =>
+  requestJson(`/api/research/box-evaluations/items/${itemId}/candles`);
+export const saveBoxEvaluationDraft = (itemId, request) =>
+  requestJson(`/api/research/box-evaluations/items/${itemId}/draft`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(request)
+  });
+export const commitBoxEvaluation = (itemId, request) =>
+  requestJson(`/api/research/box-evaluations/items/${itemId}/commit`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(request)
+  });
 /** DB 일봉 기반 전략 후보를 버전별로 조회한다. */
 export const getStrategyCandidates = (boxRangeDays = 60, asOf = '', strategyVersion = '') => {
   const params = new URLSearchParams({ boxRangeDays: String(boxRangeDays) });

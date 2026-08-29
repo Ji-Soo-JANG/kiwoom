@@ -21,6 +21,7 @@ import MarketDiscovery from './components/MarketDiscovery';
 import StockComparison from './components/StockComparison';
 import SettingsPanel from './components/SettingsPanel';
 import LimitedTradingPanel from './components/LimitedTradingPanel';
+import BoxEvaluationWorkbench from './components/BoxEvaluationWorkbench';
 
 const StockDailyChart = lazy(() => import('./components/StockDailyChart'));
 
@@ -166,6 +167,7 @@ function App({ currentUser, onLogout }) {
         <NavLink to="/chart">차트</NavLink>
         <NavLink to="/compare">종목 비교</NavLink>
         <NavLink to="/discover">종목 발견</NavLink>
+        <NavLink to="/research/box-evaluation">박스권 평가</NavLink>
         <NavLink to="/watchlist">관심 종목</NavLink>
         <NavLink to="/portfolio">포트폴리오</NavLink>
         <NavLink to="/alerts">알림</NavLink>
@@ -268,6 +270,10 @@ function App({ currentUser, onLogout }) {
 
         <Route path="/alerts" element={<AlertCenter onError={handleError} />} />
         <Route path="/trading" element={<LimitedTradingPanel />} />
+        <Route
+          path="/research/box-evaluation"
+          element={<BoxEvaluationWorkbench reviewerId={currentUser?.username ?? 'local-user'} />}
+        />
         <Route path="/settings" element={<SettingsPanel />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

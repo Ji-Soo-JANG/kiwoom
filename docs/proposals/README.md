@@ -6,7 +6,7 @@
 
 | 안건 | 내용 | 상태 |
 |---|---|---|
-| [STR-P06](STR-P06/proposal.md) | 실제 DB 일봉 기반 사용자 박스권 평가 워크벤치 | [1단계 완료](STR-P06/phase-1-completion-report.md) · [2단계 실행 승인 대기](STR-P06/phase-2-execution-plan.md) |
+| [STR-P06](STR-P06/proposal.md) | 실제 DB 일봉 기반 사용자 박스권 평가 워크벤치 | [2단계 완료](STR-P06/phase-2-completion-report.md) · [3단계 실행 승인 대기](STR-P06/phase-3-execution-plan.md) |
 
 ## 상태 정의
 
