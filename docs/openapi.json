@@ -507,6 +507,34 @@
     "/api/observations/latest": {
       "get": { "responses": { "200": { "description": "Latest observation progress" } } }
     },
+    "/api/research/box-evaluations/batches": {
+      "get": { "responses": { "200": { "description": "Blind evaluation batches" } } },
+      "post": { "responses": { "200": { "description": "Evaluation batch created" } } }
+    },
+    "/api/research/box-evaluations/batches/{batchId}/next": {
+      "get": { "responses": { "200": { "description": "Next blind evaluation item" } } }
+    },
+    "/api/research/box-evaluations/items/{itemId}": {
+      "get": { "responses": { "200": { "description": "Blind evaluation item" } } }
+    },
+    "/api/research/box-evaluations/items/{itemId}/candles": {
+      "get": { "responses": { "200": { "description": "Candles ending at cutoff" } } }
+    },
+    "/api/research/box-evaluations/items/{itemId}/draft": {
+      "put": { "responses": { "200": { "description": "Draft saved" } } }
+    },
+    "/api/research/box-evaluations/items/{itemId}/commit": {
+      "post": { "responses": { "200": { "description": "Evaluation committed" } } }
+    },
+    "/api/research/box-evaluations/items/{itemId}/supersede": {
+      "post": { "responses": { "200": { "description": "Correction linked without overwriting original" } } }
+    },
+    "/api/research/box-evaluations/items/{itemId}/reveal": {
+      "post": { "responses": { "200": { "description": "Outcome policy status" } } }
+    },
+    "/api/research/box-evaluations/items/{itemId}/outcome": {
+      "get": { "responses": { "200": { "description": "Outcome policy status" } } }
+    },
     "/api/trading/paper/verification": {
       "post": { "responses": { "200": { "description": "Local verification report" } } }
     },
