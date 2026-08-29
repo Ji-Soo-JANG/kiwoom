@@ -36,7 +36,9 @@ const requestJson = async (url, options) => {
   }
 
   if (response.status === 204) return null;
-  return response.json();
+  const body = await response.text();
+  if (!body.trim()) return null;
+  return JSON.parse(body);
 };
 
 /** @returns {Promise<AuthUser>} */

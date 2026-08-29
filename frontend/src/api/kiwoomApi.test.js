@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   ApiError,
+  getNextBoxEvaluationItem,
   getAlertEvents,
   getCurrentPrice,
   markAlertRead,
@@ -51,6 +52,12 @@ describe('kiwoomApi 오류 처리', () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(null, { status: 204 })));
 
     await expect(markAlertRead(4)).resolves.toBeNull();
+  });
+
+  it('다음 블라인드 항목의 성공한 빈 응답을 완료 상태로 변환한다', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(null, { status: 200 })));
+
+    await expect(getNextBoxEvaluationItem(1)).resolves.toBeNull();
   });
 
   it('백테스트 설정을 JSON으로 전송한다', async () => {

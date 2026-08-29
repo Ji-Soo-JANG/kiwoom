@@ -24,6 +24,15 @@ const reasons = [
   'VOLUME_SPIKES',
   'BOUNDARY_AMBIGUOUS'
 ];
+const emptyForm = () => ({
+  selectedCandidateKey: '',
+  startDate: '',
+  endDate: '',
+  labelCode: '',
+  confidence: 3,
+  reasonCodes: [],
+  comment: ''
+});
 
 function MiniPriceChart({ candles, candidates, activeKeys }) {
   if (!candles.length) return <p className="empty-state">표시할 일봉이 없습니다.</p>;
@@ -66,17 +75,10 @@ export default function BoxEvaluationWorkbench({ reviewerId }) {
   const [batchId, setBatchId] = useState('');
   const [itemId, setItemId] = useState(null);
   const [activeKeys, setActiveKeys] = useState([]);
-  const [form, setForm] = useState({
-    selectedCandidateKey: '',
-    startDate: '',
-    endDate: '',
-    labelCode: '',
-    confidence: 3,
-    reasonCodes: [],
-    comment: ''
-  });
+  const [form, setForm] = useState(emptyForm);
   const [notice, setNotice] = useState('');
   const [outcome, setOutcome] = useState(null);
+  const [navigationError, setNavigationError] = useState(null);
   const batches = useQuery({
     queryKey: ['box-evaluation-batches'],
     queryFn: getBoxEvaluationBatches,
@@ -101,21 +103,47 @@ export default function BoxEvaluationWorkbench({ reviewerId }) {
     const draft = detail.data.draft;
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setActiveKeys(candidates.map((c) => c.candidateKey));
-    if (draft)
-      setForm({
-        selectedCandidateKey: draft.selectedCandidateKey ?? '',
-        startDate: draft.editedStartDate ?? '',
-        endDate: draft.editedEndDate ?? '',
-        labelCode: draft.labelCode ?? '',
-        confidence: draft.confidence ?? 3,
-        reasonCodes: (draft.reasonCodes ?? '').split(',').filter(Boolean),
-        comment: draft.comment ?? ''
-      });
+    setForm(
+      draft
+        ? {
+            selectedCandidateKey: draft.selectedCandidateKey ?? '',
+            startDate: draft.editedStartDate ?? '',
+            endDate: draft.editedEndDate ?? '',
+            labelCode: draft.labelCode ?? '',
+            confidence: draft.confidence ?? 3,
+            reasonCodes: (draft.reasonCodes ?? '').split(',').filter(Boolean),
+            comment: draft.comment ?? ''
+          }
+        : emptyForm()
+    );
   }, [detail.data, candidates]);
-  const next = async () => {
-    const item = await getNextBoxEvaluationItem(selectedBatchId);
-    setItemId(item.id);
-    setNotice('미래 데이터 비공개 상태로 항목을 불러왔습니다.');
+  const next = async ({ afterCommit = false } = {}) => {
+    setNavigationError(null);
+    try {
+      const item = await getNextBoxEvaluationItem(selectedBatchId);
+      if (!item) {
+        setItemId(null);
+        setActiveKeys([]);
+        setForm(emptyForm());
+        setOutcome(null);
+        setNotice('이 평가 과제의 모든 블라인드 항목을 완료했습니다.');
+        return;
+      }
+      setForm(emptyForm());
+      setActiveKeys([]);
+      setOutcome(null);
+      setItemId(item.id);
+      setNotice(
+        afterCommit
+          ? '평가를 확정하고 다음 블라인드 항목을 불러왔습니다.'
+          : '미래 데이터 비공개 상태로 항목을 불러왔습니다.'
+      );
+    } catch (error) {
+      setNavigationError(error);
+      if (afterCommit) {
+        setNotice('평가는 확정됐지만 다음 항목을 불러오지 못했습니다. 다시 시도해 주세요.');
+      }
+    }
   };
   const save = useMutation({
     mutationFn: () =>
@@ -137,7 +165,10 @@ export default function BoxEvaluationWorkbench({ reviewerId }) {
         commitKey: crypto.randomUUID(),
         reviewerId
       }),
-    onSuccess: () => setNotice('평가를 확정했습니다. 원본은 변경되지 않습니다.')
+    onSuccess: async () => {
+      await client.invalidateQueries({ queryKey: ['box-evaluation-batches'] });
+      await next({ afterCommit: true });
+    }
   });
   const reveal = useMutation({
     mutationFn: () => revealBoxEvaluationOutcome(itemId, reviewerId),
@@ -154,7 +185,13 @@ export default function BoxEvaluationWorkbench({ reviewerId }) {
       endDate: candidate.endDate
     }));
   const error =
-    batches.error || detail.error || candles.error || save.error || commit.error || reveal.error;
+    batches.error ||
+    detail.error ||
+    candles.error ||
+    save.error ||
+    commit.error ||
+    reveal.error ||
+    navigationError;
   return (
     <section className="box-workbench" aria-labelledby="box-workbench-title">
       <h2 id="box-workbench-title">박스권 평가 워크벤치</h2>
@@ -173,7 +210,7 @@ export default function BoxEvaluationWorkbench({ reviewerId }) {
             ))}
           </select>
         </label>
-        <button type="button" disabled={!selectedBatchId} onClick={next}>
+        <button type="button" disabled={!selectedBatchId} onClick={() => next()}>
           다음 블라인드 항목
         </button>
       </div>
