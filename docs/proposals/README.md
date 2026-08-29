@@ -6,7 +6,7 @@
 
 | 안건 | 내용 | 상태 |
 |---|---|---|
-| [STR-P06](STR-P06/proposal.md) | 실제 DB 일봉 기반 사용자 박스권 평가 워크벤치 | [3단계 완료](STR-P06/phase-3-completion-report.md) · [실제 데이터 파일럿 승인 대기](STR-P06/pilot-execution-plan.md) |
+| [STR-P06](STR-P06/proposal.md) | 실제 DB 일봉 기반 사용자 박스권 평가 워크벤치 | [3단계 성과 기반 완료·실제 검증 미완료](STR-P06/phase-3-completion-report.md) · [파일럿 승인 대기](STR-P06/pilot-execution-plan.md) |
 
 ## 상태 정의
 
