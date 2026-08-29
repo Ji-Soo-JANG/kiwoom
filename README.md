@@ -1,6 +1,7 @@
 # 📈 Kiwoom 주가 조회 시스템
 
 설치, 실행 및 자동매매 사용 방법은 [사용자 매뉴얼](docs/user-manual.md)을 참고하세요.
+제품 목표와 이후 구현 기준은 [설계 문서 색인](docs/specification-index.md)에서 확인할 수 있습니다.
 
 Spring Boot + React로 구성된 실시간 주식 종목 정보 조회 플랫폼입니다.
 
