@@ -86,19 +86,6 @@ export const updateWatchlistItem = (code, groupName, note) =>
 export const removeFromWatchlist = (code) =>
   requestJson(`/api/watchlist/${encodeURIComponent(code)}`, { method: 'DELETE' });
 
-export const getPortfolio = () => requestJson('/api/portfolio');
-
-export const savePortfolioPosition = (code, quantity, averagePrice) =>
-  requestJson(`/api/portfolio/${encodeURIComponent(code)}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ quantity, averagePrice })
-  });
-
-export const removePortfolioPosition = (code) =>
-  requestJson(`/api/portfolio/${encodeURIComponent(code)}`, { method: 'DELETE' });
-
-export const getPortfolioValuation = () => requestJson('/api/portfolio/valuation');
 export const searchStocks = (query, market = 'ALL', productType = 'ALL') =>
   requestJson(
     `/api/kiwoom/stocks/search?q=${encodeURIComponent(query)}&market=${encodeURIComponent(market)}&productType=${encodeURIComponent(productType)}`
@@ -216,13 +203,3 @@ export const getAlertEvents = (unreadOnly = false, page = 0, size = 20) =>
   requestJson(`/api/alerts/events?unreadOnly=${unreadOnly}&page=${page}&size=${size}`);
 export const markAlertRead = (id) =>
   requestJson(`/api/alerts/events/${id}/read`, { method: 'POST' });
-
-export const getPortfolioProfitTrend = () =>
-  requestJson('/api/portfolio/transactions/profit-trend');
-
-export const importPortfolioTrades = (csv) =>
-  requestJson('/api/portfolio/transactions/import', {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/csv' },
-    body: csv
-  });

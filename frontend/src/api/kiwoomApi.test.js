@@ -3,8 +3,6 @@ import {
   ApiError,
   getAlertEvents,
   getCurrentPrice,
-  getPortfolioProfitTrend,
-  importPortfolioTrades,
   markAlertRead,
   runBacktest,
   runWalkForward,
@@ -36,7 +34,7 @@ describe('kiwoomApi 오류 처리', () => {
     expect(error.message).toContain('잠시 후 다시 시도');
   });
 
-  it('페이지 알림과 포트폴리오 분석 API를 호출한다', async () => {
+  it('페이지 알림 API를 호출한다', async () => {
     const fetchMock = vi
       .fn()
       .mockImplementation(() =>
@@ -45,11 +43,8 @@ describe('kiwoomApi 오류 처리', () => {
     vi.stubGlobal('fetch', fetchMock);
 
     await getAlertEvents(true, 2, 10);
-    await getPortfolioProfitTrend();
-    await importPortfolioTrades('code,type,quantity,price,fee,tax');
 
     expect(fetchMock.mock.calls[0][0]).toContain('unreadOnly=true&page=2&size=10');
-    expect(fetchMock.mock.calls[2][1]).toMatchObject({ method: 'POST', body: expect.any(String) });
   });
 
   it('204 읽음 처리 응답을 null로 변환한다', async () => {

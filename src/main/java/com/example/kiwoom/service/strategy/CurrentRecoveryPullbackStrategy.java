@@ -27,14 +27,11 @@ public class CurrentRecoveryPullbackStrategy implements StockStrategy {
     @Override
     public StrategyCandidate analyze(
             MarketRankingItem stock, List<DailyPriceResponse> prices, int baseDays) {
-        StrategyCandidate candidate = detector.analyze(stock, prices, baseDays);
+        MultiPeriodRecoveryPullbackStrategy.Evaluation evaluation =
+                detector.evaluate(stock, prices, baseDays);
+        StrategyCandidate candidate = evaluation.candidate();
         List<String> conditions = new ArrayList<>(candidate.matchedConditions());
-        boolean currentPattern =
-                contains(conditions, "박스권 진입 전 단기")
-                        && contains(conditions, "장기 박스권")
-                        && contains(conditions, "박스권 내 간헐적 거래량")
-                        && contains(conditions, "이전 낙폭의")
-                        && contains(conditions, "회복 고점 이후 눌림목");
+        boolean currentPattern = evaluation.currentPattern();
         if (currentPattern) conditions.add("최신 일봉이 현재 눌림 단계");
         else if (candidate.score() > 0) conditions.add("현재 진행 중인 전체 패턴이 아니므로 제외");
 
@@ -50,9 +47,5 @@ public class CurrentRecoveryPullbackStrategy implements StockStrategy {
                 candidate.breakoutRate(),
                 candidate.pullbackRate(),
                 List.copyOf(conditions));
-    }
-
-    private boolean contains(List<String> conditions, String text) {
-        return conditions.stream().anyMatch(condition -> condition.contains(text));
     }
 }

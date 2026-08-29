@@ -32,6 +32,11 @@ public class MultiPeriodRecoveryPullbackStrategy implements StockStrategy {
     @Override
     public StrategyCandidate analyze(
             MarketRankingItem stock, List<DailyPriceResponse> source, int preferredBaseDays) {
+        return evaluate(stock, source, preferredBaseDays).candidate();
+    }
+
+    Evaluation evaluate(
+            MarketRankingItem stock, List<DailyPriceResponse> source, int preferredBaseDays) {
         List<DailyPriceResponse> prices =
                 source.stream().sorted(Comparator.comparing(DailyPriceResponse::getDate)).toList();
         Analysis best = null;
@@ -46,19 +51,21 @@ public class MultiPeriodRecoveryPullbackStrategy implements StockStrategy {
                 if (best == null || analysis.score() > best.score()) best = analysis;
             }
         }
-        if (best == null) return insufficient(stock, prices.size());
-        return new StrategyCandidate(
-                stock.code(),
-                stock.name(),
-                stock.currentPrice(),
-                best.score(),
-                best.score() >= 75,
-                percent(best.dropRate()),
-                percent(best.boxRangeRate()),
-                best.volumeSpikeCount(),
-                percent(best.recoveryRatio()),
-                percent(best.pullbackRate()),
-                List.copyOf(best.conditions()));
+        if (best == null) return new Evaluation(insufficient(stock, prices.size()), false);
+        StrategyCandidate candidate =
+                new StrategyCandidate(
+                        stock.code(),
+                        stock.name(),
+                        stock.currentPrice(),
+                        best.score(),
+                        best.score() >= 75,
+                        percent(best.dropRate()),
+                        percent(best.boxRangeRate()),
+                        best.volumeSpikeCount(),
+                        percent(best.recoveryRatio()),
+                        percent(best.pullbackRate()),
+                        List.copyOf(best.conditions()));
+        return new Evaluation(candidate, best.currentPattern());
     }
 
     private Analysis analyzeWindow(
@@ -111,24 +118,31 @@ public class MultiPeriodRecoveryPullbackStrategy implements StockStrategy {
 
         int score = 0;
         List<String> conditions = new ArrayList<>();
-        if (drop <= -0.30) {
+        boolean sharpDrop = drop <= -0.30;
+        if (sharpDrop) {
             score += 20;
             conditions.add("박스권 진입 전 단기 30% 이상 급락");
         }
         double allowedRange = baseDays >= 480 ? 0.45 : baseDays >= 240 ? 0.38 : 0.32;
-        if (boxRange <= allowedRange && coverage >= 0.80 && Math.abs(baseSlope) <= 0.0008) {
+        boolean stableBase =
+                boxRange <= allowedRange && coverage >= 0.80 && Math.abs(baseSlope) <= 0.0008;
+        if (stableBase) {
             score += 20;
             conditions.add(baseDays + "거래일 장기 박스권");
         }
-        if (spikes >= 2) {
+        boolean volumeAccumulation = spikes >= 2;
+        if (volumeAccumulation) {
             score += 15;
             conditions.add("박스권 내 간헐적 거래량 급증 " + spikes + "회");
         }
-        if (recovery >= 0.15 && recovery <= 0.30) {
+        boolean partialRecovery = recovery >= 0.15 && recovery <= 0.30;
+        if (partialRecovery) {
             score += 25;
             conditions.add("이전 낙폭의 " + Math.round(recovery * 100) + "% 회복");
         }
-        if (pullback <= -0.04 && pullback >= -0.12 && latest >= baseHigh * 0.97) {
+        boolean currentPullback =
+                pullback <= -0.04 && pullback >= -0.12 && latest >= baseHigh * 0.97;
+        if (currentPullback) {
             score += 15;
             conditions.add("회복 고점 이후 눌림목");
         }
@@ -136,7 +150,15 @@ public class MultiPeriodRecoveryPullbackStrategy implements StockStrategy {
             score += 5;
             conditions.add("눌림 구간 거래량 감소");
         }
-        return new Analysis(score, drop, boxRange, spikes, recovery, pullback, conditions);
+        return new Analysis(
+                score,
+                drop,
+                boxRange,
+                spikes,
+                recovery,
+                pullback,
+                sharpDrop && stableBase && volumeAccumulation && partialRecovery && currentPullback,
+                conditions);
     }
 
     private Set<Integer> windows(int preferred) {
@@ -195,5 +217,8 @@ public class MultiPeriodRecoveryPullbackStrategy implements StockStrategy {
             int volumeSpikeCount,
             double recoveryRatio,
             double pullbackRate,
+            boolean currentPattern,
             List<String> conditions) {}
+
+    record Evaluation(StrategyCandidate candidate, boolean currentPattern) {}
 }
