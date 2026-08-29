@@ -25,6 +25,8 @@ class ResearchIsolationArchitectureTest {
                     "com/example/kiwoom/service/LimitedTradingService",
                     "com/example/kiwoom/service/AutoTradingControlService",
                     "com/example/kiwoom/service/PaperRiskService",
+                    "com/example/kiwoom/service/StrategyScanService",
+                    "com/example/kiwoom/service/strategy/",
                     "com/example/kiwoom/repository/PaperTradingRepository",
                     "com/example/kiwoom/repository/LimitedTradingRepository",
                     "com/example/kiwoom/repository/AutoTradingControlRepository");

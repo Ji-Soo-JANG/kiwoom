@@ -6,7 +6,6 @@ import {
   getBoxEvaluationCandles,
   getBoxEvaluationItem,
   getNextBoxEvaluationItem,
-  revealBoxEvaluationOutcome,
   saveBoxEvaluationDraft
 } from '../api/kiwoomApi';
 
@@ -29,7 +28,7 @@ const emptyForm = () => ({
   startDate: '',
   endDate: '',
   labelCode: '',
-  confidence: 3,
+  confidence: '',
   reasonCodes: [],
   comment: ''
 });
@@ -77,7 +76,6 @@ export default function BoxEvaluationWorkbench({ reviewerId }) {
   const [activeKeys, setActiveKeys] = useState([]);
   const [form, setForm] = useState(emptyForm);
   const [notice, setNotice] = useState('');
-  const [outcome, setOutcome] = useState(null);
   const [navigationError, setNavigationError] = useState(null);
   const batches = useQuery({
     queryKey: ['box-evaluation-batches'],
@@ -110,7 +108,7 @@ export default function BoxEvaluationWorkbench({ reviewerId }) {
             startDate: draft.editedStartDate ?? '',
             endDate: draft.editedEndDate ?? '',
             labelCode: draft.labelCode ?? '',
-            confidence: draft.confidence ?? 3,
+            confidence: draft.confidence ?? '',
             reasonCodes: (draft.reasonCodes ?? '').split(',').filter(Boolean),
             comment: draft.comment ?? ''
           }
@@ -125,13 +123,11 @@ export default function BoxEvaluationWorkbench({ reviewerId }) {
         setItemId(null);
         setActiveKeys([]);
         setForm(emptyForm());
-        setOutcome(null);
         setNotice('이 평가 과제의 모든 블라인드 항목을 완료했습니다.');
         return;
       }
       setForm(emptyForm());
       setActiveKeys([]);
-      setOutcome(null);
       setItemId(item.id);
       setNotice(
         afterCommit
@@ -170,13 +166,6 @@ export default function BoxEvaluationWorkbench({ reviewerId }) {
       await next({ afterCommit: true });
     }
   });
-  const reveal = useMutation({
-    mutationFn: () => revealBoxEvaluationOutcome(itemId, reviewerId),
-    onSuccess: (data) => {
-      setOutcome(data);
-      setNotice('미래 성과를 공개했습니다. 공개 시점과 산식 버전이 저장됩니다.');
-    }
-  });
   const choose = (candidate) =>
     setForm((v) => ({
       ...v,
@@ -185,18 +174,19 @@ export default function BoxEvaluationWorkbench({ reviewerId }) {
       endDate: candidate.endDate
     }));
   const error =
-    batches.error ||
-    detail.error ||
-    candles.error ||
-    save.error ||
-    commit.error ||
-    reveal.error ||
-    navigationError;
+    batches.error || detail.error || candles.error || save.error || commit.error || navigationError;
+  const explanationRequired = ['PARTIAL_BOX', 'INSUFFICIENT_DATA'].includes(form.labelCode);
+  const canCommit =
+    form.labelCode &&
+    form.confidence &&
+    form.reasonCodes.length > 0 &&
+    (!explanationRequired || form.comment.trim());
   return (
     <section className="box-workbench" aria-labelledby="box-workbench-title">
-      <h2 id="box-workbench-title">박스권 평가 워크벤치</h2>
+      <h2 id="box-workbench-title">박스권 경계 탐지 검증</h2>
       <p className="research-warning">
-        연구 전용 화면입니다. 매수 추천이나 자동매매에 연결되지 않습니다.
+        박스권 구간만 평가합니다. 이후 수익률·급락·회복·눌림·매매 성과는 이 검증에 사용하지
+        않습니다.
       </p>
       <div className="workbench-toolbar">
         <label>
@@ -224,7 +214,7 @@ export default function BoxEvaluationWorkbench({ reviewerId }) {
           <div className="blind-banner" role="status">
             관찰 종료일 {detail.data.item.cutoffDate} · 이후 가격은 서버에서 차단됨
           </div>
-          <h3>{detail.data.item.code} 실제 일봉</h3>
+          <h3>블라인드 평가 항목 실제 일봉</h3>
           <MiniPriceChart
             candles={candles.data ?? []}
             candidates={candidates}
@@ -232,7 +222,7 @@ export default function BoxEvaluationWorkbench({ reviewerId }) {
           />
           <fieldset>
             <legend>후보 비교</legend>
-            {candidates.map((c) => (
+            {candidates.map((c, index) => (
               <div className="candidate-row" key={c.candidateKey}>
                 <label>
                   <input
@@ -246,7 +236,7 @@ export default function BoxEvaluationWorkbench({ reviewerId }) {
                       )
                     }
                   />
-                  {c.candidateKey} · {c.startDate}~{c.endDate}
+                  후보 {index + 1} · {c.startDate}~{c.endDate}
                 </label>
                 <button type="button" onClick={() => choose(c)}>
                   이 후보 선택
@@ -289,14 +279,20 @@ export default function BoxEvaluationWorkbench({ reviewerId }) {
             </select>
           </label>
           <label>
-            확신도 {form.confidence}
-            <input
-              type="range"
-              min="1"
-              max="5"
+            확신도
+            <select
               value={form.confidence}
-              onChange={(e) => setForm({ ...form, confidence: Number(e.target.value) })}
-            />
+              onChange={(e) =>
+                setForm({ ...form, confidence: e.target.value ? Number(e.target.value) : '' })
+              }
+            >
+              <option value="">선택하세요</option>
+              <option value="1">1 · 매우 낮음</option>
+              <option value="2">2 · 낮음</option>
+              <option value="3">3 · 보통</option>
+              <option value="4">4 · 높음</option>
+              <option value="5">5 · 매우 높음</option>
+            </select>
           </label>
           <fieldset>
             <legend>판단 근거</legend>
@@ -319,56 +315,30 @@ export default function BoxEvaluationWorkbench({ reviewerId }) {
             ))}
           </fieldset>
           <label>
-            메모
+            설명 {explanationRequired && '(필수)'}
             <textarea
+              aria-describedby={explanationRequired ? 'evaluation-comment-help' : undefined}
               value={form.comment}
               onChange={(e) => setForm({ ...form, comment: e.target.value })}
             />
           </label>
+          {explanationRequired && (
+            <p id="evaluation-comment-help" className="info-text">
+              부분 유효 또는 자료 부족으로 판단한 이유를 적어주세요.
+            </p>
+          )}
           <div className="workbench-actions">
             <button type="button" onClick={() => save.mutate()}>
               임시 저장
             </button>
             <button
               type="button"
-              disabled={!form.labelCode || !form.reasonCodes.length || commit.isPending}
+              disabled={!canCommit || commit.isPending}
               onClick={() => commit.mutate()}
             >
               평가 내용 확인 및 확정
             </button>
-            <button type="button" onClick={() => reveal.mutate()} disabled={reveal.isPending}>
-              미래 결과 공개
-            </button>
           </div>
-          {outcome && (
-            <section className="outcome-panel" aria-labelledby="outcome-title">
-              <h3 id="outcome-title">미래 성과 · {outcome.policyVersion}</h3>
-              <p>
-                기준가격 {Number(outcome.entryPrice).toLocaleString('ko-KR')}원 · 최초 장벽{' '}
-                {outcome.firstBarrier}
-              </p>
-              <table>
-                <thead>
-                  <tr>
-                    <th>기간</th>
-                    <th>종가 수익률</th>
-                    <th>MFE</th>
-                    <th>MAE</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {outcome.windows.map((w) => (
-                    <tr key={w.tradingDays}>
-                      <td>{w.tradingDays}거래일</td>
-                      <td>{(w.closeReturnRate * 100).toFixed(2)}%</td>
-                      <td>{(w.maximumFavorableExcursion * 100).toFixed(2)}%</td>
-                      <td>{(w.maximumAdverseExcursion * 100).toFixed(2)}%</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </section>
-          )}
         </>
       )}
       {notice && <p aria-live="polite">{notice}</p>}
