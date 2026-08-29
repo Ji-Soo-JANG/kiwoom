@@ -41,6 +41,7 @@
 
 - [프로젝트 구성 지도](../project-structure-map.md)
 - [PM 종합 검토](../pm-current-state-review.md)
+- [승인 대기 제안 목록](../proposals/README.md)
 
 ## 검토 의견 형식
 
