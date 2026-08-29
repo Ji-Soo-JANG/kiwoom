@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.example.kiwoom.dto.StockSearchResult;
 import com.example.kiwoom.repository.MarketDataRepository;
+import com.example.kiwoom.research.boxevaluation.model.BoxBoundaryDecision;
 import com.example.kiwoom.research.boxevaluation.model.BoxEvaluation;
 import com.example.kiwoom.research.boxevaluation.model.BoxEvaluationBatch;
 import com.example.kiwoom.research.boxevaluation.model.BoxEvaluationBatchStatus;
@@ -91,6 +92,7 @@ class BoxEvaluationRepositoryTest {
                                         null,
                                         item.id(),
                                         "reviewer",
+                                        BoxBoundaryDecision.CANDIDATE,
                                         "C1",
                                         LocalDate.of(2023, 1, 10),
                                         LocalDate.of(2024, 4, 5),
@@ -111,6 +113,7 @@ class BoxEvaluationRepositoryTest {
                         item.id(),
                         "reviewer",
                         "commit-" + item.id(),
+                        BoxBoundaryDecision.CANDIDATE,
                         "C1",
                         LocalDate.of(2023, 1, 10),
                         LocalDate.of(2024, 4, 5),
@@ -175,6 +178,7 @@ class BoxEvaluationRepositoryTest {
                                                         null,
                                                         item.id(),
                                                         "reviewer",
+                                                        BoxBoundaryDecision.MANUAL,
                                                         null,
                                                         LocalDate.of(2024, 1, 1),
                                                         LocalDate.of(2024, 7, 1),

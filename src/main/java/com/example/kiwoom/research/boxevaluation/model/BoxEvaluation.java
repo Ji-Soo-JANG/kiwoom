@@ -8,6 +8,7 @@ public record BoxEvaluation(
         long itemId,
         String reviewerId,
         String commitKey,
+        BoxBoundaryDecision boundaryDecision,
         String selectedCandidateKey,
         LocalDate finalStartDate,
         LocalDate finalEndDate,

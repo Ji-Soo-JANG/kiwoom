@@ -7,6 +7,7 @@ public record BoxEvaluationDraft(
         Long id,
         long itemId,
         String reviewerId,
+        BoxBoundaryDecision boundaryDecision,
         String selectedCandidateKey,
         LocalDate editedStartDate,
         LocalDate editedEndDate,

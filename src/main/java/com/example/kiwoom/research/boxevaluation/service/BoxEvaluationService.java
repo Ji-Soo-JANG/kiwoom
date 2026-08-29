@@ -8,6 +8,7 @@ import com.example.kiwoom.research.boxevaluation.dto.CommitBoxEvaluationRequest;
 import com.example.kiwoom.research.boxevaluation.dto.CreateBoxEvaluationBatchRequest;
 import com.example.kiwoom.research.boxevaluation.dto.SaveBoxEvaluationDraftRequest;
 import com.example.kiwoom.research.boxevaluation.dto.SupersedeBoxEvaluationRequest;
+import com.example.kiwoom.research.boxevaluation.model.BoxBoundaryDecision;
 import com.example.kiwoom.research.boxevaluation.model.BoxEvaluation;
 import com.example.kiwoom.research.boxevaluation.model.BoxEvaluationBatch;
 import com.example.kiwoom.research.boxevaluation.model.BoxEvaluationBatchStatus;
@@ -34,7 +35,7 @@ import reactor.core.publisher.Mono;
 public class BoxEvaluationService {
     public static final String GENERATOR_VERSION = "box-candidate-research-v1";
     public static final String BLIND_VERSION = "server-cutoff-v1";
-    public static final String SCHEMA_VERSION = "box-label-v1";
+    public static final String SCHEMA_VERSION = "box-label-v2";
 
     private final BoxEvaluationRepository repository;
     private final ObjectMapper objectMapper;
@@ -157,6 +158,7 @@ public class BoxEvaluationService {
                         null,
                         itemId,
                         request.reviewerId(),
+                        request.boundaryDecision(),
                         request.selectedCandidateKey(),
                         request.startDate(),
                         request.endDate(),
@@ -173,23 +175,96 @@ public class BoxEvaluationService {
         return repository
                 .findItem(itemId)
                 .flatMap(
-                        item ->
-                                repository.commit(
-                                        new BoxEvaluation(
-                                                null,
-                                                itemId,
-                                                request.reviewerId(),
-                                                request.commitKey(),
-                                                request.selectedCandidateKey(),
-                                                request.startDate(),
-                                                request.endDate(),
-                                                request.labelCode(),
-                                                request.confidence(),
-                                                request.reasonCodes(),
-                                                request.comment(),
-                                                json(item),
-                                                SCHEMA_VERSION,
-                                                Instant.now())));
+                        item -> {
+                            validateBoundaryDecision(request);
+                            Mono<Void> candidateValidation =
+                                    request.boundaryDecision() == BoxBoundaryDecision.CANDIDATE
+                                            ? repository
+                                                    .findCandidates(itemId)
+                                                    .filter(
+                                                            candidate ->
+                                                                    candidate
+                                                                                    .candidateKey()
+                                                                                    .equals(
+                                                                                            request
+                                                                                                    .selectedCandidateKey())
+                                                                            && candidate
+                                                                                    .startDate()
+                                                                                    .equals(
+                                                                                            request
+                                                                                                    .startDate())
+                                                                            && candidate
+                                                                                    .endDate()
+                                                                                    .equals(
+                                                                                            request
+                                                                                                    .endDate()))
+                                                    .hasElements()
+                                                    .flatMap(
+                                                            valid ->
+                                                                    valid
+                                                                            ? Mono.empty()
+                                                                            : Mono.error(
+                                                                                    new IllegalArgumentException(
+                                                                                            "선택 후보와 경계가 일치하지 않습니다.")))
+                                            : Mono.empty();
+                            return candidateValidation.then(
+                                    repository
+                                            .commit(
+                                                    new BoxEvaluation(
+                                                            null,
+                                                            itemId,
+                                                            request.reviewerId(),
+                                                            request.commitKey(),
+                                                            request.boundaryDecision(),
+                                                            normalize(
+                                                                    request.selectedCandidateKey()),
+                                                            request.startDate(),
+                                                            request.endDate(),
+                                                            request.labelCode(),
+                                                            request.confidence(),
+                                                            request.reasonCodes(),
+                                                            request.comment(),
+                                                            json(item),
+                                                            "box-label-v2",
+                                                            Instant.now()))
+                                            .flatMap(
+                                                    saved ->
+                                                            repository
+                                                                    .closeBatchIfComplete(
+                                                                            item.batchId())
+                                                                    .thenReturn(saved)));
+                        });
+    }
+
+    private void validateBoundaryDecision(CommitBoxEvaluationRequest request) {
+        BoxBoundaryDecision decision = request.boundaryDecision();
+        boolean hasStart = request.startDate() != null;
+        boolean hasEnd = request.endDate() != null;
+        boolean hasCandidate = normalize(request.selectedCandidateKey()) != null;
+        boolean positiveLabel =
+                "VALID_BOX".equals(request.labelCode())
+                        || "PARTIAL_BOX".equals(request.labelCode());
+
+        if (positiveLabel && decision == BoxBoundaryDecision.NO_SUITABLE_CANDIDATE) {
+            throw new IllegalArgumentException("유효·부분 박스 평가는 경계를 지정해야 합니다.");
+        }
+        if (!positiveLabel && decision != BoxBoundaryDecision.NO_SUITABLE_CANDIDATE) {
+            throw new IllegalArgumentException("비박스·자료 부족 평가는 적합 후보 없음으로 확정해야 합니다.");
+        }
+        if (decision == BoxBoundaryDecision.NO_SUITABLE_CANDIDATE
+                && (hasCandidate || hasStart || hasEnd)) {
+            throw new IllegalArgumentException("적합 후보 없음 평가에는 후보나 경계를 저장할 수 없습니다.");
+        }
+        if (decision == BoxBoundaryDecision.CANDIDATE && (!hasCandidate || !hasStart || !hasEnd)) {
+            throw new IllegalArgumentException("후보 선택 평가는 후보와 시작·종료 경계가 필요합니다.");
+        }
+        if (decision == BoxBoundaryDecision.MANUAL && (hasCandidate || !hasStart || !hasEnd)) {
+            throw new IllegalArgumentException("직접 경계 평가는 시작·종료 경계만 지정해야 합니다.");
+        }
+    }
+
+    private String normalize(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
     }
 
     public Mono<BoxEvaluationSupersede> supersede(SupersedeBoxEvaluationRequest request) {

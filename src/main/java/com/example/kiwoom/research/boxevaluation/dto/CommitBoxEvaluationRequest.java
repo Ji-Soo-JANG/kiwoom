@@ -1,13 +1,16 @@
 package com.example.kiwoom.research.boxevaluation.dto;
 
+import com.example.kiwoom.research.boxevaluation.model.BoxBoundaryDecision;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import java.time.LocalDate;
 
 public record CommitBoxEvaluationRequest(
         @NotBlank String reviewerId,
         @NotBlank String commitKey,
+        @NotNull BoxBoundaryDecision boundaryDecision,
         String selectedCandidateKey,
         LocalDate startDate,
         LocalDate endDate,

@@ -92,6 +92,7 @@ describe('BoxEvaluationWorkbench', () => {
     const nextButton = await screen.findByRole('button', { name: '다음 블라인드 항목' });
     await waitFor(() => expect(nextButton).toBeEnabled());
     fireEvent.click(nextButton);
+    fireEvent.click(await screen.findByRole('button', { name: '이 후보 선택' }));
     fireEvent.change(await screen.findByLabelText('평가'), {
       target: { value: 'VALID_BOX' }
     });
@@ -115,6 +116,7 @@ describe('BoxEvaluationWorkbench', () => {
     const nextButton = await screen.findByRole('button', { name: '다음 블라인드 항목' });
     await waitFor(() => expect(nextButton).toBeEnabled());
     fireEvent.click(nextButton);
+    fireEvent.click(await screen.findByRole('button', { name: '이 후보 선택' }));
     fireEvent.change(await screen.findByLabelText('평가'), {
       target: { value: 'VALID_BOX' }
     });
@@ -144,6 +146,28 @@ describe('BoxEvaluationWorkbench', () => {
     fireEvent.change(screen.getByLabelText('확신도'), { target: { value: '2' } });
     expect(commitButton).toBeDisabled();
     fireEvent.change(screen.getByLabelText(/설명/), { target: { value: '종료 경계가 모호함' } });
+    expect(commitButton).toBeDisabled();
+    fireEvent.click(screen.getByRole('button', { name: '이 후보 선택' }));
+    expect(commitButton).toBeEnabled();
+  });
+
+  it('requires an explicit no-candidate decision for a negative label', async () => {
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <BoxEvaluationWorkbench reviewerId="admin" />
+      </QueryClientProvider>
+    );
+    const nextButton = await screen.findByRole('button', { name: '다음 블라인드 항목' });
+    await waitFor(() => expect(nextButton).toBeEnabled());
+    fireEvent.click(nextButton);
+    const commitButton = await screen.findByRole('button', {
+      name: '평가 내용 확인 및 확정'
+    });
+    fireEvent.change(screen.getByLabelText('평가'), { target: { value: 'NOT_BOX' } });
+    fireEvent.change(screen.getByLabelText('확신도'), { target: { value: '4' } });
+    fireEvent.click(screen.getByLabelText('BOUNDARY_AMBIGUOUS'));
+    expect(commitButton).toBeDisabled();
+    fireEvent.click(screen.getByLabelText('적합 후보 없음'));
     expect(commitButton).toBeEnabled();
   });
 });

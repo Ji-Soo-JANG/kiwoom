@@ -24,6 +24,7 @@ const reasons = [
   'BOUNDARY_AMBIGUOUS'
 ];
 const emptyForm = () => ({
+  boundaryDecision: '',
   selectedCandidateKey: '',
   startDate: '',
   endDate: '',
@@ -103,7 +104,8 @@ export default function BoxEvaluationWorkbench({ reviewerId }) {
     setActiveKeys(candidates.map((c) => c.candidateKey));
     setForm(
       draft
-        ? {
+          ? {
+            boundaryDecision: draft.boundaryDecision ?? '',
             selectedCandidateKey: draft.selectedCandidateKey ?? '',
             startDate: draft.editedStartDate ?? '',
             endDate: draft.editedEndDate ?? '',
@@ -169,6 +171,7 @@ export default function BoxEvaluationWorkbench({ reviewerId }) {
   const choose = (candidate) =>
     setForm((v) => ({
       ...v,
+      boundaryDecision: 'CANDIDATE',
       selectedCandidateKey: candidate.candidateKey,
       startDate: candidate.startDate,
       endDate: candidate.endDate
@@ -176,10 +179,22 @@ export default function BoxEvaluationWorkbench({ reviewerId }) {
   const error =
     batches.error || detail.error || candles.error || save.error || commit.error || navigationError;
   const explanationRequired = ['PARTIAL_BOX', 'INSUFFICIENT_DATA'].includes(form.labelCode);
+  const positiveLabel = ['VALID_BOX', 'PARTIAL_BOX'].includes(form.labelCode);
+  const negativeLabel = ['NOT_BOX', 'INSUFFICIENT_DATA', 'DATA_QUALITY_ISSUE'].includes(
+    form.labelCode
+  );
+  const boundaryReady =
+    (positiveLabel &&
+      ['CANDIDATE', 'MANUAL'].includes(form.boundaryDecision) &&
+      form.startDate &&
+      form.endDate &&
+      (form.boundaryDecision !== 'CANDIDATE' || form.selectedCandidateKey)) ||
+    (negativeLabel && form.boundaryDecision === 'NO_SUITABLE_CANDIDATE');
   const canCommit =
     form.labelCode &&
     form.confidence &&
     form.reasonCodes.length > 0 &&
+    boundaryReady &&
     (!explanationRequired || form.comment.trim());
   return (
     <section className="box-workbench" aria-labelledby="box-workbench-title">
@@ -244,6 +259,50 @@ export default function BoxEvaluationWorkbench({ reviewerId }) {
               </div>
             ))}
           </fieldset>
+          <fieldset>
+            <legend>경계 결정 방식</legend>
+            <p className="info-text">
+              후보를 선택하거나 직접 경계를 지정하세요. 박스권이 아니거나 판단할 자료가 없으면
+              적합 후보 없음을 선택하세요.
+            </p>
+            <label>
+              <input
+                type="radio"
+                name="boundaryDecision"
+                value="MANUAL"
+                checked={form.boundaryDecision === 'MANUAL'}
+                onChange={() =>
+                  setForm({
+                    ...form,
+                    boundaryDecision: 'MANUAL',
+                    selectedCandidateKey: ''
+                  })
+                }
+              />
+              직접 시작·종료 경계 지정
+            </label>
+            <label>
+              <input
+                type="radio"
+                name="boundaryDecision"
+                value="NO_SUITABLE_CANDIDATE"
+                checked={form.boundaryDecision === 'NO_SUITABLE_CANDIDATE'}
+                onChange={() =>
+                  setForm({
+                    ...form,
+                    boundaryDecision: 'NO_SUITABLE_CANDIDATE',
+                    selectedCandidateKey: '',
+                    startDate: '',
+                    endDate: ''
+                  })
+                }
+              />
+              적합 후보 없음
+            </label>
+            {form.boundaryDecision === 'CANDIDATE' && (
+              <p className="info-text">후보를 선택했습니다. 날짜를 수정하면 직접 지정으로 바뀝니다.</p>
+            )}
+          </fieldset>
           <div className="boundary-grid">
             <label>
               시작 거래일
@@ -251,7 +310,15 @@ export default function BoxEvaluationWorkbench({ reviewerId }) {
                 type="date"
                 value={form.startDate}
                 max={detail.data.item.cutoffDate}
-                onChange={(e) => setForm({ ...form, startDate: e.target.value })}
+                disabled={form.boundaryDecision === 'NO_SUITABLE_CANDIDATE'}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    boundaryDecision: 'MANUAL',
+                    selectedCandidateKey: '',
+                    startDate: e.target.value
+                  })
+                }
               />
             </label>
             <label>
@@ -260,7 +327,15 @@ export default function BoxEvaluationWorkbench({ reviewerId }) {
                 type="date"
                 value={form.endDate}
                 max={detail.data.item.cutoffDate}
-                onChange={(e) => setForm({ ...form, endDate: e.target.value })}
+                disabled={form.boundaryDecision === 'NO_SUITABLE_CANDIDATE'}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    boundaryDecision: 'MANUAL',
+                    selectedCandidateKey: '',
+                    endDate: e.target.value
+                  })
+                }
               />
             </label>
           </div>

@@ -1,6 +1,7 @@
 package com.example.kiwoom.research.boxevaluation.repository;
 
 import com.example.kiwoom.dto.StoredDailyCandle;
+import com.example.kiwoom.research.boxevaluation.model.BoxBoundaryDecision;
 import com.example.kiwoom.research.boxevaluation.model.BoxEvaluation;
 import com.example.kiwoom.research.boxevaluation.model.BoxEvaluationBatch;
 import com.example.kiwoom.research.boxevaluation.model.BoxEvaluationBatchStatus;
@@ -272,7 +273,8 @@ public class BoxEvaluationRepository {
         DatabaseClient.GenericExecuteSpec update =
                 database.sql(
                                 """
-                UPDATE box_evaluation_draft d SET selected_candidate_key=:candidate,
+                UPDATE box_evaluation_draft d SET boundary_decision=:decision,
+                    selected_candidate_key=:candidate,
                     edited_start_date=:startDate, edited_end_date=:endDate, label_code=:label,
                     confidence=:confidence, reason_codes=:reasons, comment_text=:comment,
                     draft_revision=draft_revision+1, updated_at=CURRENT_TIMESTAMP
@@ -311,6 +313,8 @@ public class BoxEvaluationRepository {
                                         number(row.get("id")),
                                         number(row.get("item_id")),
                                         row.get("reviewer_id", String.class),
+                                        boundaryDecision(
+                                                row.get("boundary_decision", String.class)),
                                         row.get("selected_candidate_key", String.class),
                                         row.get("edited_start_date", LocalDate.class),
                                         row.get("edited_end_date", LocalDate.class),
@@ -403,10 +407,11 @@ public class BoxEvaluationRepository {
         DatabaseClient.GenericExecuteSpec insert =
                 database.sql(
                                 """
-                INSERT INTO box_evaluation_draft(item_id, reviewer_id, selected_candidate_key,
+                INSERT INTO box_evaluation_draft(item_id, reviewer_id, boundary_decision,
+                    selected_candidate_key,
                     edited_start_date, edited_end_date, label_code, confidence, reason_codes,
                     comment_text, draft_revision)
-                SELECT :item, :reviewer, :candidate, :startDate, :endDate, :label, :confidence,
+                SELECT :item, :reviewer, :decision, :candidate, :startDate, :endDate, :label, :confidence,
                     :reasons, :comment, 1 FROM box_evaluation_item i
                 WHERE i.id=:item AND i.status IN ('PENDING','DRAFTED')
                   AND (:startDate IS NULL OR :endDate IS NULL
@@ -434,6 +439,12 @@ public class BoxEvaluationRepository {
 
     private DatabaseClient.GenericExecuteSpec bindDraftValues(
             DatabaseClient.GenericExecuteSpec query, BoxEvaluationDraft draft) {
+        query =
+                bindNullable(
+                        query,
+                        "decision",
+                        draft.boundaryDecision() == null ? null : draft.boundaryDecision().name(),
+                        String.class);
         query = bindNullable(query, "candidate", draft.selectedCandidateKey(), String.class);
         query = bindNullable(query, "startDate", draft.editedStartDate(), LocalDate.class);
         query = bindNullable(query, "endDate", draft.editedEndDate(), LocalDate.class);
@@ -454,15 +465,29 @@ public class BoxEvaluationRepository {
                 .rowsUpdated();
     }
 
+    public Mono<Long> closeBatchIfComplete(long batchId) {
+        return database.sql(
+                        """
+                UPDATE box_evaluation_batch b SET status='CLOSED', updated_at=CURRENT_TIMESTAMP
+                WHERE b.id=:batch AND b.status IN ('READY','IN_PROGRESS')
+                  AND EXISTS (SELECT 1 FROM box_evaluation_item i WHERE i.batch_id=b.id)
+                  AND NOT EXISTS (SELECT 1 FROM box_evaluation_item i WHERE i.batch_id=b.id
+                                  AND i.status IN ('PENDING','DRAFTED'))
+                """)
+                .bind("batch", batchId)
+                .fetch()
+                .rowsUpdated();
+    }
+
     private Mono<BoxEvaluation> insertEvaluation(BoxEvaluation evaluation) {
         DatabaseClient.GenericExecuteSpec query =
                 database.sql(
                                 """
-                INSERT INTO box_evaluation(item_id, reviewer_id, commit_key,
+                INSERT INTO box_evaluation(item_id, reviewer_id, commit_key, boundary_decision,
                     selected_candidate_key, final_start_date, final_end_date, label_code,
                     confidence, reason_codes, comment_text, input_snapshot_json,
                     evaluation_schema_version)
-                SELECT :item, :reviewer, :commitKey, :candidate, :startDate, :endDate, :label,
+                SELECT :item, :reviewer, :commitKey, :decision, :candidate, :startDate, :endDate, :label,
                     :confidence, :reasons, :comment, :snapshot, :schema
                 FROM box_evaluation_item i WHERE i.id=:item AND i.status='COMMITTED'
                   AND (:startDate IS NULL OR :endDate IS NULL
@@ -471,6 +496,7 @@ public class BoxEvaluationRepository {
                         .bind("item", evaluation.itemId())
                         .bind("reviewer", evaluation.reviewerId())
                         .bind("commitKey", evaluation.commitKey())
+                        .bind("decision", evaluation.boundaryDecision().name())
                         .bind("label", evaluation.labelCode())
                         .bind("confidence", evaluation.confidence())
                         .bind("reasons", evaluation.reasonCodes())
@@ -506,6 +532,8 @@ public class BoxEvaluationRepository {
                                         number(row.get("item_id")),
                                         row.get("reviewer_id", String.class),
                                         row.get("commit_key", String.class),
+                                        boundaryDecision(
+                                                row.get("boundary_decision", String.class)),
                                         row.get("selected_candidate_key", String.class),
                                         row.get("final_start_date", LocalDate.class),
                                         row.get("final_end_date", LocalDate.class),
@@ -570,6 +598,10 @@ public class BoxEvaluationRepository {
 
     private Integer nullableInteger(Object value) {
         return value == null ? null : ((Number) value).intValue();
+    }
+
+    private BoxBoundaryDecision boundaryDecision(String value) {
+        return value == null ? null : BoxBoundaryDecision.valueOf(value);
     }
 
     private Instant instant(Object value) {
