@@ -64,6 +64,10 @@
 
 ## 3. 주문과 포지션
 
+### 3.0 후보에서 진입 계획으로의 전환
+
+전략 후보는 곧바로 주문이 아니다. 데이터 품질, 거래 가능성, 시장 상태, 최신 가격, 최소 기대 손익비와 계좌 위험을 순서대로 검사해 `WATCHING`, `ENTRY_PENDING`, `ORDERABLE`, `DEFERRED`, `INVALIDATED`, `RISK_BLOCKED` 중 하나로 분류한다. `ORDERABLE`에는 진입 유효기간, 최대 허용 가격, 전략 무효화 가격, 예상 주당 손실과 청산 계획이 반드시 포함된다.
+
 ### 3.1 브로커 계약
 
 목표 `BrokerAdapter`는 다음 기능을 제공한다.
@@ -139,7 +143,23 @@ min(
 
 차단 결과는 코드, 사용자 설명, 입력 스냅샷과 해제 조건을 저장한다.
 
-## 5. 데이터 모델 계획
+### 4.1 손실 예산 기반 수량
+
+```text
+주당 예상손실 = 진입 예정가 - 무효화/보호 가격 + 예상 비용
+손실예산 수량 = 주문당 허용손실 / 주당 예상손실
+최종 수량 = 손실예산 수량과 기존 계좌·노출·유동성 한도 수량의 최솟값
+```
+
+무효화 가격이 없거나 예상 손실이 계산되지 않으면 신규 매수를 허용하지 않는다. 목표 수익 미달, 최근 승률 상승 또는 높은 전략 점수만으로 수량을 확대하지 않는다.
+
+## 5. 시장 상태와 전략 승격
+
+시장 상태 엔진은 지수 추세, 변동성 확대, 시장 거래대금, 상승·하락 종목 확산도와 종목 거래 위험 상태를 입력으로 `NORMAL`, `CAUTION`, `RISK_OFF`, `UNKNOWN`을 반환한다. `UNKNOWN`과 `RISK_OFF`에서는 신규 매수를 차단하고, `CAUTION`에서는 승인된 축소 배율만 적용한다.
+
+전략 버전은 `DRAFT → BACKTESTED → PAPER_APPROVED → SIMULATION_APPROVED → LIMITED_LIVE → LIVE_APPROVED → RETIRED`로 승격한다. 비용 후 기대값, 최대 낙폭, 손익비, 표본 수, 시장 구간별 안정성과 주문·대사 오류율을 모두 검사한다. AI 분석은 새 버전 후보를 제안할 수 있지만 승격 상태를 직접 변경할 수 없다.
+
+## 6. 데이터 모델 계획
 
 기존 테이블은 유지하며 다음 개념을 보강한다. 실제 마이그레이션 전에 현재 스키마와 중복 여부를 확인한다.
 
@@ -153,10 +173,14 @@ min(
 | position_strategy_link | account_hash, symbol, strategy_version_id, entry_signal_id, quantity, average_price, exit_plan_json |
 | reconciliation_issue | run_id, type, local_value, broker_value, severity, resolution_status, resolved_at |
 | daily_account_snapshot | trade_date, cash, equity, exposure, realized_pnl, unrealized_pnl, drawdown, source_timestamp |
+| entry_plan | signal_id, state, valid_until, max_entry_price, invalidation_price, risk_per_share, exit_plan_json, block_reason |
+| capital_policy | version, effective_from, daily/monthly_loss_limit, drawdown_limit, position/exposure limits, approved_at |
+| market_regime_snapshot | observed_at, market, state, feature_json, reason_codes |
+| strategy_promotion | strategy_version_id, stage, evidence_json, approved_at, superseded_at |
 
 계좌번호 원문은 저장하지 않고 필요한 경우 안정적인 해시 또는 별칭을 사용한다. 브로커 원문 응답에는 민감정보 제거 규칙을 적용한다.
 
-## 6. API 계획
+## 7. API 계획
 
 | 영역 | 목표 API |
 |---|---|
@@ -170,7 +194,7 @@ min(
 
 현재 API 경로와 호환 계층을 유지하고, 구현 시 OpenAPI 문서와 UI 호출을 동시에 갱신한다. 상태 변경 API는 인증, CSRF 정책, 감사 이벤트와 멱등 키를 요구한다.
 
-## 7. 오류·재시도·호출 제한
+## 8. 오류·재시도·호출 제한
 
 - 조회 API: 제한된 지수 백오프와 랜덤 지연을 적용한다.
 - 주문 API: 자동 재전송하지 않고 의사결정 ID와 브로커 조회로 결과를 확인한다.
@@ -179,7 +203,7 @@ min(
 - 5xx/timeout: 조회와 주문을 구분하며 주문은 `UNKNOWN` 처리한다.
 - 오류 전문, 키, 토큰, 계좌번호는 로그에 남기지 않는다.
 
-## 8. 스케줄과 거래일
+## 9. 스케줄과 거래일
 
 정확한 시각은 설정값이며 다음 순서를 보장한다.
 
@@ -191,7 +215,7 @@ MARKET_CLOSED → FINAL_RECONCILE → PERFORMANCE → SAFE_TO_STOP
 
 평일이라는 이유만으로 거래일로 간주하지 않는다. 휴장일과 임시 개장 시간을 제공하는 신뢰 가능한 거래일 원천을 사용한다. 각 단계는 멱등 실행 ID를 가지며 선행 단계 실패 시 후속 신규 매수 단계를 실행하지 않는다.
 
-## 9. 테스트 설계
+## 10. 테스트 설계
 
 - 전략 단위 테스트: 인공 일봉으로 각 단계, 경계, 현재성, 고정 기간 비의존성을 검증한다.
 - 속성 테스트: 미래 일봉 추가 전의 과거 신호가 바뀌지 않는지 확인한다.
@@ -202,7 +226,7 @@ MARKET_CLOSED → FINAL_RECONCILE → PERFORMANCE → SAFE_TO_STOP
 - UI E2E: PAPER/LIVE 구분, 위험 확인, ON/OFF, 오류·빈 상태를 검증한다.
 - 실전 전 시험: 모의투자와 제한 실전 체크리스트를 별도로 승인한다.
 
-## 10. 요구사항 추적
+## 11. 요구사항 추적
 
 | 요구사항 | 설계 구현 위치 | 주요 검증 |
 |---|---|---|
@@ -212,3 +236,6 @@ MARKET_CLOSED → FINAL_RECONCILE → PERFORMANCE → SAFE_TO_STOP
 | RSK-001~004 | Risk Engine, readiness_check | 한도·킬 스위치·실패 폐쇄 테스트 |
 | OPS-001~003 | automation_run, scheduler | 단계 순서·멱등·복구 테스트 |
 | UI-001~004 | 운영·후보·계좌 화면 | 접근성·E2E 테스트 |
+| CAP-001~002, ENT-001~002 | Capital Allocation, Entry Plan | 손실예산·승격·진입 차단 테스트 |
+| EXT-001~002 | Exit Plan, Position Monitor | 갭·부분체결·초과매도 방지 테스트 |
+| MKT-001~002, PRM-001~003 | Market Regime, Strategy Promotion | 위험 시장·미승격 LIVE 차단 테스트 |
