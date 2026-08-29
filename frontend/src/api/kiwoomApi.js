@@ -113,6 +113,14 @@ export const commitBoxEvaluation = (itemId, request) =>
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(request)
   });
+export const revealBoxEvaluationOutcome = (itemId, requestedBy) =>
+  requestJson(`/api/research/box-evaluations/items/${itemId}/reveal`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ requestedBy })
+  });
+export const getBoxEvaluationOutcome = (itemId) =>
+  requestJson(`/api/research/box-evaluations/items/${itemId}/outcome`);
 /** DB 일봉 기반 전략 후보를 버전별로 조회한다. */
 export const getStrategyCandidates = (boxRangeDays = 60, asOf = '', strategyVersion = '') => {
   const params = new URLSearchParams({ boxRangeDays: String(boxRangeDays) });

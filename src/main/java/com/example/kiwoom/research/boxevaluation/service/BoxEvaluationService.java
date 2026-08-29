@@ -3,6 +3,7 @@ package com.example.kiwoom.research.boxevaluation.service;
 import com.example.kiwoom.dto.StoredDailyCandle;
 import com.example.kiwoom.research.boxevaluation.candidate.BoxCandidateGenerator;
 import com.example.kiwoom.research.boxevaluation.dto.BoxEvaluationItemResponse;
+import com.example.kiwoom.research.boxevaluation.dto.BoxEvaluationOutcome;
 import com.example.kiwoom.research.boxevaluation.dto.CommitBoxEvaluationRequest;
 import com.example.kiwoom.research.boxevaluation.dto.CreateBoxEvaluationBatchRequest;
 import com.example.kiwoom.research.boxevaluation.dto.SaveBoxEvaluationDraftRequest;
@@ -14,6 +15,7 @@ import com.example.kiwoom.research.boxevaluation.model.BoxEvaluationCandidate;
 import com.example.kiwoom.research.boxevaluation.model.BoxEvaluationDraft;
 import com.example.kiwoom.research.boxevaluation.model.BoxEvaluationItem;
 import com.example.kiwoom.research.boxevaluation.model.BoxEvaluationItemStatus;
+import com.example.kiwoom.research.boxevaluation.model.BoxEvaluationReveal;
 import com.example.kiwoom.research.boxevaluation.model.BoxEvaluationSupersede;
 import com.example.kiwoom.research.boxevaluation.repository.BoxEvaluationRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -37,6 +39,7 @@ public class BoxEvaluationService {
     private final BoxEvaluationRepository repository;
     private final ObjectMapper objectMapper;
     private final BoxCandidateGenerator generator = new BoxCandidateGenerator();
+    private final BoxOutcomeCalculator outcomeCalculator = new BoxOutcomeCalculator();
 
     public BoxEvaluationService(BoxEvaluationRepository repository, ObjectMapper objectMapper) {
         this.repository = repository;
@@ -200,16 +203,59 @@ public class BoxEvaluationService {
                         null));
     }
 
-    public Mono<java.util.Map<String, String>> outcomeStatus(long itemId) {
+    public Mono<BoxEvaluationOutcome> reveal(long itemId, String requestedBy) {
         return repository
-                .findItem(itemId)
-                .map(
-                        ignored ->
-                                java.util.Map.of(
-                                        "status",
-                                        "NOT_CONFIGURED",
-                                        "message",
-                                        "공식 미래 성과 산식은 STR-P06 3단계 승인 후 제공됩니다."));
+                .findCommittedEvaluationByItem(itemId)
+                .flatMap(
+                        evaluation ->
+                                repository
+                                        .findReveal(evaluation.id())
+                                        .switchIfEmpty(
+                                                Mono.zip(
+                                                                repository.findItem(itemId),
+                                                                repository
+                                                                        .findOutcomeCandles(
+                                                                                itemId, 20)
+                                                                        .collectList())
+                                                        .flatMap(
+                                                                tuple -> {
+                                                                    var outcome =
+                                                                            outcomeCalculator
+                                                                                    .calculate(
+                                                                                            evaluation
+                                                                                                    .id(),
+                                                                                            tuple.getT1()
+                                                                                                    .code(),
+                                                                                            tuple.getT1()
+                                                                                                    .cutoffDate(),
+                                                                                            tuple
+                                                                                                    .getT2());
+                                                                    return repository.reveal(
+                                                                            new BoxEvaluationReveal(
+                                                                                    null,
+                                                                                    evaluation.id(),
+                                                                                    BoxOutcomeCalculator
+                                                                                            .POLICY_VERSION,
+                                                                                    requestedBy,
+                                                                                    json(outcome),
+                                                                                    null));
+                                                                }))
+                                        .map(saved -> readOutcome(saved.outcomeSnapshotJson())));
+    }
+
+    public Mono<BoxEvaluationOutcome> outcome(long itemId) {
+        return repository
+                .findCommittedEvaluationByItem(itemId)
+                .flatMap(evaluation -> repository.findReveal(evaluation.id()))
+                .map(saved -> readOutcome(saved.outcomeSnapshotJson()));
+    }
+
+    private BoxEvaluationOutcome readOutcome(String json) {
+        try {
+            return objectMapper.readValue(json, BoxEvaluationOutcome.class);
+        } catch (JsonProcessingException exception) {
+            throw new IllegalStateException("성과 스냅샷을 읽을 수 없습니다.", exception);
+        }
     }
 
     private String hash(List<StoredDailyCandle> candles) {

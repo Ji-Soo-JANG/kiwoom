@@ -2,8 +2,10 @@ package com.example.kiwoom.research.boxevaluation.controller;
 
 import com.example.kiwoom.dto.StoredDailyCandle;
 import com.example.kiwoom.research.boxevaluation.dto.BoxEvaluationItemResponse;
+import com.example.kiwoom.research.boxevaluation.dto.BoxEvaluationOutcome;
 import com.example.kiwoom.research.boxevaluation.dto.CommitBoxEvaluationRequest;
 import com.example.kiwoom.research.boxevaluation.dto.CreateBoxEvaluationBatchRequest;
+import com.example.kiwoom.research.boxevaluation.dto.RevealBoxEvaluationRequest;
 import com.example.kiwoom.research.boxevaluation.dto.SaveBoxEvaluationDraftRequest;
 import com.example.kiwoom.research.boxevaluation.dto.SupersedeBoxEvaluationRequest;
 import com.example.kiwoom.research.boxevaluation.model.BoxEvaluation;
@@ -79,12 +81,13 @@ public class BoxEvaluationController {
     }
 
     @PostMapping("/items/{itemId}/reveal")
-    public Mono<java.util.Map<String, String>> reveal(@PathVariable long itemId) {
-        return service.outcomeStatus(itemId);
+    public Mono<BoxEvaluationOutcome> reveal(
+            @PathVariable long itemId, @Valid @RequestBody RevealBoxEvaluationRequest request) {
+        return service.reveal(itemId, request.requestedBy());
     }
 
     @GetMapping("/items/{itemId}/outcome")
-    public Mono<java.util.Map<String, String>> outcome(@PathVariable long itemId) {
-        return service.outcomeStatus(itemId);
+    public Mono<BoxEvaluationOutcome> outcome(@PathVariable long itemId) {
+        return service.outcome(itemId);
     }
 }

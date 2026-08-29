@@ -135,6 +135,30 @@ public class BoxEvaluationRepository {
                 .all();
     }
 
+    public Flux<StoredDailyCandle> findOutcomeCandles(long itemId, int limit) {
+        return database.sql(
+                        """
+                SELECT c.code, c.trade_date, c.open_price, c.high_price, c.low_price,
+                       c.close_price, c.volume
+                FROM daily_candle c JOIN box_evaluation_item i ON i.code=c.code
+                WHERE i.id=:item AND c.trade_date > i.cutoff_date
+                ORDER BY c.trade_date LIMIT :limit
+                """)
+                .bind("item", itemId)
+                .bind("limit", limit)
+                .map(
+                        row ->
+                                new StoredDailyCandle(
+                                        row.get("code", String.class),
+                                        row.get("trade_date", LocalDate.class),
+                                        number(row.get("open_price")),
+                                        number(row.get("high_price")),
+                                        number(row.get("low_price")),
+                                        number(row.get("close_price")),
+                                        number(row.get("volume"))))
+                .all();
+    }
+
     public Mono<BoxEvaluationItem> createItem(BoxEvaluationItem item) {
         DatabaseClient.GenericExecuteSpec query =
                 database.sql(
@@ -492,6 +516,30 @@ public class BoxEvaluationRepository {
                                         row.get("input_snapshot_json", String.class),
                                         row.get("evaluation_schema_version", String.class),
                                         instant(row.get("committed_at"))))
+                .one();
+    }
+
+    public Mono<BoxEvaluation> findCommittedEvaluationByItem(long itemId) {
+        return database.sql(
+                        "SELECT id FROM box_evaluation WHERE item_id=:item ORDER BY committed_at DESC LIMIT 1")
+                .bind("item", itemId)
+                .map(row -> number(row.get("id")))
+                .one()
+                .flatMap(this::findEvaluation);
+    }
+
+    public Mono<BoxEvaluationReveal> findReveal(long evaluationId) {
+        return database.sql("SELECT * FROM box_evaluation_reveal WHERE evaluation_id=:evaluation")
+                .bind("evaluation", evaluationId)
+                .map(
+                        row ->
+                                new BoxEvaluationReveal(
+                                        number(row.get("id")),
+                                        number(row.get("evaluation_id")),
+                                        row.get("outcome_policy_version", String.class),
+                                        row.get("requested_by", String.class),
+                                        row.get("outcome_snapshot_json", String.class),
+                                        instant(row.get("revealed_at"))))
                 .one();
     }
 

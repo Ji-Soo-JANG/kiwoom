@@ -6,6 +6,7 @@ import {
   getBoxEvaluationCandles,
   getBoxEvaluationItem,
   getNextBoxEvaluationItem,
+  revealBoxEvaluationOutcome,
   saveBoxEvaluationDraft
 } from '../api/kiwoomApi';
 
@@ -75,6 +76,7 @@ export default function BoxEvaluationWorkbench({ reviewerId }) {
     comment: ''
   });
   const [notice, setNotice] = useState('');
+  const [outcome, setOutcome] = useState(null);
   const batches = useQuery({
     queryKey: ['box-evaluation-batches'],
     queryFn: getBoxEvaluationBatches,
@@ -137,6 +139,13 @@ export default function BoxEvaluationWorkbench({ reviewerId }) {
       }),
     onSuccess: () => setNotice('평가를 확정했습니다. 원본은 변경되지 않습니다.')
   });
+  const reveal = useMutation({
+    mutationFn: () => revealBoxEvaluationOutcome(itemId, reviewerId),
+    onSuccess: (data) => {
+      setOutcome(data);
+      setNotice('미래 성과를 공개했습니다. 공개 시점과 산식 버전이 저장됩니다.');
+    }
+  });
   const choose = (candidate) =>
     setForm((v) => ({
       ...v,
@@ -144,7 +153,8 @@ export default function BoxEvaluationWorkbench({ reviewerId }) {
       startDate: candidate.startDate,
       endDate: candidate.endDate
     }));
-  const error = batches.error || detail.error || candles.error || save.error || commit.error;
+  const error =
+    batches.error || detail.error || candles.error || save.error || commit.error || reveal.error;
   return (
     <section className="box-workbench" aria-labelledby="box-workbench-title">
       <h2 id="box-workbench-title">박스권 평가 워크벤치</h2>
@@ -289,7 +299,39 @@ export default function BoxEvaluationWorkbench({ reviewerId }) {
             >
               평가 내용 확인 및 확정
             </button>
+            <button type="button" onClick={() => reveal.mutate()} disabled={reveal.isPending}>
+              미래 결과 공개
+            </button>
           </div>
+          {outcome && (
+            <section className="outcome-panel" aria-labelledby="outcome-title">
+              <h3 id="outcome-title">미래 성과 · {outcome.policyVersion}</h3>
+              <p>
+                기준가격 {Number(outcome.entryPrice).toLocaleString('ko-KR')}원 · 최초 장벽{' '}
+                {outcome.firstBarrier}
+              </p>
+              <table>
+                <thead>
+                  <tr>
+                    <th>기간</th>
+                    <th>종가 수익률</th>
+                    <th>MFE</th>
+                    <th>MAE</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {outcome.windows.map((w) => (
+                    <tr key={w.tradingDays}>
+                      <td>{w.tradingDays}거래일</td>
+                      <td>{(w.closeReturnRate * 100).toFixed(2)}%</td>
+                      <td>{(w.maximumFavorableExcursion * 100).toFixed(2)}%</td>
+                      <td>{(w.maximumAdverseExcursion * 100).toFixed(2)}%</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </section>
+          )}
         </>
       )}
       {notice && <p aria-live="polite">{notice}</p>}
