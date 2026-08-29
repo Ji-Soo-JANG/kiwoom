@@ -6,7 +6,7 @@
 
 | 안건 | 내용 | 상태 |
 |---|---|---|
-| [STR-P06](STR-P06/proposal.md) | 실제 DB 일봉 기반 사용자 박스권 평가 워크벤치 | [실제 배치 준비 완료·사용자 평가 대기](STR-P06/pilot-preparation-report.md) |
+| [STR-P06](STR-P06/proposal.md) | 실제 DB 일봉 기반 사용자 박스권 평가 워크벤치 | [30개 파일럿 완료·알고리즘 승격 보류·R2 승인 대기](STR-P06/pilot-result-report-v1.md) |
 
 ## 상태 정의
 
