@@ -6,6 +6,7 @@
 - PM 결론: 조건부 구현 승인 권고
 - 구현 상태: 미구현
 - 승인 기록: [STR-P06 승인 기록](approval-record.md)
+- 다음 승인 안건: [1단계 실행 승인 요청](phase-1-execution-plan.md)
 
 ## 1. 승인 요청 요약
 
