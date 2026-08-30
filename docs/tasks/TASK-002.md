@@ -1656,6 +1656,26 @@ Not committed
 
 ---
 
+### 12.10 Finalization Addendum (authoritative)
+
+TASK-002 implementation: PASS
+
+Acceptance Criteria: AC-001~AC-024 PASS. Evidence is the completed backend/frontend implementation, Discovery pipeline integration coverage, and the manual browser validation recorded during TASK-002.
+
+Automated validation:
+
+- Maven: **168 tests PASS**
+- Frontend: **18 files / 63 tests PASS**
+- Frontend build: **PASS**
+- `git diff --check`: **PASS**
+- Manual UX verification: **PASS**
+
+Manual UX coverage included blind classification, BOX-only NARROW proposal disclosure, fast 2/3 save-and-next, BOX boundary editing, period trading-day snap, Lower/Upper zone drag and resize, numeric synchronization, keyboard navigation and confirmation, Esc cancellation, previous correction, reload/resume, persisted formation fields, completion progress, wheel zoom with page-scroll prevention, and normal page scrolling outside the chart.
+
+Design boundaries: Discovery A1 has not been created and no user research evaluation has been performed. Production Box Detector v2 and Formation Rule v1 were not implemented or decided. No production threshold was introduced. Volume is not used for Formation Classification. Strategy, backtest, PAPER/LIVE trading, order, and risk behavior were not changed. NARROW remains a proposal baseline only; EXPANDED/CONNECTED are not validated baselines. TASK-001 C0 data is not reused as Discovery training data.
+
+Implementation commit: `9826813e2d4365e3bdbf7fab6a82720c263bd8e4`
+
 ## 13. Decision Gate / Expected Next Step
 
 TASK-002 완료 후 바로 production Box Detector를 구현하지 않는다.
