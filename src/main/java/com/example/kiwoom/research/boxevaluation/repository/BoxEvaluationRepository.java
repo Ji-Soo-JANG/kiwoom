@@ -9,11 +9,17 @@ import com.example.kiwoom.research.boxevaluation.model.BoxEvaluationCandidate;
 import com.example.kiwoom.research.boxevaluation.model.BoxEvaluationDraft;
 import com.example.kiwoom.research.boxevaluation.model.BoxEvaluationItem;
 import com.example.kiwoom.research.boxevaluation.model.BoxEvaluationItemStatus;
+import com.example.kiwoom.research.boxevaluation.model.BoxEvaluationProgress;
 import com.example.kiwoom.research.boxevaluation.model.BoxEvaluationReveal;
 import com.example.kiwoom.research.boxevaluation.model.BoxEvaluationSupersede;
+import com.example.kiwoom.research.boxevaluation.model.BoxFormationEvaluation;
+import com.example.kiwoom.research.boxevaluation.model.BoxResearchDataset;
+import com.example.kiwoom.research.boxevaluation.model.FormationLabel;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import io.r2dbc.spi.Row;
 import org.springframework.r2dbc.core.DatabaseClient;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
@@ -226,6 +232,49 @@ public class BoxEvaluationRepository {
                 .one();
     }
 
+    public Flux<BoxEvaluationItem> findItems(long batchId) {
+        return database.sql("SELECT * FROM box_evaluation_item WHERE batch_id=:batch ORDER BY display_order")
+                .bind("batch", batchId)
+                .map((row, metadata) -> item(row))
+                .all();
+    }
+
+    private BoxEvaluationItem item(Row row) {
+        return new BoxEvaluationItem(
+                number(row.get("id")),
+                number(row.get("batch_id")),
+                row.get("code", String.class),
+                row.get("cutoff_date", LocalDate.class),
+                ((Number) row.get("display_order")).intValue(),
+                nullableNumber(row.get("source_scan_id")),
+                row.get("data_hash", String.class),
+                BoxEvaluationItemStatus.valueOf(row.get("status", String.class)),
+                number(row.get("lock_version")),
+                instant(row.get("created_at")));
+    }
+
+    public Mono<BoxEvaluationProgress> progress(long batchId) {
+        return database.sql(
+                        "SELECT :batch AS batch_id, COUNT(*) AS total, SUM(CASE WHEN status='COMMITTED' THEN 1 ELSE 0 END) AS completed, MIN(CASE WHEN status IN ('PENDING','DRAFTED') THEN id END) AS next_item_id FROM box_evaluation_item WHERE batch_id=:batch")
+                .bind("batch", batchId)
+                .map(
+                        (row, metadata) ->
+                                new BoxEvaluationProgress(
+                                        batchId,
+                                        number(row.get("completed")),
+                                        number(row.get("total")),
+                                        nullableNumber(row.get("next_item_id"))))
+                .one();
+    }
+
+    public Mono<Long> markFormationComplete(long itemId) {
+        return database.sql(
+                        "UPDATE box_evaluation_item SET status='COMMITTED', updated_at=CURRENT_TIMESTAMP WHERE id=:item")
+                .bind("item", itemId)
+                .fetch()
+                .rowsUpdated();
+    }
+
     public Mono<BoxEvaluationCandidate> addCandidate(BoxEvaluationCandidate candidate) {
         return database.sql(
                         """
@@ -331,14 +380,40 @@ public class BoxEvaluationRepository {
     public Mono<BoxEvaluation> commit(BoxEvaluation evaluation) {
         return findByCommitKey(evaluation.commitKey())
                 .switchIfEmpty(
-                        transitionToCommitted(evaluation.itemId())
+                        findCommittedEvaluation(evaluation.itemId(), evaluation.reviewerId())
+                                .flatMap(existing -> updateEvaluation(existing.id(), evaluation))
+                                .switchIfEmpty(transitionToCommitted(evaluation.itemId())
                                 .flatMap(
                                         changed ->
                                                 changed == 1
                                                         ? insertEvaluation(evaluation)
                                                         : Mono.error(
                                                                 new IllegalStateException(
-                                                                        "확정할 수 없는 평가 항목 상태입니다."))));
+                                                                        "확정할 수 없는 평가 항목 상태입니다.")))));
+    }
+
+    private Mono<BoxEvaluation> updateEvaluation(long evaluationId, BoxEvaluation evaluation) {
+        DatabaseClient.GenericExecuteSpec query = database.sql(
+                """
+                UPDATE box_evaluation SET commit_key=:commitKey, boundary_decision=:decision,
+                    selected_candidate_key=:candidate, final_start_date=:startDate, final_end_date=:endDate,
+                    label_code=:label, confidence=:confidence, reason_codes=:reasons, comment_text=:comment,
+                    input_snapshot_json=:snapshot, evaluation_schema_version=:schema,
+                    committed_at=CURRENT_TIMESTAMP WHERE id=:id
+                """)
+                .bind("id", evaluationId)
+                .bind("commitKey", evaluation.commitKey())
+                .bind("decision", evaluation.boundaryDecision().name())
+                .bind("label", evaluation.labelCode())
+                .bind("confidence", evaluation.confidence())
+                .bind("reasons", evaluation.reasonCodes())
+                .bind("snapshot", evaluation.inputSnapshotJson())
+                .bind("schema", evaluation.evaluationSchemaVersion());
+        query = bindNullable(query, "candidate", evaluation.selectedCandidateKey(), String.class);
+        query = bindNullable(query, "startDate", evaluation.finalStartDate(), LocalDate.class);
+        query = bindNullable(query, "endDate", evaluation.finalEndDate(), LocalDate.class);
+        query = bindNullable(query, "comment", evaluation.comment(), String.class);
+        return query.fetch().rowsUpdated().flatMap(updated -> updated == 1 ? findEvaluation(evaluationId) : Mono.empty());
     }
 
     public Mono<BoxEvaluationSupersede> supersede(BoxEvaluationSupersede supersede) {
@@ -556,6 +631,16 @@ public class BoxEvaluationRepository {
                 .flatMap(this::findEvaluation);
     }
 
+    public Mono<BoxEvaluation> findCommittedEvaluation(long itemId, String reviewerId) {
+        return database.sql(
+                        "SELECT id FROM box_evaluation WHERE item_id=:item AND reviewer_id=:reviewer ORDER BY committed_at DESC LIMIT 1")
+                .bind("item", itemId)
+                .bind("reviewer", reviewerId)
+                .map(row -> number(row.get("id")))
+                .one()
+                .flatMap(this::findEvaluation);
+    }
+
     public Mono<BoxEvaluationReveal> findReveal(long evaluationId) {
         return database.sql("SELECT * FROM box_evaluation_reveal WHERE evaluation_id=:evaluation")
                 .bind("evaluation", evaluationId)
@@ -569,6 +654,181 @@ public class BoxEvaluationRepository {
                                         row.get("outcome_snapshot_json", String.class),
                                         instant(row.get("revealed_at"))))
                 .one();
+    }
+
+    public Mono<BoxFormationEvaluation> saveFormation(
+            BoxFormationEvaluation value, long expectedRevision) {
+        DatabaseClient.GenericExecuteSpec query =
+                database.sql(
+                                """
+                INSERT INTO box_formation_evaluation(item_id, reviewer_id, formation_label,
+   proposed_start_date, proposed_end_date, final_start_date, final_end_date, period_decision,
+   proposed_lower_support_min, proposed_lower_support_max,
+   proposed_upper_resistance_min, proposed_upper_resistance_max,
+                    final_lower_support_min, final_lower_support_max,
+                    final_upper_resistance_min, final_upper_resistance_max, zone_decision, note, confidence,
+                    boundary_decision, label_code, reason_codes, comment_text, revision)
+                VALUES (:item, :reviewer, :label,
+                    (SELECT c.start_date FROM box_evaluation_candidate c WHERE c.item_id=:item AND c.candidate_key='NARROW'),
+                    (SELECT c.end_date FROM box_evaluation_candidate c WHERE c.item_id=:item AND c.candidate_key='NARROW'),
+   :startDate, :endDate, :periodDecision, :proposedLowerMin, :proposedLowerMax,
+   :proposedUpperMin, :proposedUpperMax, :lowerMin, :lowerMax, :upperMin, :upperMax,
+   :zoneDecision, :note, :confidence, :boundaryDecision, :labelCode, :reasonCodes, :comment, :revision)
+                ON CONFLICT (item_id, reviewer_id) DO UPDATE SET
+   formation_label=EXCLUDED.formation_label, final_start_date=EXCLUDED.final_start_date,
+   final_end_date=EXCLUDED.final_end_date,
+   period_decision=EXCLUDED.period_decision,
+   proposed_lower_support_min=EXCLUDED.proposed_lower_support_min,
+   proposed_lower_support_max=EXCLUDED.proposed_lower_support_max,
+   proposed_upper_resistance_min=EXCLUDED.proposed_upper_resistance_min,
+   proposed_upper_resistance_max=EXCLUDED.proposed_upper_resistance_max,
+                    final_lower_support_min=EXCLUDED.final_lower_support_min,
+                    final_lower_support_max=EXCLUDED.final_lower_support_max,
+                    final_upper_resistance_min=EXCLUDED.final_upper_resistance_min,
+                    final_upper_resistance_max=EXCLUDED.final_upper_resistance_max,
+   zone_decision=EXCLUDED.zone_decision, note=EXCLUDED.note, confidence=EXCLUDED.confidence,
+   boundary_decision=EXCLUDED.boundary_decision, label_code=EXCLUDED.label_code,
+   reason_codes=EXCLUDED.reason_codes, comment_text=EXCLUDED.comment_text,
+   revision=box_formation_evaluation.revision+1,
+                    committed_at=CURRENT_TIMESTAMP
+                WHERE box_formation_evaluation.revision=:expected
+                """)
+                        .bind("item", value.itemId())
+                        .bind("reviewer", value.reviewerId())
+                        .bind("label", value.formationLabel().name())
+                        .bind("revision", expectedRevision + 1)
+                        .bind("expected", expectedRevision);
+        query = bindNullable(query, "startDate", value.finalStartDate(), LocalDate.class);
+        query = bindNullable(query, "endDate", value.finalEndDate(), LocalDate.class);
+        query = bindNullable(query, "periodDecision", value.periodDecision(), String.class);
+        query =
+                bindNullable(
+                        query,
+                        "proposedLowerMin",
+                        value.proposedLowerSupportMin(),
+                        BigDecimal.class);
+        query =
+                bindNullable(
+                        query,
+                        "proposedLowerMax",
+                        value.proposedLowerSupportMax(),
+                        BigDecimal.class);
+        query =
+                bindNullable(
+                        query,
+                        "proposedUpperMin",
+                        value.proposedUpperResistanceMin(),
+                        BigDecimal.class);
+        query =
+                bindNullable(
+                        query,
+                        "proposedUpperMax",
+                        value.proposedUpperResistanceMax(),
+                        BigDecimal.class);
+        query = bindNullable(query, "lowerMin", value.finalLowerSupportMin(), BigDecimal.class);
+        query = bindNullable(query, "lowerMax", value.finalLowerSupportMax(), BigDecimal.class);
+        query = bindNullable(query, "upperMin", value.finalUpperResistanceMin(), BigDecimal.class);
+        query = bindNullable(query, "upperMax", value.finalUpperResistanceMax(), BigDecimal.class);
+        query = bindNullable(query, "zoneDecision", value.zoneDecision(), String.class);
+        query = bindNullable(query, "note", value.note(), String.class);
+        query = bindNullable(query, "confidence", value.confidence(), Integer.class);
+        query = bindNullable(query, "boundaryDecision", value.boundaryDecision(), String.class);
+        query = bindNullable(query, "labelCode", value.labelCode(), String.class);
+        query = bindNullable(query, "reasonCodes", value.reasonCodes(), String.class);
+        query = bindNullable(query, "comment", value.comment(), String.class);
+        return query.fetch()
+                .rowsUpdated()
+                .flatMap(
+                        updated ->
+                                updated == 0
+                                        ? Mono.error(
+                                                new IllegalStateException(
+                                                        "formation revision conflict"))
+                                        : findFormation(value.itemId(), value.reviewerId()));
+    }
+
+    public Mono<BoxFormationEvaluation> findFormation(long itemId, String reviewerId) {
+        return database.sql(
+                        "SELECT * FROM box_formation_evaluation WHERE item_id=:item AND reviewer_id=:reviewer")
+                .bind("item", itemId)
+                .bind("reviewer", reviewerId)
+                .map((row, metadata) -> formation(row))
+                .one();
+    }
+
+    public Mono<BoxResearchDataset> createDataset(BoxResearchDataset dataset) {
+        DatabaseClient.GenericExecuteSpec datasetQuery =
+                database.sql(
+                                """
+                INSERT INTO box_research_dataset(dataset_key, dataset_type, source_batch_id,
+                    sampling_policy_json, blind_policy_version, feature_snapshot_version)
+                VALUES (:key, :type, :batch, :sampling, :blind, :features)
+                """)
+                        .bind("key", dataset.datasetKey())
+                        .bind("type", dataset.datasetType())
+                        .bind("sampling", dataset.samplingPolicyJson())
+                        .bind("blind", dataset.blindPolicyVersion())
+                        .bind("features", dataset.featureSnapshotVersion());
+        datasetQuery =
+                dataset.sourceBatchId() == null
+                        ? datasetQuery.bindNull("batch", Long.class)
+                        : datasetQuery.bind("batch", dataset.sourceBatchId());
+        return datasetQuery.fetch().rowsUpdated().then(findDataset(dataset.datasetKey()));
+    }
+
+    private Mono<BoxResearchDataset> findDataset(String key) {
+        return database.sql("SELECT * FROM box_research_dataset WHERE dataset_key=:key")
+                .bind("key", key)
+                .map((row, metadata) -> dataset(row))
+                .one();
+    }
+
+    public Flux<BoxResearchDataset> findDatasets() {
+        return database.sql("SELECT * FROM box_research_dataset ORDER BY created_at DESC")
+                .map((row, metadata) -> dataset(row))
+                .all();
+    }
+
+    private BoxResearchDataset dataset(io.r2dbc.spi.Row row) {
+        return new BoxResearchDataset(
+                number(row.get("id")),
+                row.get("dataset_key", String.class),
+                row.get("dataset_type", String.class),
+                nullableNumber(row.get("source_batch_id")),
+                row.get("sampling_policy_json", String.class),
+                row.get("blind_policy_version", String.class),
+                row.get("feature_snapshot_version", String.class),
+                instant(row.get("created_at")));
+    }
+
+    private BoxFormationEvaluation formation(io.r2dbc.spi.Row row) {
+        return new BoxFormationEvaluation(
+                number(row.get("id")),
+                number(row.get("item_id")),
+                row.get("reviewer_id", String.class),
+                FormationLabel.valueOf(row.get("formation_label", String.class)),
+                row.get("proposed_start_date", LocalDate.class),
+                row.get("proposed_end_date", LocalDate.class),
+                row.get("final_start_date", LocalDate.class),
+                row.get("final_end_date", LocalDate.class),
+                row.get("period_decision", String.class),
+                row.get("proposed_lower_support_min", BigDecimal.class),
+                row.get("proposed_lower_support_max", BigDecimal.class),
+                row.get("proposed_upper_resistance_min", BigDecimal.class),
+                row.get("proposed_upper_resistance_max", BigDecimal.class),
+                row.get("final_lower_support_min", BigDecimal.class),
+                row.get("final_lower_support_max", BigDecimal.class),
+                row.get("final_upper_resistance_min", BigDecimal.class),
+                row.get("final_upper_resistance_max", BigDecimal.class),
+                row.get("zone_decision", String.class),
+                row.get("note", String.class),
+                row.get("confidence", Integer.class),
+                row.get("boundary_decision", String.class),
+                row.get("label_code", String.class),
+                row.get("reason_codes", String.class),
+                row.get("comment_text", String.class),
+                number(row.get("revision")),
+                instant(row.get("committed_at")));
     }
 
     private BoxEvaluationCandidate candidateWithId(BoxEvaluationCandidate source, long id) {

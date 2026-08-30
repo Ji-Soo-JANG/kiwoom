@@ -1256,6 +1256,38 @@ input:focus-visible {
   fill: #12b76a;
   stroke: #039855;
 }
+.final-period-range {
+  fill: #6941c6;
+  fill-opacity: 0.12;
+  stroke: #6941c6;
+  stroke-dasharray: 5 4;
+  stroke-width: 2;
+  pointer-events: none;
+}
+.period-handle {
+  fill: #6941c6;
+  fill-opacity: 0.75;
+  cursor: ew-resize;
+}
+.support-zone {
+  fill: #12b76a;
+  fill-opacity: 0.2;
+  stroke: #039855;
+  stroke-width: 1.5;
+  cursor: ns-resize;
+}
+.resistance-zone {
+  fill: #f79009;
+  fill-opacity: 0.2;
+  stroke: #dc6803;
+  stroke-width: 1.5;
+  cursor: ns-resize;
+}
+.zone-handle {
+  fill: #344054;
+  fill-opacity: 0.8;
+  cursor: ns-resize;
+}
 @media (max-width: 700px) {
   .candidate-row {
     align-items: stretch;

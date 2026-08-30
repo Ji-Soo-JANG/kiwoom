@@ -4,9 +4,11 @@ import com.example.kiwoom.dto.StoredDailyCandle;
 import com.example.kiwoom.research.boxevaluation.candidate.BoxCandidateGenerator;
 import com.example.kiwoom.research.boxevaluation.dto.BoxEvaluationItemResponse;
 import com.example.kiwoom.research.boxevaluation.dto.BoxEvaluationOutcome;
+import com.example.kiwoom.research.boxevaluation.dto.BoxResearchDatasetRequest;
 import com.example.kiwoom.research.boxevaluation.dto.CommitBoxEvaluationRequest;
 import com.example.kiwoom.research.boxevaluation.dto.CreateBoxEvaluationBatchRequest;
 import com.example.kiwoom.research.boxevaluation.dto.SaveBoxEvaluationDraftRequest;
+import com.example.kiwoom.research.boxevaluation.dto.SaveFormationEvaluationRequest;
 import com.example.kiwoom.research.boxevaluation.dto.SupersedeBoxEvaluationRequest;
 import com.example.kiwoom.research.boxevaluation.model.BoxBoundaryDecision;
 import com.example.kiwoom.research.boxevaluation.model.BoxEvaluation;
@@ -16,8 +18,12 @@ import com.example.kiwoom.research.boxevaluation.model.BoxEvaluationCandidate;
 import com.example.kiwoom.research.boxevaluation.model.BoxEvaluationDraft;
 import com.example.kiwoom.research.boxevaluation.model.BoxEvaluationItem;
 import com.example.kiwoom.research.boxevaluation.model.BoxEvaluationItemStatus;
+import com.example.kiwoom.research.boxevaluation.model.BoxEvaluationProgress;
 import com.example.kiwoom.research.boxevaluation.model.BoxEvaluationReveal;
 import com.example.kiwoom.research.boxevaluation.model.BoxEvaluationSupersede;
+import com.example.kiwoom.research.boxevaluation.model.BoxFormationEvaluation;
+import com.example.kiwoom.research.boxevaluation.model.BoxResearchDataset;
+import com.example.kiwoom.research.boxevaluation.model.FormationLabel;
 import com.example.kiwoom.research.boxevaluation.repository.BoxEvaluationRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -131,6 +137,10 @@ public class BoxEvaluationService {
         return repository.findNext(batchId);
     }
 
+    public Flux<BoxEvaluationItem> items(long batchId) {
+        return repository.findItems(batchId);
+    }
+
     public Mono<BoxEvaluationItemResponse> item(long itemId, String reviewerId) {
         return Mono.zip(
                         repository.findItem(itemId),
@@ -169,6 +179,10 @@ public class BoxEvaluationService {
                         request.expectedRevision(),
                         null),
                 request.expectedRevision());
+    }
+
+    public Mono<BoxEvaluationProgress> progress(long batchId) {
+        return repository.progress(batchId);
     }
 
     public Mono<BoxEvaluation> commit(long itemId, CommitBoxEvaluationRequest request) {
@@ -323,6 +337,88 @@ public class BoxEvaluationService {
                 .findCommittedEvaluationByItem(itemId)
                 .flatMap(evaluation -> repository.findReveal(evaluation.id()))
                 .map(saved -> readOutcome(saved.outcomeSnapshotJson()));
+    }
+
+    public Mono<BoxEvaluation> evaluation(long itemId, String reviewerId) {
+        return repository.findCommittedEvaluation(itemId, reviewerId);
+    }
+
+    public Mono<BoxFormationEvaluation> saveFormation(
+            long itemId, SaveFormationEvaluationRequest request) {
+        if (request.formationLabel() == FormationLabel.BOX
+                && (request.finalStartDate() == null || request.finalEndDate() == null)) {
+            return Mono.error(new IllegalArgumentException("BOX requires a final period"));
+        }
+        if (request.formationLabel() != FormationLabel.BOX
+                && (request.finalStartDate() != null || request.finalEndDate() != null)) {
+            return Mono.error(new IllegalArgumentException("non-BOX cannot contain a boundary"));
+        }
+        return repository
+                .saveFormation(
+                        new BoxFormationEvaluation(
+                                null,
+                                itemId,
+                                request.reviewerId(),
+                                request.formationLabel(),
+                                null,
+                                null,
+                                request.finalStartDate(),
+                                request.finalEndDate(),
+                                request.periodDecision(),
+                                request.proposedLowerSupportMin(),
+                                request.proposedLowerSupportMax(),
+                                request.proposedUpperResistanceMin(),
+                                request.proposedUpperResistanceMax(),
+                                request.finalLowerSupportMin(),
+                                request.finalLowerSupportMax(),
+                                request.finalUpperResistanceMin(),
+                                request.finalUpperResistanceMax(),
+                                request.zoneDecision(),
+                                request.note(),
+                                request.confidence(),
+                                request.boundaryDecision(),
+                                request.labelCode(),
+                                request.reasonCodes(),
+                                request.comment(),
+                                request.expectedRevision() + 1,
+                                Instant.now()),
+                        request.expectedRevision())
+                .flatMap(saved -> repository.markFormationComplete(itemId).thenReturn(saved));
+    }
+
+    public Mono<BoxFormationEvaluation> formation(long itemId, String reviewerId) {
+        return repository.findFormation(itemId, reviewerId);
+    }
+
+    public Mono<BoxResearchDataset> createDataset(BoxResearchDatasetRequest request) {
+        return repository.createDataset(
+                new BoxResearchDataset(
+                        null,
+                        request.datasetKey(),
+                        request.datasetType().name(),
+                        request.sourceBatchId(),
+                        request.samplingPolicyJson(),
+                        request.blindPolicyVersion(),
+                        request.featureSnapshotVersion(),
+                        null));
+    }
+
+    public Flux<BoxResearchDataset> datasets() {
+        return repository.findDatasets();
+    }
+
+    public Mono<BoxEvaluationBatch> createDiscoveryBatch(
+            String datasetKey, CreateBoxEvaluationBatchRequest request) {
+        return repository
+                .findDatasets()
+                .filter(
+                        d ->
+                                d.datasetKey().equals(datasetKey)
+                                        && "DISCOVERY".equals(d.datasetType()))
+                .next()
+                .switchIfEmpty(
+                        Mono.error(new IllegalArgumentException("DISCOVERY dataset not found")))
+                .flatMap(ignored -> createBatch(request));
     }
 
     private BoxEvaluationOutcome readOutcome(String json) {

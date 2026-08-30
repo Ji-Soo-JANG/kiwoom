@@ -514,6 +514,9 @@
     "/api/research/box-evaluations/batches/{batchId}/next": {
       "get": { "responses": { "200": { "description": "Next blind evaluation item" } } }
     },
+    "/api/research/box-evaluations/batches/{batchId}/items": {
+      "get": { "responses": { "200": { "description": "All persisted evaluation items for navigation" } } }
+    },
     "/api/research/box-evaluations/items/{itemId}": {
       "get": { "responses": { "200": { "description": "Blind evaluation item" } } }
     },
@@ -534,6 +537,23 @@
     },
     "/api/research/box-evaluations/items/{itemId}/outcome": {
       "get": { "responses": { "200": { "description": "Outcome policy status" } } }
+    },
+    "/api/research/box-evaluations/items/{itemId}/evaluation": {
+      "get": { "responses": { "200": { "description": "Committed evaluation for the reviewer" } } }
+    },
+    "/api/research/box-evaluations/items/{itemId}/formation": {
+      "get": { "responses": { "200": { "description": "Formation evaluation" } } },
+      "put": { "responses": { "200": { "description": "Formation evaluation saved" } } }
+    },
+    "/api/research/box-evaluations/datasets": {
+      "get": { "responses": { "200": { "description": "Research datasets" } } },
+      "post": { "responses": { "200": { "description": "Research dataset created" } } }
+    },
+    "/api/research/box-evaluations/datasets/{datasetKey}/batches": {
+      "post": { "responses": { "200": { "description": "Discovery batch created" } } }
+    },
+    "/api/research/box-evaluations/batches/{batchId}/progress": {
+      "get": { "responses": { "200": { "description": "Batch progress" } } }
     },
     "/api/trading/paper/verification": {
       "post": { "responses": { "200": { "description": "Local verification report" } } }

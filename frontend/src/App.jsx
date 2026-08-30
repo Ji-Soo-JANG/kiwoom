@@ -272,7 +272,7 @@ function App({ currentUser, onLogout }) {
         <Route path="/trading" element={<LimitedTradingPanel />} />
         <Route
           path="/research/box-evaluation"
-          element={<BoxEvaluationWorkbench reviewerId={currentUser?.username ?? 'local-user'} />}
+          element={<BoxEvaluationWorkbench reviewerId={currentUser?.username ?? 'local-user'} formationMode />}
         />
         <Route path="/settings" element={<SettingsPanel />} />
         <Route path="*" element={<Navigate to="/" replace />} />

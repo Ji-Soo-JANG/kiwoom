@@ -97,6 +97,10 @@ export const getMarketRankings = (market = 'ALL') =>
 export const getBoxEvaluationBatches = () => requestJson('/api/research/box-evaluations/batches');
 export const getNextBoxEvaluationItem = (batchId) =>
   requestJson(`/api/research/box-evaluations/batches/${batchId}/next`);
+export const getBoxEvaluationBatchItems = (batchId) =>
+  requestJson(`/api/research/box-evaluations/batches/${batchId}/items`);
+export const getBoxEvaluationProgress = (batchId) =>
+  requestJson(`/api/research/box-evaluations/batches/${batchId}/progress`);
 export const getBoxEvaluationItem = (itemId, reviewerId) =>
   requestJson(
     `/api/research/box-evaluations/items/${itemId}?reviewerId=${encodeURIComponent(reviewerId)}`
@@ -123,6 +127,19 @@ export const revealBoxEvaluationOutcome = (itemId, requestedBy) =>
   });
 export const getBoxEvaluationOutcome = (itemId) =>
   requestJson(`/api/research/box-evaluations/items/${itemId}/outcome`);
+export const getBoxEvaluation = (itemId, reviewerId) =>
+  requestJson(`/api/research/box-evaluations/items/${itemId}/evaluation?reviewerId=${encodeURIComponent(reviewerId)}`);
+export const getBoxFormationEvaluation = (itemId, reviewerId) =>
+  requestJson(`/api/research/box-evaluations/items/${itemId}/formation?reviewerId=${encodeURIComponent(reviewerId)}`);
+export const saveBoxFormationEvaluation = (itemId, request) =>
+  requestJson(`/api/research/box-evaluations/items/${itemId}/formation`, {
+    method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(request)
+  });
+export const getBoxResearchDatasets = () => requestJson('/api/research/box-evaluations/datasets');
+export const createBoxResearchDataset = (request) =>
+  requestJson('/api/research/box-evaluations/datasets', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(request)
+  });
 /** DB 일봉 기반 전략 후보를 버전별로 조회한다. */
 export const getStrategyCandidates = (boxRangeDays = 60, asOf = '', strategyVersion = '') => {
   const params = new URLSearchParams({ boxRangeDays: String(boxRangeDays) });

@@ -3,10 +3,12 @@ package com.example.kiwoom.research.boxevaluation.controller;
 import com.example.kiwoom.dto.StoredDailyCandle;
 import com.example.kiwoom.research.boxevaluation.dto.BoxEvaluationItemResponse;
 import com.example.kiwoom.research.boxevaluation.dto.BoxEvaluationOutcome;
+import com.example.kiwoom.research.boxevaluation.dto.BoxResearchDatasetRequest;
 import com.example.kiwoom.research.boxevaluation.dto.CommitBoxEvaluationRequest;
 import com.example.kiwoom.research.boxevaluation.dto.CreateBoxEvaluationBatchRequest;
 import com.example.kiwoom.research.boxevaluation.dto.RevealBoxEvaluationRequest;
 import com.example.kiwoom.research.boxevaluation.dto.SaveBoxEvaluationDraftRequest;
+import com.example.kiwoom.research.boxevaluation.dto.SaveFormationEvaluationRequest;
 import com.example.kiwoom.research.boxevaluation.dto.SupersedeBoxEvaluationRequest;
 import com.example.kiwoom.research.boxevaluation.model.BoxEvaluation;
 import com.example.kiwoom.research.boxevaluation.model.BoxEvaluationBatch;
@@ -51,6 +53,17 @@ public class BoxEvaluationController {
         return service.next(batchId);
     }
 
+    @GetMapping("/batches/{batchId}/items")
+    public Flux<BoxEvaluationItem> items(@PathVariable long batchId) {
+        return service.items(batchId);
+    }
+
+    @GetMapping("/batches/{batchId}/progress")
+    public Mono<com.example.kiwoom.research.boxevaluation.model.BoxEvaluationProgress> progress(
+            @PathVariable long batchId) {
+        return service.progress(batchId);
+    }
+
     @GetMapping("/items/{itemId}")
     public Mono<BoxEvaluationItemResponse> item(
             @PathVariable long itemId, @RequestParam String reviewerId) {
@@ -89,5 +102,43 @@ public class BoxEvaluationController {
     @GetMapping("/items/{itemId}/outcome")
     public Mono<BoxEvaluationOutcome> outcome(@PathVariable long itemId) {
         return service.outcome(itemId);
+    }
+
+    @GetMapping("/items/{itemId}/evaluation")
+    public Mono<BoxEvaluation> evaluation(
+            @PathVariable long itemId, @RequestParam String reviewerId) {
+        return service.evaluation(itemId, reviewerId);
+    }
+
+    @GetMapping("/items/{itemId}/formation")
+    public Mono<com.example.kiwoom.research.boxevaluation.model.BoxFormationEvaluation> formation(
+            @PathVariable long itemId, @RequestParam String reviewerId) {
+        return service.formation(itemId, reviewerId);
+    }
+
+    @PutMapping("/items/{itemId}/formation")
+    public Mono<com.example.kiwoom.research.boxevaluation.model.BoxFormationEvaluation>
+            saveFormation(
+                    @PathVariable long itemId,
+                    @Valid @RequestBody SaveFormationEvaluationRequest request) {
+        return service.saveFormation(itemId, request);
+    }
+
+    @GetMapping("/datasets")
+    public Flux<com.example.kiwoom.research.boxevaluation.model.BoxResearchDataset> datasets() {
+        return service.datasets();
+    }
+
+    @PostMapping("/datasets/{datasetKey}/batches")
+    public Mono<BoxEvaluationBatch> createDiscoveryBatch(
+            @PathVariable String datasetKey,
+            @Valid @RequestBody CreateBoxEvaluationBatchRequest request) {
+        return service.createDiscoveryBatch(datasetKey, request);
+    }
+
+    @PostMapping("/datasets")
+    public Mono<com.example.kiwoom.research.boxevaluation.model.BoxResearchDataset> createDataset(
+            @Valid @RequestBody BoxResearchDatasetRequest request) {
+        return service.createDataset(request);
     }
 }
