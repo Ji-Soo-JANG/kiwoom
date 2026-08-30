@@ -36,8 +36,12 @@ build/
 ### VS Code ###
 .vscode/
 
-### Playwright ###
+### Playwright
 frontend/playwright-report/
 frontend/test-results/
 frontend/coverage/
 backups/
+
+### Local session files
+.codex/
+session.txt
