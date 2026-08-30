@@ -1,7 +1,7 @@
 package com.example.kiwoom.controller;
 
-import com.example.kiwoom.dto.StrategyDefinition;
-import com.example.kiwoom.service.StrategyCatalogService;
+import com.example.kiwoom.strategy.model.StrategyDefinition;
+import com.example.kiwoom.strategy.service.StrategyCatalogService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;

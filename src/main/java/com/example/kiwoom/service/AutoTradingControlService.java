@@ -4,7 +4,7 @@ import com.example.kiwoom.dto.AutoTradingControl;
 import com.example.kiwoom.dto.AutoTradingControlRequest;
 import com.example.kiwoom.error.TradingSafetyException;
 import com.example.kiwoom.repository.AutoTradingControlRepository;
-import com.example.kiwoom.service.strategy.StrategyRegistry;
+import com.example.kiwoom.strategy.StrategyRegistry;
 import java.util.List;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;

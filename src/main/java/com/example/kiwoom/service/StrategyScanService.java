@@ -1,11 +1,12 @@
 package com.example.kiwoom.service;
 
-import com.example.kiwoom.dto.StrategyCandidate;
-import com.example.kiwoom.dto.StrategyScanResponse;
 import com.example.kiwoom.repository.MarketDataRepository;
-import com.example.kiwoom.repository.StrategySnapshotRepository;
-import com.example.kiwoom.service.strategy.CurrentRecoveryPullbackStrategy;
-import com.example.kiwoom.service.strategy.StrategyRegistry;
+import com.example.kiwoom.strategy.StrategyRegistry;
+import com.example.kiwoom.strategy.implementation.CurrentRecoveryPullbackStrategy;
+import com.example.kiwoom.strategy.model.StrategyCandidate;
+import com.example.kiwoom.strategy.model.StrategyScanResponse;
+import com.example.kiwoom.strategy.repository.StrategySnapshotRepository;
+import com.example.kiwoom.strategy.service.StrategyPatternDetector;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;

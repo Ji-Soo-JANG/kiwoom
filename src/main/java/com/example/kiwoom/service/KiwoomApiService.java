@@ -1,6 +1,7 @@
 package com.example.kiwoom.service;
 
-import com.example.kiwoom.client.KiwoomHttpClient;
+import com.example.kiwoom.broker.kiwoom.client.KiwoomHttpClient;
+import com.example.kiwoom.broker.kiwoom.mapper.KiwoomResponseMapper;
 import com.example.kiwoom.config.KiwoomApiProperties;
 import com.example.kiwoom.dto.AccountPortfolioResponse;
 import com.example.kiwoom.dto.DailyPriceResponse;
@@ -10,7 +11,6 @@ import com.example.kiwoom.dto.StockPriceResponse;
 import com.example.kiwoom.dto.StockProductType;
 import com.example.kiwoom.dto.StockSearchResult;
 import com.example.kiwoom.error.KiwoomAuthenticationException;
-import com.example.kiwoom.mapper.KiwoomResponseMapper;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;

@@ -3,10 +3,10 @@ package com.example.kiwoom.service;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import com.example.kiwoom.client.KiwoomHttpClient;
+import com.example.kiwoom.broker.kiwoom.client.KiwoomHttpClient;
+import com.example.kiwoom.broker.kiwoom.mapper.KiwoomResponseMapper;
 import com.example.kiwoom.config.KiwoomApiProperties;
 import com.example.kiwoom.dto.AccountPortfolioResponse;
-import com.example.kiwoom.mapper.KiwoomResponseMapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;

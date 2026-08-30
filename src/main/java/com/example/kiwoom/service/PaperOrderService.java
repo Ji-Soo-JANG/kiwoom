@@ -25,7 +25,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Service
-public class PaperOrderService implements com.example.kiwoom.service.broker.BrokerAdapter {
+public class PaperOrderService implements com.example.kiwoom.broker.BrokerAdapter {
     private static final ZoneId SEOUL = ZoneId.of("Asia/Seoul");
     private final TradingModeService modes;
     private final PaperTradingRepository repository;

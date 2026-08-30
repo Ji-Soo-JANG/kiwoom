@@ -4,6 +4,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.example.kiwoom.dto.*;
+import com.example.kiwoom.research.backtest.dto.BacktestResponse;
+import com.example.kiwoom.research.backtest.dto.BacktestTrade;
+import com.example.kiwoom.research.backtest.repository.BacktestRepository;
+import com.example.kiwoom.research.walkforward.dto.WalkForwardFold;
+import com.example.kiwoom.research.walkforward.dto.WalkForwardReport;
+import com.example.kiwoom.research.walkforward.repository.WalkForwardRepository;
+import com.example.kiwoom.strategy.model.StrategyCandidate;
+import com.example.kiwoom.strategy.model.StrategyScanResponse;
+import com.example.kiwoom.strategy.repository.StrategySnapshotRepository;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import org.junit.jupiter.api.Test;

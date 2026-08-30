@@ -2,11 +2,11 @@ package com.example.kiwoom.integration;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.example.kiwoom.client.KiwoomHttpClient;
+import com.example.kiwoom.broker.kiwoom.client.KiwoomHttpClient;
+import com.example.kiwoom.broker.kiwoom.mapper.KiwoomResponseMapper;
 import com.example.kiwoom.config.KiwoomApiProperties;
 import com.example.kiwoom.dto.DailyPriceResponse;
 import com.example.kiwoom.dto.StockPriceResponse;
-import com.example.kiwoom.mapper.KiwoomResponseMapper;
 import com.example.kiwoom.service.KiwoomApiService;
 import com.example.kiwoom.service.TechnicalIndicatorService;
 import com.fasterxml.jackson.databind.ObjectMapper;

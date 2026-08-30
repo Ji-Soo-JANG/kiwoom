@@ -7,13 +7,13 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.example.kiwoom.dto.LimitedTradeCandidate;
-import com.example.kiwoom.dto.StrategyCandidate;
-import com.example.kiwoom.dto.StrategyScanResponse;
 import com.example.kiwoom.dto.TradeCandidateRequest;
 import com.example.kiwoom.repository.MarketDataRepository;
-import com.example.kiwoom.repository.StrategySnapshotRepository;
-import com.example.kiwoom.service.strategy.DropBaseBreakoutPullbackStrategy;
-import com.example.kiwoom.service.strategy.StrategyRegistry;
+import com.example.kiwoom.strategy.StrategyRegistry;
+import com.example.kiwoom.strategy.implementation.DropBaseBreakoutPullbackStrategy;
+import com.example.kiwoom.strategy.model.StrategyCandidate;
+import com.example.kiwoom.strategy.model.StrategyScanResponse;
+import com.example.kiwoom.strategy.repository.StrategySnapshotRepository;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;

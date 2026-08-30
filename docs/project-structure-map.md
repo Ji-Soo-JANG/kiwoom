@@ -1,7 +1,7 @@
 # 프로젝트 구성 지도
 
-기준일: 2026-08-29
-상태: PM 현황 조사
+기준일: 2026-08-30
+상태: Architecture Baseline v1
 
 ## 1. 규모와 기술 구성
 
@@ -9,7 +9,7 @@
 - 프론트엔드: React, React Router, TanStack Query, Recharts, Vite
 - 데이터베이스: PostgreSQL, 테스트용 H2/R2DBC
 - 외부 연동: 키움 REST API
-- 소스 규모: Java 운영 코드 155개, Java 테스트 클래스 35개, 프론트 소스 39개
+- 소스 규모: Java 운영 코드 182개, Java 테스트 클래스 42개, 프론트 소스 39개
 - DB 변경 이력: Flyway V1~V24
 
 ## 2. 실행 구조
@@ -23,22 +23,37 @@
             ├─ 전략·백테스트·관찰
             ├─ PAPER 주문·위험·성과
             └─ 알림·관심종목·레거시 포트폴리오
-                 ├─ KiwoomHttpClient → 키움 REST API
+                 ├─ broker/kiwoom/KiwoomHttpClient → 키움 REST API
                  └─ Repository → PostgreSQL
 ```
 
 ## 3. 백엔드 패키지
 
-| 패키지 | 파일 수 | 현재 책임 | PM 관찰 |
+Architecture Baseline v1은 feature package를 우선하고, 기존 기술 계층 package는 관련 TASK에서 점진적으로 이동하는 기준선이다.
+
+| 패키지 | 파일 수 | 현재 책임 | 분류 |
 |---|---:|---|---|
-| `client` | 1 | 키움 HTTP 통신·재시도 | 단일 클래스 집중도가 높아 API 영역별 분리 검토 필요 |
-| `config` | 9 | 보안, CORS, API·거래 설정, 진단 | 실전 준비 검사와 비밀 관리 보강 필요 |
-| `controller` | 14 | REST와 웹 진입점 | 조회·연구·운영·거래 API가 같은 애플리케이션에 공존 |
-| `dto` | 65 | 외부·API·도메인 전달 모델 | PAPER 명칭과 외부 응답·도메인 모델 혼재 |
-| `error` | 8 | 공통 오류와 키움 오류 | 주문의 모호한 결과 전용 모델 보강 필요 |
-| `mapper` | 1 | 키움 JSON 변환 | client와 마찬가지로 기능 집중도가 높음 |
-| `repository` | 16 | R2DBC SQL과 영속화 | 연구·사용자·거래 원장의 경계 명시 필요 |
-| `service` | 40 | 수집, 전략, 연구, 주문, 위험, 스케줄 | 기능은 풍부하나 도메인별 패키지 재구성 후보 |
+| `broker` | 4 | broker-neutral 계약과 Kiwoom 전용 어댑터·HTTP·매핑 | 신규 feature package |
+| `strategy` | 12 | 전략 계약·구현·모델·저장소·카탈로그 | 신규 feature package |
+| `research/backtest` | 7 | 백테스트 설정·실행·DTO·저장소 | 신규 feature package |
+| `research/walkforward` | 6 | 워크포워드 분석·실행·DTO·저장소 | 신규 feature package |
+| `research/boxevaluation` | 27 | 박스 평가 후보·모델·API·저장소·서비스 | 선행 feature package 사례 |
+| `config` | 9 | 보안, CORS, API·거래 설정, 진단 | legacy technical package |
+| `controller` | 14 | REST와 웹 진입점 | legacy technical package |
+| `dto` | 56 | 아직 이동하지 않은 외부·API·도메인 전달 모델 | legacy technical package |
+| `error` | 8 | 공통 오류와 키움 오류 | legacy technical package |
+| `repository` | 12 | 아직 이동하지 않은 R2DBC SQL과 영속화 | legacy technical package |
+| `service` | 26 | 아직 이동하지 않은 수집·거래·운영 서비스 | legacy technical package |
+
+`client`와 `mapper`의 Kiwoom 외부 API 클래스는 `broker/kiwoom` 경계로 이동했다. `common/config`와 `common/error`는 장기 목표이며 이번 기준선에서는 물리적으로 만들지 않았다.
+
+### 점진적 migration 정책
+
+- 새 주요 기능은 최상위 기술 계층보다 feature package를 우선한다.
+- 기존 `controller`, `service`, `dto`, `repository`를 일괄 해체하지 않는다.
+- 기존 클래스는 관련 기능 TASK에서 수정할 때 feature package로 점진적으로 이동한다.
+- `research/boxevaluation`은 이번 기준선 이전부터 적용된 package-by-feature 선행 사례다.
+- Market Data, PAPER Trading, Order, Position, Risk, Auto Trading, Alert, Portfolio, Watchlist와 Frontend는 현재 위치와 동작을 유지한다.
 
 ## 4. 주요 기능 흐름
 
