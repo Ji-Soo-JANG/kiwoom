@@ -90,6 +90,43 @@ class KiwoomHttpClientPagedTest {
     }
 
     @Test
+    void requestDailyChartPage_preservesContinuationHeaders() throws InterruptedException {
+        server.enqueue(
+                new MockResponse()
+                        .setResponseCode(200)
+                        .setHeader("Content-Type", "application/json")
+                        .setHeader("cont-yn", "Y")
+                        .setHeader("next-key", "older-page")
+                        .setBody("{\"return_code\":0,\"stk_dt_pole_chart_qry\":[]}"));
+        KiwoomHttpClient client = client();
+        KiwoomHttpClient.PagedResponse result =
+                client.requestDailyChartPage(
+                                "005930", "20240723", new ContinuationToken("prior-page"), "token")
+                        .block();
+        assertTrue(result.continuePaging());
+        assertEquals("older-page", result.nextKey());
+        RecordedRequest request = server.takeRequest();
+        assertEquals("ka10081", request.getHeader("api-id"));
+        assertEquals("Y", request.getHeader("cont-yn"));
+        assertEquals("prior-page", request.getHeader("next-key"));
+        assertTrue(request.getBody().readUtf8().contains("20240723"));
+    }
+
+    @Test
+    void requestDailyChartPage_retriesTransientFailureThenSucceeds() throws Exception {
+        server.enqueue(new MockResponse().setResponseCode(503));
+        server.enqueue(
+                new MockResponse()
+                        .setResponseCode(200)
+                        .setHeader("Content-Type", "application/json")
+                        .setBody("{\"return_code\":0,\"stk_dt_pole_chart_qry\":[]}"));
+        KiwoomHttpClient.PagedResponse result =
+                client().requestDailyChartPage("005930", "20240723", null, "token").block();
+        assertFalse(result.continuePaging());
+        assertEquals(2, server.getRequestCount());
+    }
+
+    @Test
     void requestAccountPortfolioPaged_authError() {
         server.enqueue(new MockResponse().setResponseCode(401));
 

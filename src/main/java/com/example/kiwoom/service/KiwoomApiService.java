@@ -1,5 +1,7 @@
 package com.example.kiwoom.service;
 
+import com.example.kiwoom.broker.kiwoom.client.ContinuationToken;
+import com.example.kiwoom.broker.kiwoom.client.DailyChartPage;
 import com.example.kiwoom.broker.kiwoom.client.KiwoomHttpClient;
 import com.example.kiwoom.broker.kiwoom.mapper.KiwoomResponseMapper;
 import com.example.kiwoom.config.KiwoomApiProperties;
@@ -182,6 +184,53 @@ public class KiwoomApiService {
 
     public Mono<List<DailyPriceResponse>> getDailyPrices(String code, String baseDate, int limit) {
         return getPeriodPrices(code, baseDate, limit, "day");
+    }
+
+    /** Fetches a single ka10081 page without discarding broker continuation metadata. */
+    public Mono<DailyChartPage> getDailyChartPage(
+            String code, LocalDate baseDate, ContinuationToken continuation) {
+        final String normalizedCode = normalizeStockCode(code);
+        final String date =
+                (baseDate == null ? LocalDate.now(ZoneId.of("Asia/Seoul")) : baseDate)
+                        .format(DateTimeFormatter.BASIC_ISO_DATE);
+        return getAccessToken()
+                .flatMap(
+                        token ->
+                                client.requestDailyChartPage(
+                                                normalizedCode, date, continuation, token.value())
+                                        .map(
+                                                page ->
+                                                        new DailyChartPage(
+                                                                mapper.parseDailyPrices(
+                                                                        page.body()),
+                                                                page.continuePaging(),
+                                                                new ContinuationToken(
+                                                                        page.nextKey()))))
+                .onErrorResume(
+                        KiwoomAuthenticationException.class,
+                        error -> {
+                            invalidateAccessToken();
+                            return getAccessToken()
+                                    .flatMap(
+                                            token ->
+                                                    client.requestDailyChartPage(
+                                                                    normalizedCode,
+                                                                    date,
+                                                                    continuation,
+                                                                    token.value())
+                                                            .map(
+                                                                    page ->
+                                                                            new DailyChartPage(
+                                                                                    mapper
+                                                                                            .parseDailyPrices(
+                                                                                                    page
+                                                                                                            .body()),
+                                                                                    page
+                                                                                            .continuePaging(),
+                                                                                    new ContinuationToken(
+                                                                                            page
+                                                                                                    .nextKey()))));
+                        });
     }
 
     /**

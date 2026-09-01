@@ -15,11 +15,11 @@ import com.example.kiwoom.research.boxevaluation.model.BoxEvaluationSupersede;
 import com.example.kiwoom.research.boxevaluation.model.BoxFormationEvaluation;
 import com.example.kiwoom.research.boxevaluation.model.BoxResearchDataset;
 import com.example.kiwoom.research.boxevaluation.model.FormationLabel;
+import io.r2dbc.spi.Row;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
-import io.r2dbc.spi.Row;
 import org.springframework.r2dbc.core.DatabaseClient;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
@@ -233,7 +233,8 @@ public class BoxEvaluationRepository {
     }
 
     public Flux<BoxEvaluationItem> findItems(long batchId) {
-        return database.sql("SELECT * FROM box_evaluation_item WHERE batch_id=:batch ORDER BY display_order")
+        return database.sql(
+                        "SELECT * FROM box_evaluation_item WHERE batch_id=:batch ORDER BY display_order")
                 .bind("batch", batchId)
                 .map((row, metadata) -> item(row))
                 .all();
@@ -382,38 +383,43 @@ public class BoxEvaluationRepository {
                 .switchIfEmpty(
                         findCommittedEvaluation(evaluation.itemId(), evaluation.reviewerId())
                                 .flatMap(existing -> updateEvaluation(existing.id(), evaluation))
-                                .switchIfEmpty(transitionToCommitted(evaluation.itemId())
-                                .flatMap(
-                                        changed ->
-                                                changed == 1
-                                                        ? insertEvaluation(evaluation)
-                                                        : Mono.error(
-                                                                new IllegalStateException(
-                                                                        "확정할 수 없는 평가 항목 상태입니다.")))));
+                                .switchIfEmpty(
+                                        transitionToCommitted(evaluation.itemId())
+                                                .flatMap(
+                                                        changed ->
+                                                                changed == 1
+                                                                        ? insertEvaluation(
+                                                                                evaluation)
+                                                                        : Mono.error(
+                                                                                new IllegalStateException(
+                                                                                        "확정할 수 없는 평가 항목 상태입니다.")))));
     }
 
     private Mono<BoxEvaluation> updateEvaluation(long evaluationId, BoxEvaluation evaluation) {
-        DatabaseClient.GenericExecuteSpec query = database.sql(
-                """
+        DatabaseClient.GenericExecuteSpec query =
+                database.sql(
+                                """
                 UPDATE box_evaluation SET commit_key=:commitKey, boundary_decision=:decision,
                     selected_candidate_key=:candidate, final_start_date=:startDate, final_end_date=:endDate,
                     label_code=:label, confidence=:confidence, reason_codes=:reasons, comment_text=:comment,
                     input_snapshot_json=:snapshot, evaluation_schema_version=:schema,
                     committed_at=CURRENT_TIMESTAMP WHERE id=:id
                 """)
-                .bind("id", evaluationId)
-                .bind("commitKey", evaluation.commitKey())
-                .bind("decision", evaluation.boundaryDecision().name())
-                .bind("label", evaluation.labelCode())
-                .bind("confidence", evaluation.confidence())
-                .bind("reasons", evaluation.reasonCodes())
-                .bind("snapshot", evaluation.inputSnapshotJson())
-                .bind("schema", evaluation.evaluationSchemaVersion());
+                        .bind("id", evaluationId)
+                        .bind("commitKey", evaluation.commitKey())
+                        .bind("decision", evaluation.boundaryDecision().name())
+                        .bind("label", evaluation.labelCode())
+                        .bind("confidence", evaluation.confidence())
+                        .bind("reasons", evaluation.reasonCodes())
+                        .bind("snapshot", evaluation.inputSnapshotJson())
+                        .bind("schema", evaluation.evaluationSchemaVersion());
         query = bindNullable(query, "candidate", evaluation.selectedCandidateKey(), String.class);
         query = bindNullable(query, "startDate", evaluation.finalStartDate(), LocalDate.class);
         query = bindNullable(query, "endDate", evaluation.finalEndDate(), LocalDate.class);
         query = bindNullable(query, "comment", evaluation.comment(), String.class);
-        return query.fetch().rowsUpdated().flatMap(updated -> updated == 1 ? findEvaluation(evaluationId) : Mono.empty());
+        return query.fetch()
+                .rowsUpdated()
+                .flatMap(updated -> updated == 1 ? findEvaluation(evaluationId) : Mono.empty());
     }
 
     public Mono<BoxEvaluationSupersede> supersede(BoxEvaluationSupersede supersede) {

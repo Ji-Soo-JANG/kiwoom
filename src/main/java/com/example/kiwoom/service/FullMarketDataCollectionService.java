@@ -44,7 +44,7 @@ public class FullMarketDataCollectionService implements ApplicationRunner {
             LoggerFactory.getLogger(FullMarketDataCollectionService.class);
 
     /** 장기 박스권 전략과 동일하게 약 6년치 거래일을 초기 적재한다. 이후 실행은 같은 키를 갱신한다. */
-    static final int DAILY_CANDLE_LIMIT = 1500;
+    static final int DAILY_CANDLE_LIMIT = 500;
 
     private static final int PROGRESS_LOG_INTERVAL = 100;
 

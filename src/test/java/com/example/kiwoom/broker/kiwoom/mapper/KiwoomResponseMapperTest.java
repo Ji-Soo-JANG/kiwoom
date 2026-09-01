@@ -70,6 +70,33 @@ class KiwoomResponseMapperTest {
     }
 
     @Test
+    void ignoresAllBlankDailyNoDataPlaceholder() {
+        String json =
+                """
+                {"return_code":0,"stk_dt_pole_chart_qry":[
+                  {"dt":"","open_pric":"","high_pric":"","low_pric":"","cur_prc":"","trde_qty":""}
+                ]}
+                """;
+
+        assertTrue(mapper.parseDailyPrices(json).isEmpty());
+    }
+
+    @Test
+    void rejectsPartiallyBlankDailyRow() {
+        String json =
+                """
+                {"return_code":0,"stk_dt_pole_chart_qry":[
+                  {"dt":"","open_pric":"100","high_pric":"100","low_pric":"100","cur_prc":"100","trde_qty":"1"}
+                ]}
+                """;
+
+        KiwoomApiException error =
+                assertThrows(KiwoomApiException.class, () -> mapper.parseDailyPrices(json));
+        assertEquals(KiwoomErrorCode.INVALID_RESPONSE, error.errorCode());
+        assertTrue(error.getMessage().contains("dt"));
+    }
+
+    @Test
     void classifiesProductTypesInStockCatalog() {
         String json =
                 """

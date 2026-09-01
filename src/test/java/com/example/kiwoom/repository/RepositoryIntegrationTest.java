@@ -51,6 +51,7 @@ class RepositoryIntegrationTest {
     @Autowired private com.example.kiwoom.service.PaperRiskService paperRiskService;
     @Autowired private com.example.kiwoom.service.ObservationService observationService;
     @Autowired private LimitedTradingRepository limitedTradingRepository;
+    @Autowired private HistoricalBackfillRepository historicalBackfillRepository;
 
     // --- MarketDataRepository tests ---
 
@@ -79,6 +80,139 @@ class RepositoryIntegrationTest {
         DailyPriceResponse updatedCandle =
                 new DailyPriceResponse("20260816", 70500, 72000, 69500, 71000, 2000);
         marketDataRepository.saveCandles("888888", Flux.just(updatedCandle)).block();
+        var prices = marketDataRepository.findDailyPrices("888888", 10).collectList().block();
+        assertThat(prices).hasSize(1);
+        assertThat(prices.get(0).getOpenPrice()).isEqualTo(70500);
+        assertThat(prices.get(0).getHighPrice()).isEqualTo(72000);
+        assertThat(prices.get(0).getLowPrice()).isEqualTo(69500);
+        assertThat(prices.get(0).getClosePrice()).isEqualTo(71000);
+        assertThat(prices.get(0).getVolume()).isEqualTo(2000);
+    }
+
+    @Test
+    void findOldestCandleDateReturnsEmptyWhenStockHasNoCandles() {
+        StockSearchResult stock = new StockSearchResult("884444", "no-candles", "KOSDAQ");
+        marketDataRepository.saveStocks(Flux.just(stock)).block();
+
+        assertThat(marketDataRepository.findOldestCandleDate("884444").blockOptional()).isEmpty();
+        assertThat(marketDataRepository.findDailyPrices("884444", 10).collectList().block())
+                .isEmpty();
+    }
+
+    @Test
+    void persistPageRollsBackCandlesWhenCheckpointFails() {
+        StockSearchResult stock = new StockSearchResult("889999", "rollback", "KOSPI");
+        marketDataRepository.saveStocks(Flux.just(stock)).block();
+        historicalBackfillRepository
+                .start("889999", LocalDate.of(2015, 1, 1), LocalDate.of(2024, 7, 24))
+                .block();
+        var before = historicalBackfillRepository.find("889999").block();
+        DailyPriceResponse candle = new DailyPriceResponse("20240723", 10, 12, 9, 11, 100);
+        assertThatThrownBy(
+                        () ->
+                                historicalBackfillRepository
+                                        .persistPage(
+                                                "889999",
+                                                java.util.List.of(candle),
+                                                LocalDate.of(2024, 7, 23),
+                                                "x".repeat(501),
+                                                true,
+                                                1,
+                                                1)
+                                        .block())
+                .hasMessageContaining("continuation key exceeds");
+        var after = historicalBackfillRepository.find("889999").block();
+        assertThat(after.oldestSyncedDate()).isEqualTo(before.oldestSyncedDate());
+        assertThat(after.pageCount()).isEqualTo(before.pageCount());
+        assertThat(marketDataRepository.findDailyPrices("889999", 10).collectList().block())
+                .isEmpty();
+    }
+
+    @Test
+    void backfillStatePersistsAttemptAndFailureMetadata() {
+        StockSearchResult stock = new StockSearchResult("887777", "metadata", "KOSDAQ");
+        marketDataRepository.saveStocks(Flux.just(stock)).block();
+        historicalBackfillRepository.start("887777", LocalDate.of(2015, 1, 1), null).block();
+        historicalBackfillRepository.start("887777", LocalDate.of(2015, 1, 1), null).block();
+        historicalBackfillRepository.fail("887777", "AUTH", "invalid credentials").block();
+        var state = historicalBackfillRepository.find("887777").block();
+        assertThat(state.status())
+                .isEqualTo(com.example.kiwoom.service.HistoricalBackfillStatus.FAILED);
+        assertThat(state.attemptCount()).isEqualTo(1);
+        assertThat(state.lastErrorCode()).isEqualTo("AUTH");
+        assertThat(state.lastErrorMessage()).isEqualTo("invalid credentials");
+    }
+
+    @Test
+    void initializedStatePersistsFailureMetadataAfterBrokerError() {
+        StockSearchResult stock = new StockSearchResult("883333", "failure-lifecycle", "KOSDAQ");
+        marketDataRepository.saveStocks(Flux.just(stock)).block();
+        historicalBackfillRepository.createPending("883333", LocalDate.of(2015, 1, 1)).block();
+        historicalBackfillRepository.start("883333", LocalDate.of(2015, 1, 1), null).block();
+        historicalBackfillRepository
+                .fail("883333", "BACKFILL_ERROR", "controlled broker failure")
+                .block();
+
+        var state = historicalBackfillRepository.find("883333").block();
+        assertThat(state.status())
+                .isEqualTo(com.example.kiwoom.service.HistoricalBackfillStatus.FAILED);
+        assertThat(state.attemptCount()).isEqualTo(1);
+        assertThat(state.lastErrorCode()).isEqualTo("BACKFILL_ERROR");
+        assertThat(state.lastErrorMessage()).isEqualTo("controlled broker failure");
+    }
+
+    @Test
+    void pendingStateIsPersistedBeforeWorkerClaimsInProgress() {
+        StockSearchResult stock = new StockSearchResult("886666", "lifecycle", "KOSPI");
+        marketDataRepository.saveStocks(Flux.just(stock)).block();
+        historicalBackfillRepository.createPending("886666", LocalDate.of(2015, 1, 1)).block();
+        assertThat(historicalBackfillRepository.find("886666").block().status())
+                .isEqualTo(com.example.kiwoom.service.HistoricalBackfillStatus.PENDING);
+        historicalBackfillRepository.start("886666", LocalDate.of(2015, 1, 1), null).block();
+        assertThat(historicalBackfillRepository.find("886666").block().status())
+                .isEqualTo(com.example.kiwoom.service.HistoricalBackfillStatus.IN_PROGRESS);
+    }
+
+    @Test
+    void terminalBackfillStatusesArePersisted() {
+        StockSearchResult stock = new StockSearchResult("885555", "terminal-states", "KOSPI");
+        marketDataRepository.saveStocks(Flux.just(stock)).block();
+        historicalBackfillRepository.createPending("885555", LocalDate.of(2015, 1, 1)).block();
+        historicalBackfillRepository.start("885555", LocalDate.of(2015, 1, 1), null).block();
+
+        historicalBackfillRepository
+                .finish(
+                        "885555",
+                        com.example.kiwoom.service.HistoricalBackfillStatus.TARGET_REACHED,
+                        null)
+                .block();
+        assertThat(historicalBackfillRepository.find("885555").block().status())
+                .isEqualTo(com.example.kiwoom.service.HistoricalBackfillStatus.TARGET_REACHED);
+
+        historicalBackfillRepository.start("885555", LocalDate.of(2015, 1, 1), null).block();
+        historicalBackfillRepository
+                .finish(
+                        "885555",
+                        com.example.kiwoom.service.HistoricalBackfillStatus.HISTORY_EXHAUSTED,
+                        com.example.kiwoom.service.HistoricalExhaustionReason
+                                .BROKER_HISTORY_EXHAUSTED)
+                .block();
+        assertThat(historicalBackfillRepository.find("885555").block().status())
+                .isEqualTo(com.example.kiwoom.service.HistoricalBackfillStatus.HISTORY_EXHAUSTED);
+
+        historicalBackfillRepository.start("885555", LocalDate.of(2015, 1, 1), null).block();
+        historicalBackfillRepository
+                .finish(
+                        "885555",
+                        com.example.kiwoom.service.HistoricalBackfillStatus.ALREADY_SATISFIED,
+                        null)
+                .block();
+        assertThat(historicalBackfillRepository.find("885555").block().status())
+                .isEqualTo(com.example.kiwoom.service.HistoricalBackfillStatus.ALREADY_SATISFIED);
+
+        historicalBackfillRepository.fail("885555", "PERMANENT", "malformed request").block();
+        assertThat(historicalBackfillRepository.find("885555").block().status())
+                .isEqualTo(com.example.kiwoom.service.HistoricalBackfillStatus.FAILED);
     }
 
     @Test

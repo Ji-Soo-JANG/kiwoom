@@ -81,6 +81,18 @@ public class KiwoomHttpClient {
         return requestPeriodPrices(code, baseDate, "ka10081", accessToken);
     }
 
+    /** Requests one broker page of daily candles, preserving continuation metadata. */
+    public Mono<PagedResponse> requestDailyChartPage(
+            String code, String baseDate, ContinuationToken continuation, String accessToken) {
+        return postPaged(
+                "/api/dostk/chart",
+                accessToken,
+                "ka10081",
+                Map.of("stk_cd", code, "base_dt", baseDate, "upd_stkpc_tp", "1"),
+                continuation == null ? null : continuation.value(),
+                "차트 API 호출 실패");
+    }
+
     /** 기간별 차트 조회. apiId는 일봉 ka10081, 주봉 ka10082, 월봉 ka10083, 년봉 ka10094입니다. */
     public Mono<String> requestPeriodPrices(
             String code, String baseDate, String apiId, String accessToken) {

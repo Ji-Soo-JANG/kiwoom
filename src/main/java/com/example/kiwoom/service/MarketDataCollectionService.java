@@ -18,7 +18,7 @@ import reactor.core.publisher.Mono;
 public class MarketDataCollectionService {
     private static final Logger log = LoggerFactory.getLogger(MarketDataCollectionService.class);
     private static final int MAX_BATCH_SIZE = 500;
-    private static final int DAILY_CANDLE_LIMIT = 1500;
+    private static final int DAILY_CANDLE_LIMIT = 500;
     private final KiwoomApiService kiwoom;
     private final MarketDataRepository repository;
     private final AtomicBoolean running = new AtomicBoolean();

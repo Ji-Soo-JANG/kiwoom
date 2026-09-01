@@ -20,8 +20,10 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.List;
+import okhttp3.mockwebserver.Dispatcher;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
+import okhttp3.mockwebserver.RecordedRequest;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -286,6 +288,32 @@ class KiwoomApiServiceTest {
     @Test
     @DisplayName("종목명과 시장으로 종목 목록을 검색한다")
     void searchesStockCatalogByNameAndMarket() {
+        server.setDispatcher(
+                new Dispatcher() {
+                    @Override
+                    public MockResponse dispatch(RecordedRequest request) {
+                        if ("/oauth2/token".equals(request.getPath())) {
+                            return new MockResponse()
+                                    .setResponseCode(200)
+                                    .setHeader("Content-Type", "application/json")
+                                    .setBody(
+                                            "{\"return_code\":0,\"token\":\"access-token\",\"expires_dt\":\"20991231235959\"}");
+                        }
+                        String body = request.getBody().readUtf8();
+                        if (body.contains("\"mrkt_tp\":\"0\"")) {
+                            return new MockResponse()
+                                    .setResponseCode(200)
+                                    .setHeader("Content-Type", "application/json")
+                                    .setBody(
+                                            "{\"return_code\":0,\"list\":[{\"code\":\"005930\",\"name\":\"\\uC0BC\\uC131\\uC804\\uC790\"}]}");
+                        }
+                        return new MockResponse()
+                                .setResponseCode(200)
+                                .setHeader("Content-Type", "application/json")
+                                .setBody(
+                                        "{\"return_code\":0,\"list\":[{\"code\":\"035720\",\"name\":\"\\uCE74\\uCE74\\uC624\"}]}");
+                    }
+                });
         enqueueJson(
                 200,
                 """
@@ -540,6 +568,9 @@ class KiwoomApiServiceTest {
     }
 
     private void enqueueJson(int status, String body) {
+        if (!(server.getDispatcher() instanceof okhttp3.mockwebserver.QueueDispatcher)) {
+            return;
+        }
         server.enqueue(
                 new MockResponse()
                         .setResponseCode(status)

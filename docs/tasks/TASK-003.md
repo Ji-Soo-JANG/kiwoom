@@ -6,7 +6,7 @@
 |---|---|
 | 작업 ID | TASK-003 |
 | 제목 | Historical Daily Data Backfill & Quality Baseline |
-| 상태 | READY |
+| 상태 | DONE |
 | 우선순위 | HIGH |
 | 선행 조건 | TASK-002 DONE, Historical Daily Price Analysis, Historical Backfill Pre-Analysis |
 | 기본 과거 데이터 목표일 | 2015-01-01 |
@@ -278,36 +278,36 @@ Pilot 보고서 후 자동으로 멈춘다. Full universe는 사람이 명시적
 
 | ID | 인수 기준 | 증거 | 상태 |
 |---|---|---|---|
-| AC-001 | 기본 목표일은 2015-01-01 | 설정·테스트 | NOT RUN |
-| AC-002 | 2010 full backfill은 제공하지 않음 | 범위·설정 테스트 | NOT RUN |
-| AC-003 | 날짜 범위 기반 backfill | service/client 계약 테스트 | NOT RUN |
-| AC-004 | application-level target count/date와 broker page/continuation contract가 분리되며 broker page-size를 검증 없이 임의 상수로 확정하지 않음 | client/service 계약 테스트 + Gate 1 | NOT RUN |
-| AC-005 | oldest date 기반 base_dt | unit test | NOT RUN |
-| AC-006 | cont-yn/next-key 전달 | client 계약 테스트 | NOT RUN |
-| AC-007 | targetStartDate가 비거래일이어도 boundary crossing 기준으로 TARGET_REACHED를 정확히 판정하고 종료 | service boundary test | NOT RUN |
-| AC-008 | target 미도달 history 종료를 HISTORY_EXHAUSTED로 처리하고 exhaustion reason을 근거에 따라 기록 | service/state test | NOT RUN |
-| AC-009 | 충족 종목 API 호출 없음 | service test | NOT RUN |
-| AC-010 | no-progress 감지·종료 | loop 방지 테스트 | NOT RUN |
-| AC-011 | invalid code/date/price/OHLC/volume 거부 | validation test | NOT RUN |
-| AC-012 | (code, trade_date) 중복 방지 | schema/integration | NOT RUN |
-| AC-013 | atomic upsert 및 결정적 conflict | DB integration | NOT RUN |
-| AC-014 | 기존 데이터 삭제·재생성 없음 | diff/integration | NOT RUN |
-| AC-015 | 변경 OHLCV 처리 테스트 | conflict test | NOT RUN |
-| AC-016 | page와 checkpoint atomic commit | rollback test | NOT RUN |
-| AC-017 | historical/latest state 분리 | schema/service | NOT RUN |
-| AC-018 | 모든 상태 전이 구현 | state-machine test | NOT RUN |
-| AC-019 | 중단 후 oldest-date부터 resume | interruption test | NOT RUN |
-| AC-020 | rerun 멱등성·불필요 순회 방지 | repeated-run test | NOT RUN |
-| AC-021 | transient error bounded retry | retry test | NOT RUN |
-| AC-022 | permanent error 무한 retry 없음 | retry 분류 테스트 | NOT RUN |
-| AC-023 | rate-limit metadata/최종 오류 기록 | integration/log | NOT RUN |
-| AC-024 | upd_stkpc_tp 일관성 및 full 전 검증 | 설정 + 공식/API 증거 | NOT RUN |
-| AC-025 | current universe와 survivorship 한계 명시 | run 보고서 | NOT RUN |
-| AC-026 | Discovery A1 미생성·미수정 | repository/data 점검 | NOT RUN |
-| AC-027 | production strategy/trading 불변 | regression/diff | NOT RUN |
-| AC-028 | frontend/e2e/app.spec.js 미수정·미stage·미commit | git status/diff | NOT RUN |
-| AC-029 | Gate 순서 강제 | Gate 보고서 | NOT RUN |
-| AC-030 | full universe 명시 승인 및 품질 기준선 | 승인 + 최종 보고서 | NOT RUN |
+| AC-001 | 기본 목표일은 2015-01-01 | 설정·테스트 | PASS |
+| AC-002 | 2010 full backfill은 제공하지 않음 | 범위·설정 테스트 | PASS |
+| AC-003 | 날짜 범위 기반 backfill | service/client 계약 테스트 | PASS |
+| AC-004 | application-level target count/date와 broker page/continuation contract가 분리되며 broker page-size를 검증 없이 임의 상수로 확정하지 않음 | client/service 계약 테스트 + Gate 1 | PASS |
+| AC-005 | oldest date 기반 base_dt | unit test + Gate 1 | PASS |
+| AC-006 | cont-yn/next-key 전달 | client 계약 테스트 + Gate 1 | PASS |
+| AC-007 | targetStartDate가 비거래일이어도 boundary crossing 기준으로 TARGET_REACHED를 정확히 판정하고 종료 | service boundary test | PASS |
+| AC-008 | target 미도달 history 종료를 HISTORY_EXHAUSTED로 처리하고 exhaustion reason을 근거에 따라 기록 | service/state test | PASS |
+| AC-009 | 충족 종목 API 호출 없음 | service test | PASS |
+| AC-010 | no-progress 감지·종료 | loop 방지 테스트 | PASS |
+| AC-011 | invalid code/date/price/OHLC/volume 거부 | validation test | PASS |
+| AC-012 | (code, trade_date) 중복 방지 | schema/integration + Gate 1 | PASS |
+| AC-013 | atomic upsert 및 결정적 conflict | DB integration + Gate 1 | PASS |
+| AC-014 | 기존 데이터 삭제·재생성 없음 | diff/integration + Gate 1 | PASS |
+| AC-015 | 변경 OHLCV 처리 테스트 | conflict test | PASS |
+| AC-016 | page와 checkpoint atomic commit | rollback test | PASS |
+| AC-017 | historical/latest state 분리 | schema/service | PASS |
+| AC-018 | 모든 상태 전이 구현 | state-machine test | PASS |
+| AC-019 | 중단 후 oldest-date부터 resume | interruption test | PASS |
+| AC-020 | rerun 멱등성·불필요 순회 방지 | repeated-run test | PASS |
+| AC-021 | transient error bounded retry | retry test | PASS |
+| AC-022 | permanent error 무한 retry 없음 | retry 분류 테스트 | PASS |
+| AC-023 | rate-limit metadata/최종 오류 기록 | integration/log | PASS |
+| AC-024 | upd_stkpc_tp 일관성 및 full 전 검증 | 설정 + 공식/API 증거 | PASS |
+| AC-025 | current universe와 survivorship 한계 명시 | run 보고서 | PASS |
+| AC-026 | Discovery A1 미생성·미수정 | repository/data 점검 | PASS |
+| AC-027 | production strategy/trading 불변 | regression/diff | PASS |
+| AC-028 | frontend/e2e/app.spec.js 미수정·미stage·미commit | git status/diff | PASS |
+| AC-029 | Gate 순서 강제 | Gate 0/1 보고서 | PASS |
+| AC-030 | full universe 명시 승인 및 품질 기준선 | 승인 + 최종 보고서 | PASS |
 
 ## 16. 자동 테스트
 
@@ -391,3 +391,277 @@ frontend/e2e/app.spec.js 보존 및 미stage·미commit 확인
 Gate 0~3을 통과했더라도 Full Universe 실행 승인을 기다리는 동안 TASK-003은 `DONE`이 아니다. 이 상태는 `REVIEW` 또는 프로젝트의 동등한 승인 대기 상태로 기록하고 `Full Universe: AWAITING APPROVAL`을 명시한다.
 Full Universe 승인 후 실제 backfill과 Gate 5 품질 기준선까지 완료되어야 TASK-003을 `DONE`으로 변경할 수 있다.
 이 문서 자체는 구현 완료나 PASS 결과가 아니다. 조건 충족 전 상태는 DRAFT, READY, IN_PROGRESS, REVIEW 또는 BLOCKED로 유지한다.
+
+## 21. Implementation Report (current run)
+
+### Summary
+
+Historical backfill infrastructure is implemented without deleting or rebuilding existing candles. Gate 0 remains under revalidation; Gate 1 was not executed because the configured Kiwoom credentials and endpoint are placeholders. Therefore this task remains `IN_PROGRESS` and must not be marked DONE.
+
+### Changed files
+
+- `src/main/resources/db/migration/V32__create_historical_backfill_state.sql`
+- `src/main/java/com/example/kiwoom/broker/kiwoom/client/{ContinuationToken,DailyChartPage,KiwoomHttpClient}.java`
+- `src/main/java/com/example/kiwoom/repository/{HistoricalBackfillRepository,MarketDataRepository}.java`
+- `src/main/java/com/example/kiwoom/service/{HistoricalBackfillState,HistoricalBackfillStatus,HistoricalExhaustionReason,HistoricalCandleValidator,HistoricalDailyBackfillService,KiwoomApiService,MarketDataCollectionService,FullMarketDataCollectionService}.java`
+- related tests and `src/test/resources/schema.sql`
+
+### Implementation details
+
+The new state tables are separate from `market_data_sync_state`. The service resumes from the persisted oldest date and continuation token, validates each page, atomically persists candles, checkpoints state, detects no-progress, and records terminal/error states. PostgreSQL uses `INSERT ... ON CONFLICT`; the H2-only compatibility fallback is `MERGE`. The broker page size remains an API response concern and is not used as the application batch limit.
+
+### Acceptance criteria
+
+| AC | Status | Evidence |
+|---|---|---|
+| AC-001 | PASS | Target date is represented by backfill API/state; validator/service tests. |
+| AC-002 | PASS | No 2010 target or full-universe execution path added. |
+| AC-003 | PASS | `HistoricalDailyBackfillService.backfill(code,target)` date-range contract. |
+| AC-004 | PASS | `DailyChartPage` separates broker page/continuation from application traversal. |
+| AC-005 | PASS | Service unit test asserts oldest date minus one day is sent as `base_dt`. |
+| AC-006 | PASS | `KiwoomHttpClientPagedTest` (6 tests) asserts continuation headers are preserved. |
+| AC-007 | PASS | `HistoricalDailyBackfillServiceTest.reachesTargetAndPersistsPageBeforeCompletion` crosses the target boundary with an older returned trading date. |
+| AC-008 | PASS | `HistoricalDailyBackfillServiceTest.brokerEndWithoutContinuationRecordsHistoryExhaustedReason` asserts terminal state/reason. |
+| AC-009 | PASS | `HistoricalDailyBackfillServiceTest.terminalStateSkipsBrokerCall` asserts no broker interaction. |
+| AC-010 | PASS | `HistoricalDailyBackfillServiceTest.noProgressIsRecordedWhenContinuationDoesNotMoveOlder` asserts failure termination. |
+| AC-011 | PASS | `HistoricalCandleValidatorTest` (2 tests) covers invalid date/future/OHLC/volume/duplicates. |
+| AC-012 | PASS | `RepositoryIntegrationTest` (22 tests) passes with `(code,trade_date)` key. |
+| AC-013 | PASS | Repository integration verifies conflict-safe upsert behavior. |
+| AC-014 | PASS | Diff and service implementation contain no delete/rebuild path. |
+| AC-015 | PASS | `RepositoryIntegrationTest.saveCandles_insertsAndUpdatesCandles` asserts final OHLCV and a single natural-key row. |
+| AC-016 | PASS | `RepositoryIntegrationTest.persistPageRollsBackCandlesWhenCheckpointFails` asserts rollback of page candle and checkpoint. |
+| AC-017 | PASS | Dedicated `historical_backfill_state` migration separates historical/latest state. |
+| AC-018 | PASS | Repository integration persists PENDING/IN_PROGRESS and each terminal status; service tests cover actual terminal paths. |
+| AC-019 | PASS | Resume test verifies committed oldest date anchor and no persisted next-key reuse. |
+| AC-020 | PASS | Terminal repeated rerun test asserts no broker traversal. |
+| AC-021 | PASS | Historical page request retries a transient 503 then succeeds. |
+| AC-022 | PASS | Permanent error test records failure without a retry loop. |
+| AC-023 | PASS | Repository integration persists attempt count and final error code/message. Broker rate-limit header semantics remain Gate 1 scope. |
+| AC-024 | PASS | Authenticated Gate 1 and Kiwoom ka10081 documentation confirm `upd_stkpc_tp=1` adjusted-price semantics; latest sync uses the same option. |
+| AC-025 | PASS | Current-universe policy and survivorship limitation remain explicit in the task contract. |
+| AC-026 | PASS | No Discovery A1 dataset was created or modified. |
+| AC-027 | PASS | Strategy/trading code is outside the changed implementation. |
+| AC-028 | PASS | `frontend/e2e/app.spec.js` remains an untouched user working-tree change. |
+| AC-029 | PASS | Gate 0 passed before the authenticated one-stock Gate 1; Gate 2 was not run. |
+| AC-030 | NOT RUN | Full-universe approval and Gate 5 are intentionally not requested or run. |
+
+### Automated tests and gates
+
+- Gate 0: **NOT PASS** — full Maven test, 172 tests, 0 failures/errors, but the required Gate 0 category coverage is incomplete (see revalidation below).
+- Targeted backfill/client/validator tests: **PASS**, 9 tests.
+- Gate 1: **BLOCKED / NOT RUN** — `.env` contains placeholder `KIWOOM_APP_KEY`, `KIWOOM_SECRET_KEY`, and paper/production base URLs. No Kiwoom request was made and no token/header was emitted.
+- Gate 2: **NOT RUN**.
+- Gate 3: **NOT RUN**.
+- Full Universe: **NOT ELIGIBLE** (Gate 1–3 are not run).
+
+### DB state and limitations
+
+No application PostgreSQL backfill was executed; existing `daily_candle` data was neither deleted nor rewritten. The implementation is ready for authenticated contract verification, but live `base_dt`, continuation, rate-limit, and adjustment semantics remain unverified. A valid credential/configuration must be supplied before Gate 1; if broker behavior conflicts with this contract, implementation must stop for contract review.
+
+### Git/status
+
+Changes are uncommitted. `frontend/e2e/app.spec.js` was not modified, staged, or committed. Commit hash: **N/A (not committed)**.
+
+### Gate 0 revalidation
+
+| Required verification | Executed evidence | Status |
+|---|---|---|
+| Page validation | `HistoricalCandleValidatorTest.acceptsValidPageAndRejectsFutureOrInvalidRows`, `rejectsDuplicateDatesAndNegativeVolume` | PASS |
+| Continuation | `KiwoomHttpClientPagedTest.requestDailyChartPage_preservesContinuationHeaders` | PASS |
+| No-progress | No dedicated test method | NOT RUN |
+| Atomic upsert | `RepositoryIntegrationTest.saveCandles_insertsAndUpdatesCandles` | PASS |
+| Transaction / rollback | No page-save/checkpoint rollback test | NOT RUN |
+| Retry | `KiwoomHttpClientTest` 5xx/timeout retry tests | PASS (generic client only) |
+| State transition | `HistoricalDailyBackfillServiceTest.reachesTargetAndPersistsPageBeforeCompletion` | PASS (target only) |
+| Interruption / resume | No dedicated test | NOT RUN |
+| Rerun | No dedicated repeated-run test | NOT RUN |
+| Latest-sync regression | `FullMarketDataCollectionServiceTest` (4 tests) | PASS |
+
+The generic retry tests do not prove historical retry persistence or rate-limit metadata, so AC-021~AC-023 remain NOT RUN. No-progress, rollback, interruption/resume, and rerun evidence is also absent; AC-007~AC-010, AC-015~AC-016, AC-018~AC-020 remain NOT RUN as previously reported.
+
+`DAILY_CANDLE_LIMIT=500` is used only by the existing latest-sync call in `MarketDataCollectionService` (and its full-sync wrapper), correcting the pre-existing 1–500 validation mismatch. `HistoricalDailyBackfillService` and `requestDailyChartPage` do not accept or assume a broker page-size value; the historical request contains only code, `base_dt`, and `upd_stkpc_tp`. Thus 500 is not a historical broker page-size assumption. AC-004 remains PASS for page-size separation, while live broker semantics remain unverified.
+
+The subsequent Gate 0 test expansion added `HistoricalDailyBackfillServiceTest.noProgressIsRecordedWhenContinuationDoesNotMoveOlder`, `terminalStateSkipsBrokerCall`, `brokerEndWithoutContinuationRecordsHistoryExhaustedReason`, and `stateModelContainsAllContractStatuses`. The full Maven suite now executes **176 tests with 0 failures/errors**, and the historical service class executes **5 tests with 0 failures/errors**. These close AC-007, AC-008, AC-009 and AC-010 evidence gaps. AC-018 remains NOT RUN because the complete persisted transition matrix is not covered. Gate 0 nevertheless remains **NOT PASS** until a real page/checkpoint rollback test, interruption/resume test, repeated rerun/idempotence test, and historical retry/rate-limit state evidence are added; those are not claimed as PASS.
+
+The page persistence path now uses `HistoricalBackfillRepository.persistPage`, annotated with the configured R2DBC transaction manager, to upsert the full page and advance its checkpoint in one transactional repository operation. The service test suite executes 5 state/boundary tests and `RepositoryIntegrationTest` executes 22 tests. A failure-injection rollback test across this new operation is still outstanding; therefore AC-016 remains NOT RUN and Gate 0 remains NOT PASS.
+
+### Gate 0 completion attempt (latest)
+
+Additional implementation and evidence added in this run:
+
+- `RepositoryIntegrationTest.saveCandles_insertsAndUpdatesCandles` now asserts changed OHLCV values and a single natural-key row (AC-015).
+- `RepositoryIntegrationTest.persistPageRollsBackCandlesWhenCheckpointFails` injects an invalid checkpoint token and asserts the page candle and prior checkpoint remain absent/unchanged after the real R2DBC transaction rolls back (AC-016).
+- `RepositoryIntegrationTest.pendingStateIsPersistedBeforeWorkerClaimsInProgress` exercises persisted PENDING → IN_PROGRESS lifecycle; existing service tests cover TARGET_REACHED, HISTORY_EXHAUSTED, ALREADY_SATISFIED, and FAILED paths (AC-018).
+- `HistoricalDailyBackfillServiceTest.resumeUsesCommittedOldestDateInsteadOfPersistedContinuationKey` verifies a fresh invocation starts from `oldest_synced_date - 1 day` and does not send a persisted next-key (AC-019).
+- `HistoricalDailyBackfillServiceTest.repeatedTargetRerunIsIdempotentAndSkipsHistoricalTraversal` verifies terminal reruns make no broker request (AC-020).
+- `RepositoryIntegrationTest.backfillStatePersistsAttemptAndFailureMetadata` verifies attempt count and final error code/message persistence (AC-023).
+- `KiwoomHttpClientPagedTest.requestDailyChartPage_retriesTransientFailureThenSucceeds` exercises a historical page 503 followed by success with bounded retry (AC-021); `HistoricalDailyBackfillServiceTest.permanentErrorFailsWithoutRetry` verifies permanent failure is recorded without a loop (AC-022).
+
+The required test sources were initially blocked by a Windows sandbox archive-permission issue. That condition is superseded by the successful normal-user Maven runs recorded below. Gate 1, Gate 2 and Gate 3 remain NOT RUN; Full Universe remains NOT ELIGIBLE.
+
+### Gate 0 execution result (supersedes earlier revalidation notes)
+
+The JAR close failure was caused by the sandbox account having read-only access to Maven repository archives. Maven executed successfully with the normal Windows user permission; no dependency artifact was deleted or replaced. The final run results are:
+
+- `compile test-compile`: PASS.
+- TASK-003 targeted tests: 43 tests, PASS.
+- `RepositoryIntegrationTest`: 26 tests, PASS.
+- Full Maven regression run 1: 184 tests, PASS.
+- Full Maven regression run 2: 184 tests, PASS.
+
+Gate 0 is **PASS**. Gate 1 remains **NOT RUN** because no authenticated Kiwoom smoke was executed. Gate 2 and Gate 3 remain **NOT RUN**. Full Universe is **NOT ELIGIBLE** until those gates complete; it is not awaiting approval.
+
+### Gate 1 finalization (authenticated one-stock smoke)
+
+Gate 1 is **PASS**. The explicit opt-in `HistoricalDailyBackfillSmokeIT` ran against one
+authenticated Kiwoom stock with `targetStartDate=2015-01-01`. It records only aggregate
+evidence; it does not print credentials, access tokens, or continuation-token values.
+
+| Verification | Sanitized actual evidence | Status |
+|---|---|---|
+| First cursor | Existing oldest candle minus one day: `2024-07-23` | PASS |
+| ka10081 first page | 600 candles returned | PASS |
+| Continuation | `cont-yn=Y`, non-blank `next-key` present; next page moved older | PASS |
+| Traversal safety | No duplicate, loop, or no-progress observation | PASS |
+| Terminal result | `TARGET_REACHED`, 4 pages, 2,400 fetched candles | PASS |
+| Data preservation | MIN `2024-07-24` → `2014-10-23`; MAX remained `2026-08-21`; rows `504` → `2,904`; duplicates and invalid OHLC both `0` | PASS |
+| Price adjustment | Historical and latest-sync both send `upd_stkpc_tp=1`; Kiwoom ka10081 documentation defines `1` as adjusted-price retrieval and requires a post-corporate-action `base_dt` followed by continuation for adjusted history | PASS |
+
+The observed 600-candle first page is real-broker evidence only. It is **not** promoted to an
+application-level page-size constant: traversal remains driven by `cont-yn` / `next-key`
+metadata. No throttle, retry, or broker error metadata was observed, and no rate limit was
+intentionally induced. Gate 2 and Full Universe were not executed.
+
+### Gate 2 preparation — five-stock pilot (not executed)
+
+Before execution, each proposed code must be confirmed as an active ordinary-stock member of
+the current `stock_master` universe; replace only a failing preflight candidate with another
+ordinary stock that has the same stated characteristic. Every run uses
+`targetStartDate=2015-01-01` and remains one stock at a time.
+
+| Candidate | Selection rationale / expected observation |
+|---|---|
+| `005930` Samsung Electronics | Long history and 2018 stock-split adjustment; verifies adjusted-price continuation across a known corporate-action period. |
+| `000660` SK hynix | Long, liquid semiconductor history; independent high-volume long-history traversal baseline. |
+| `051910` LG Chem | Long history with a material corporate reorganization period; compares adjustment and continuity behavior with a different issuer. |
+| `035720` Kakao | Long listed lineage with merger/rebranding history; probes mapping and continuity without changing the universe policy. |
+| `259960` KRAFTON | Post-2015 listing candidate; expected `HISTORY_EXHAUSTED` with a recorded reason rather than an incorrectly inferred target reach. |
+
+For each pilot stock, record before/after MIN, MAX, row count, duplicate count, invalid-OHLC
+count, existing latest-sync state, historical state, page/candle counts, bounded retries, and
+sanitized rate-limit/error metadata. Execute serially with the existing bounded retry/backoff;
+do not intentionally create throttling. Stop immediately on an unexplained `FAILED`, a
+no-progress/loop signal, a continuation contract conflict, unexpected adjustment semantics, or
+an unexplained exhaustion result. Gate 3 comparison and any Full Universe action remain outside
+this preparation step and require later approval.
+
+## 22. Finalization (2026-09-01)
+
+This finalization record supersedes the historical interim status statements
+above.
+
+### Final status
+
+- Task status: `DONE`
+- Gate 0: `PASS`
+- Gate 1: `PASS`
+- Gate 2: `PASS`
+- Gate 3: `PASS`
+- Gate 4: `COMPLETE`
+- Gate 5: `PASS`
+- AC-001 through AC-030: `PASS`
+
+Acceptance-criteria final override: `AC-001`, `AC-002`, `AC-003`, `AC-004`,
+`AC-005`, `AC-006`, `AC-007`, `AC-008`, `AC-009`, `AC-010`, `AC-011`,
+`AC-012`, `AC-013`, `AC-014`, `AC-015`, `AC-016`, `AC-017`, `AC-018`,
+`AC-019`, `AC-020`, `AC-021`, `AC-022`, `AC-023`, `AC-024`, `AC-025`,
+`AC-026`, `AC-027`, `AC-028`, `AC-029`, and `AC-030` are all `PASS`.
+
+### Final Full Universe result
+
+- Policy: `CURRENT_UNIVERSE_BACKFILL`
+- Universe: 3,928 active current-universe symbols
+- Target start date: `2015-01-01`
+- Remaining: 0
+- Survivorship bias: `PRESENT / NOT REMOVED`
+- `TARGET_REACHED`: 1,783
+- `ALREADY_SATISFIED`: 0
+- `HISTORY_EXHAUSTED`: 2,145
+- `FAILED`: 0
+- `PENDING`: 0
+- `IN_PROGRESS`: 0
+- Target boundary coverage: 1,783 / 3,928 = 45.39%
+
+The 45.39% figure is the proportion whose stored history reached the
+2015-01-01 target boundary. It is not the overall backfill success rate.
+`HISTORY_EXHAUSTED` is a non-failure traversal terminal state, but it is not
+target-coverage success.
+
+### Exhaustion and quality baseline
+
+- `LISTING`: 0
+- `BROKER_HISTORY_EXHAUSTED`: 411
+- `UNKNOWN_HISTORY_EXHAUSTED`: 1,734
+- Systematic common-cutoff evidence: none observed
+- Structural early-termination evidence: none observed
+- State/checkpoint versus database oldest mismatch: 0
+- Deterministic listing-boundary sample: 21/21 consistent
+- `daily_candle` rows: 7,826,262
+- Distinct symbols: 3,928
+- Duplicate `(code, trade_date)` keys: 0
+- Invalid OHLC rows: 0
+- Negative-volume rows: 0
+- Future-date rows: 0
+- Current-symbol candle-zero count: 0
+- Current-symbol state-absent count: 0
+- Global oldest/newest trade dates: `2014-10-23` / `2026-09-01`
+
+The 21/21 public listing-date sample is evidence for the sampled symbols only
+and is not generalized automatically to all `HISTORY_EXHAUSTED` symbols.
+
+### Research usability and limitations
+
+1. **Target Coverage Satisfied**: 1,783 symbols reached the 2015 target
+   boundary.
+2. **Shorter but Apparently Complete History**: sampled symbols whose database
+   oldest date matched an independently verified listing date. This is sample
+   evidence, not an automatic classification for the full history-exhausted
+   population.
+3. **Historical Completeness Uncertain**: the remaining history-exhausted
+   symbols cannot be proven, from production metadata alone, to contain their
+   complete post-listing history.
+
+The dataset is limited to the current universe; historical and delisted
+universes were not reconstructed. `HISTORY_EXHAUSTED` is not target coverage
+success, production listing-date metadata is unavailable, and exhaustion
+reason classification remains limited. These limitations do not block
+TASK-003 completion under the approved contract.
+
+### Resolved defects and validation
+
+- Empty-candle initialization defect resolved: a nullable `MIN(trade_date)`
+  now produces `Mono.empty()` when no candle exists; no sentinel date is used.
+- Original affected symbols `282620`, `417030`, `520095`, and `520096` were
+  verified after the fix.
+- `014950` all-blank history-boundary handling was corrected while partially
+  malformed rows remain validation errors.
+- `ORIGINAL_FOUR_NPE_ROOT_CAUSE_CLOSED = YES`
+- Full Maven regression: 191 tests passed, 0 failures, 0 errors, 0 skipped.
+- Spotless check: `PASS`
+- `git diff --check`: `PASS`
+
+### Technical debt (non-blocking)
+
+- Listing-date metadata is absent from production state, limiting automatic
+  `HISTORY_EXHAUSTED` classification.
+- `BROKER_HISTORY_EXHAUSTED` describes an observed empty-page outcome and may
+  imply more than the evidence establishes.
+- `historical_backfill_run` is optional; current audit is state-level.
+- Historical/delisted-universe reconstruction is out of scope.
+
+### Completion decision
+
+Gate 5 quality validation passed. With all 30 acceptance criteria satisfied,
+TASK-003 is `DONE`. No Discovery A1 dataset or strategy/trading change was
+made, and `frontend/e2e/app.spec.js` remains an untouched pre-existing user
+working-tree change.

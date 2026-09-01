@@ -10,6 +10,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.dao.DuplicateKeyException;
+import org.springframework.r2dbc.BadSqlGrammarException;
 import org.springframework.r2dbc.core.DatabaseClient;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
@@ -118,10 +119,16 @@ public class MarketDataRepository {
                         candle.getDate(), java.time.format.DateTimeFormatter.BASIC_ISO_DATE);
         return database.sql(
                         """
-                UPDATE daily_candle
-                SET open_price = :open, high_price = :high, low_price = :low,
-                    close_price = :close, volume = :volume, updated_at = CURRENT_TIMESTAMP
-                WHERE code = :code AND trade_date = :tradeDate
+                INSERT INTO daily_candle(
+                    code, trade_date, open_price, high_price, low_price, close_price, volume)
+                VALUES (:code, :tradeDate, :open, :high, :low, :close, :volume)
+                ON CONFLICT (code, trade_date) DO UPDATE SET
+                    open_price = EXCLUDED.open_price,
+                    high_price = EXCLUDED.high_price,
+                    low_price = EXCLUDED.low_price,
+                    close_price = EXCLUDED.close_price,
+                    volume = EXCLUDED.volume,
+                    updated_at = CURRENT_TIMESTAMP
                 """)
                 .bind("code", code)
                 .bind("tradeDate", date)
@@ -130,31 +137,26 @@ public class MarketDataRepository {
                 .bind("low", candle.getLowPrice())
                 .bind("close", candle.getClosePrice())
                 .bind("volume", candle.getVolume())
-                .fetch()
-                .rowsUpdated()
-                .flatMap(
-                        updated ->
-                                updated > 0
-                                        ? Mono.empty()
-                                        : database.sql(
-                                                        """
-                                                INSERT INTO daily_candle(
-                                                    code, trade_date, open_price, high_price,
-                                                    low_price, close_price, volume)
-                                                VALUES (:code, :tradeDate, :open, :high, :low, :close, :volume)
-                                                """)
-                                                .bind("code", code)
-                                                .bind("tradeDate", date)
-                                                .bind("open", candle.getOpenPrice())
-                                                .bind("high", candle.getHighPrice())
-                                                .bind("low", candle.getLowPrice())
-                                                .bind("close", candle.getClosePrice())
-                                                .bind("volume", candle.getVolume())
-                                                .fetch()
-                                                .rowsUpdated()
-                                                .then())
-                .onErrorResume(DuplicateKeyException.class, error -> Mono.empty())
-                .then();
+                .then()
+                // H2's PostgreSQL compatibility mode does not implement ON CONFLICT;
+                // retain an atomic MERGE fallback for the test dialect only.
+                .onErrorResume(
+                        BadSqlGrammarException.class,
+                        error ->
+                                database.sql(
+                                                """
+                                        MERGE INTO daily_candle (code, trade_date, open_price, high_price, low_price, close_price, volume)
+                                        KEY (code, trade_date)
+                                        VALUES (:code, :tradeDate, :open, :high, :low, :close, :volume)
+                                        """)
+                                        .bind("code", code)
+                                        .bind("tradeDate", date)
+                                        .bind("open", candle.getOpenPrice())
+                                        .bind("high", candle.getHighPrice())
+                                        .bind("low", candle.getLowPrice())
+                                        .bind("close", candle.getClosePrice())
+                                        .bind("volume", candle.getVolume())
+                                        .then());
     }
 
     public Mono<Void> markSuccess(String code, LocalDate lastDate) {
@@ -337,6 +339,20 @@ public class MarketDataRepository {
                 .bind("asOf", asOf)
                 .map(row -> row.get("code", String.class))
                 .all();
+    }
+
+    public Mono<LocalDate> findOldestCandleDate(String code) {
+        return database.sql(
+                        """
+                SELECT trade_date AS oldest
+                FROM daily_candle
+                WHERE code=:code
+                ORDER BY trade_date ASC
+                LIMIT 1
+                """)
+                .bind("code", code)
+                .map((row, metadata) -> row.get("oldest", LocalDate.class))
+                .one();
     }
 
     public Flux<DailyPriceResponse> findDailyPrices(String code, int limit) {

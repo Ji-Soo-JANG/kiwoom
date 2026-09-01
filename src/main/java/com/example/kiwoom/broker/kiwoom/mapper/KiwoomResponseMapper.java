@@ -84,6 +84,10 @@ public class KiwoomResponseMapper {
             }
             List<DailyPriceResponse> result = new ArrayList<>();
             for (JsonNode item : array) {
+                // ka10081 returns one all-blank placeholder when a symbol has no
+                // history before the requested cursor.  It is not a candle; keep
+                // rejecting partially populated rows as malformed responses.
+                if (isBlankDailyPlaceholder(item)) continue;
                 result.add(
                         new DailyPriceResponse(
                                 requiredText(item, "dt"),
@@ -98,6 +102,19 @@ public class KiwoomResponseMapper {
         } catch (JsonProcessingException error) {
             throw invalidResponse("일봉 응답 JSON 파싱 실패");
         }
+    }
+
+    private boolean isBlankDailyPlaceholder(JsonNode item) {
+        return isBlank(item, "dt")
+                && isBlank(item, "open_pric")
+                && isBlank(item, "high_pric")
+                && isBlank(item, "low_pric")
+                && isBlank(item, "cur_prc")
+                && isBlank(item, "trde_qty");
+    }
+
+    private boolean isBlank(JsonNode item, String field) {
+        return item.path(field).asText().isBlank();
     }
 
     public List<StockSearchResult> parseStockList(String market, String json) {
