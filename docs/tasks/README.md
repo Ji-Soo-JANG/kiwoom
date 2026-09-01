@@ -398,3 +398,11 @@ ChatGPT는 설계와 검수를 담당한다.
 ```
 
 TASK는 단순한 작업 메모가 아니라 **설계와 구현 사이의 계약**으로 취급한다.
+
+# Repository-wide Test and Coverage Definition of Done
+
+Every task that changes production behavior must include relevant automated tests, normal behavior verification, applicable branch/boundary/failure verification, and a regression test for bug fixes. Persistence, state, and API changes must use the appropriate integration or contract tests.
+
+Before review, the full regression and formatting/static checks must pass together with the repository quality entry point. Changed production Java must satisfy Changed LINE >= 80% and Changed BRANCH >= 70% (or explicitly be `NOT_APPLICABLE`), and global LINE/BRANCH must not regress against the declared base. Instruction and Method are report-only during the initial rollout.
+
+Any `COVERAGE_EXCEPTION` must state the reason, affected files, missing verification, risk, approval, and follow-up task. An agent may not create that exception without explicit user/design approval. Assertion-free, execution-only, getter/setter-only, threshold-lowering, unjustified-exclusion, validation-weakening, and broad-exception-swallowing approaches are not acceptable substitutes for behavior tests.

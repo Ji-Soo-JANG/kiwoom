@@ -549,3 +549,16 @@ ISC
 
 **작성일:** 2026-08-15  
 **개발자:** Copilot
+
+## Repository-wide test and coverage contract
+
+`mvn test` is only a targeted/backend test command; it is not the complete development quality gate. Before review, use the same contract as CI:
+
+```powershell
+.\scripts\quality.ps1 -Backend -Base origin/main
+.\scripts\quality.ps1 -Frontend
+```
+
+Use `./scripts/quality.sh backend --base "$BASE_SHA"` or `./scripts/quality.sh frontend` on Ubuntu. The backend gate generates JaCoCo, checks changed production Java LINE >= 80% and BRANCH >= 70%, and prevents global LINE/BRANCH regression. The frontend gate preserves the existing format, lint, generated-type, coverage, E2E, build, and bundle-size checks. Live/authenticated `kiwoom-live` integration is separate and is not required for ordinary CI.
+
+Changed BRANCH means JaCoCo branch coverage for changed source lines (`cb / (mb + cb)`); it is not a perfect business-branch metric. Legacy absolute coverage debt is tracked by no-regression rather than hidden or declared resolved.

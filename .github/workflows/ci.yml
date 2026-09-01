@@ -11,13 +11,31 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "21"
           cache: maven
-      - name: Test backend with coverage gate
-        run: ./mvnw --batch-mode clean verify
+      - name: Resolve backend coverage base
+        id: coverage-base
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            git fetch origin "${{ github.base_ref }}" --depth=1
+            base_sha="$(git merge-base HEAD "origin/${{ github.base_ref }}")"
+          else
+            base_sha="${{ github.event.before }}"
+            if [[ -z "$base_sha" || "$base_sha" =~ ^0+$ ]]; then
+              echo "BASE_UNAVAILABLE: invalid push predecessor" >&2
+              exit 1
+            fi
+          fi
+          git rev-parse --verify "$base_sha^{commit}"
+          echo "sha=$base_sha" >> "$GITHUB_OUTPUT"
+      - name: Run backend quality contract
+        run: bash scripts/quality.sh backend --base "${{ steps.coverage-base.outputs.sha }}"
       - name: Upload JaCoCo report
         if: always()
         uses: actions/upload-artifact@v4
@@ -27,9 +45,6 @@ jobs:
 
   frontend:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: frontend
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -37,31 +52,11 @@ jobs:
           node-version: "22"
           cache: npm
           cache-dependency-path: frontend/package-lock.json
-      - name: Install dependencies
-        run: npm ci
-      - name: Audit frontend dependencies
-        run: npm audit --audit-level=high
-      - name: Check frontend formatting
-        run: npm run format:check
-      - name: Lint frontend
-        run: npm run lint
-      - name: Check generated API types
-        run: npm run types:check
-      - name: Check API type usage
-        run: npm run types:usage
-      - name: Test frontend with coverage gate
-        run: npm run test:coverage
+      - name: Run frontend quality contract
+        run: bash scripts/quality.sh frontend
       - name: Upload Vitest coverage report
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: vitest-coverage
           path: frontend/coverage
-      - name: Install Playwright Chromium
-        run: npx playwright install --with-deps chromium
-      - name: Run browser E2E tests
-        run: npm run test:e2e
-      - name: Build frontend and check committed assets
-        run: npm run build:check
-      - name: Check bundle size budget
-        run: npm run build:size
