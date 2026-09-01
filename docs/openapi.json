@@ -538,6 +538,12 @@
     "/api/research/box-evaluations/items/{itemId}/outcome": {
       "get": { "responses": { "200": { "description": "Outcome policy status" } } }
     },
+    "/api/research/box-evaluations/a1/items/{itemId}/blind": {
+      "get": { "responses": { "200": { "description": "A1 blind point-in-time candle payload" } } }
+    },
+    "/api/research/box-evaluations/a1/items/{itemId}/narrow": {
+      "get": { "responses": { "200": { "description": "A1 NARROW candidates revealed after BOX" } } }
+    },
     "/api/research/box-evaluations/items/{itemId}/evaluation": {
       "get": { "responses": { "200": { "description": "Committed evaluation for the reviewer" } } }
     },

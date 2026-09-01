@@ -37,18 +37,23 @@ if ($Backend) {
     $report = (Resolve-Path target\site\jacoco\jacoco.xml).Path
     $effectiveBaseReport = $BaseReport
     $worktree = $null
+    $compareCoverage = {
+      Invoke-QualityStep 'changed and global coverage' {
+        & java -cp $checkerOut ChangedCoverageChecker --repo . --base $Base --report $report --base-report $effectiveBaseReport
+      }
+    }
     if ([string]::IsNullOrWhiteSpace($effectiveBaseReport)) {
       $worktree = Join-Path ([System.IO.Path]::GetTempPath()) ("kiwoom-base-" + [guid]::NewGuid())
-      Invoke-QualityStep 'base worktree' { & git worktree add --detach $worktree $Base }
       try {
+        Invoke-QualityStep 'base worktree' { & git worktree add --detach $worktree $Base }
         Invoke-Backend $worktree 'base'
         $effectiveBaseReport = Join-Path $worktree 'target\site\jacoco\jacoco.xml'
+        & $compareCoverage
       } finally {
         & git worktree remove --force $worktree
       }
-    }
-    Invoke-QualityStep 'changed and global coverage' {
-      & java -cp $checkerOut ChangedCoverageChecker --repo . --base $Base --report $report --base-report $effectiveBaseReport
+    } else {
+      & $compareCoverage
     }
   } finally {
     Remove-Item -LiteralPath $checkerOut -Recurse -Force -ErrorAction SilentlyContinue
